@@ -1,0 +1,35 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# OS metadata
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+~$*
+
+# IDEs
+.vscode/
+.idea/
+
+# Project files
+CRM_Detailed_Explanation.md
+CRM_Requirements.md
+Presentation1.pptx
+database_design.md
+*.zip
+project_updated_extracted/
+*_gallery.md
