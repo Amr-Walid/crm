@@ -76,7 +76,7 @@ HasIndex(dm => new { dm.BrandId, dm.Name }).IsUnique()
 ```mermaid
 gantt
     title CRM Phases Progress
-    dateFormat  YYYY-MM-DD
+    dateFormat YYYY-MM-DD
     section Phase 1 - Identity
     Identity and Permissions     :done, p1, 2026-07-01, 1d
     section Phase 2 - Customers
