@@ -34,12 +34,12 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "name": "Ahmed Walid",
-  "email": "ahmed.walid@unigroup.com",
+  "name": "Ali Walid",
+  "email": "ali.walid@unigroup.com",
   "province": "Cairo",
   "city": "Maadi",
   "addressDetails": "12 Road 9, Maadi, Cairo",
-  "phone": "01012345678"
+  "phone": "01087654321"
 }
 
 ###
@@ -53,7 +53,7 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "name": "Samsung"
+  "name": "Apple"
 }
 
 ###
@@ -68,7 +68,7 @@ Content-Type: application/json
 
 {
   "brandId": {{brandId}},
-  "name": "Galaxy S24 Ultra"
+  "name": "iPhone 15 Pro"
 }
 
 ###
