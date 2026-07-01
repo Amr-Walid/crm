@@ -39,3 +39,7 @@ dotnet-sdk-9.0-installer.exe
 
 
 
+
+# .NET Build Outputs
+[Bb]in/
+[Oo]bj/
