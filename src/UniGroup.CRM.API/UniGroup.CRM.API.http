@@ -1,23 +1,5 @@
 @UniGroup.CRM.API_HostAddress = http://localhost:5112
 
-# قيم افتراضية تم إنشاؤها مسبقاً في قاعدة البيانات لتسهيل التجربة دون تكرار
-@customerId = "20df9317-2933-4260-bb53-7dc53ec14d64"
-@brandId = "4de75018-3517-407d-b33e-d9fcc66eafa8"
-@modelId = "00000000-0000-0000-0000-000000000000"
-
-### Register a new user
-POST {{UniGroup.CRM.API_HostAddress}}/api/auth/register
-Content-Type: application/json
-
-{
-  "email": "testuser@unigroup.com",
-  "password": "Password123!",
-  "firstName": "Test",
-  "lastName": "User"
-}
-
-###
-
 ### Login as the registered user to get Token
 # @name login
 POST {{UniGroup.CRM.API_HostAddress}}/api/auth/login
@@ -32,38 +14,10 @@ Content-Type: application/json
 
 @authToken = {{login.response.body.token}}
 
-### Create a new Customer (ملاحظة: الهاتف يجب أن يكون فريداً في كل مرة)
-# @name createCustomer
-POST {{UniGroup.CRM.API_HostAddress}}/api/customers
-Authorization: Bearer {{authToken}}
-Content-Type: application/json
+# المعرفات الثابتة المخزنة في قاعدة البيانات للتجربة المباشرة والسريعة
+@staticCustomerId = "20df9317-2933-4260-bb53-7dc53ec14d64"
+@staticBrandId = "4de75018-3517-407d-b33e-d9fcc66eafa8"
 
-{
-  "name": "Ali Walid",
-  "email": "ali.walid@unigroup.com",
-  "province": "Cairo",
-  "city": "Maadi",
-  "addressDetails": "12 Road 9, Maadi, Cairo",
-  "phone": "01099999999"
-}
-
-###
-
-@customerId = {{createCustomer.response.body}}
-
-### Create a Device Brand (ملاحظة: الاسم يجب أن يكون فريداً في كل مرة)
-# @name createBrand
-POST {{UniGroup.CRM.API_HostAddress}}/api/devices/brands
-Authorization: Bearer {{authToken}}
-Content-Type: application/json
-
-{
-  "name": "Apple V2"
-}
-
-###
-
-@brandId = {{createBrand.response.body}}
 
 ### Create a Device Model
 # @name createModel
@@ -72,7 +26,7 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "brandId": {{brandId}},
+  "brandId": {{staticBrandId}},
   "name": "iPhone 15 Pro Max"
 }
 
@@ -80,16 +34,17 @@ Content-Type: application/json
 
 @modelId = {{createModel.response.body}}
 
+
 ### Assign a Device to the Customer (with Warranty)
 POST {{UniGroup.CRM.API_HostAddress}}/api/devices/assign
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "customerId": {{customerId}},
+  "customerId": {{staticCustomerId}},
   "modelId": {{modelId}},
-  "imei": "359876543210999",
-  "serialNumber": "S24U987654999",
+  "imei": "359876543210988",
+  "serialNumber": "S24U987654988",
   "purchaseDate": "2026-07-01T00:00:00Z",
   "invoiceNumber": "INV-2026-9999",
   "warrantyExpiry": "2028-07-01T00:00:00Z"
@@ -97,14 +52,16 @@ Content-Type: application/json
 
 ###
 
+
 ### Get Customer 360° View Details by ID (Calculates Warranty Status)
-GET {{UniGroup.CRM.API_HostAddress}}/api/customers/{{customerId}}
+GET {{UniGroup.CRM.API_HostAddress}}/api/customers/{{staticCustomerId}}
 Authorization: Bearer {{authToken}}
 
 ###
 
+
 ### Search Customers (By Name, Phone, Serial, or IMEI)
-GET {{UniGroup.CRM.API_HostAddress}}/api/customers/search?searchTerm=01087654321
+GET {{UniGroup.CRM.API_HostAddress}}/api/customers/search?searchTerm=01012345678
 Authorization: Bearer {{authToken}}
 
 ###
