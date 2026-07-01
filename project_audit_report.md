@@ -74,21 +74,12 @@ HasIndex(dm => new { dm.BrandId, dm.Name }).IsUnique()
 ## 3. مطابقة المتطلبات الـ 18 (Requirements Mapping Table)
 
 ```mermaid
-gantt
-    title CRM Phases Progress
-    dateFormat YYYY-MM-DD
-    section Phase 1 - Identity
-    Identity and Permissions     :done, p1, 2026-07-01, 1d
-    section Phase 2 - Customers
-    Customers and Devices        :done, p2, 2026-07-01, 1d
-    section Phase 3 - Call Center
-    Call Center and Search       :done, p3, 2026-07-01, 1d
-    section Phase 4 - Tickets
-    Tickets and Workflows        :todo, p4, 2026-07-02, 7d
-    section Phase 5 - Dashboards
-    Dashboards and Reports       :todo, p5, 2026-07-09, 5d
-    section Phase 6 - Audit
-    Notifications and Audit      :todo, p6, 2026-07-14, 5d
+flowchart TD
+    P1[Phase 1: Identity - Completed] --> P2[Phase 2: Customers - Completed]
+    P2 --> P3[Phase 3: Call Center - Completed]
+    P3 --> P4[Phase 4: Tickets and SLA - Pending]
+    P4 --> P5[Phase 5: Dashboards - Pending]
+    P5 --> P6[Phase 6: Notifications and Audit - Pending]
 ```
 
 ### جدول مطابقة المتطلبات التفصيلي:
