@@ -1,4 +1,4 @@
-@UniGroup.CRM.API_HostAddress = https://localhost:7170
+@UniGroup.CRM.API_HostAddress = http://localhost:5112
 
 ### Register a new user
 POST {{UniGroup.CRM.API_HostAddress}}/api/auth/register
