@@ -1,5 +1,10 @@
 @UniGroup.CRM.API_HostAddress = http://localhost:5112
 
+# قيم افتراضية تم إنشاؤها مسبقاً في قاعدة البيانات لتسهيل التجربة دون تكرار
+@customerId = "20df9317-2933-4260-bb53-7dc53ec14d64"
+@brandId = "4de75018-3517-407d-b33e-d9fcc66eafa8"
+@modelId = "00000000-0000-0000-0000-000000000000"
+
 ### Register a new user
 POST {{UniGroup.CRM.API_HostAddress}}/api/auth/register
 Content-Type: application/json
@@ -27,7 +32,7 @@ Content-Type: application/json
 
 @authToken = {{login.response.body.token}}
 
-### Create a new Customer
+### Create a new Customer (ملاحظة: الهاتف يجب أن يكون فريداً في كل مرة)
 # @name createCustomer
 POST {{UniGroup.CRM.API_HostAddress}}/api/customers
 Authorization: Bearer {{authToken}}
@@ -39,21 +44,21 @@ Content-Type: application/json
   "province": "Cairo",
   "city": "Maadi",
   "addressDetails": "12 Road 9, Maadi, Cairo",
-  "phone": "01087654321"
+  "phone": "01099999999"
 }
 
 ###
 
 @customerId = {{createCustomer.response.body}}
 
-### Create a Device Brand
+### Create a Device Brand (ملاحظة: الاسم يجب أن يكون فريداً في كل مرة)
 # @name createBrand
 POST {{UniGroup.CRM.API_HostAddress}}/api/devices/brands
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "name": "Apple"
+  "name": "Apple V2"
 }
 
 ###
@@ -68,7 +73,7 @@ Content-Type: application/json
 
 {
   "brandId": {{brandId}},
-  "name": "iPhone 15 Pro"
+  "name": "iPhone 15 Pro Max"
 }
 
 ###
@@ -83,10 +88,10 @@ Content-Type: application/json
 {
   "customerId": {{customerId}},
   "modelId": {{modelId}},
-  "imei": "359876543210123",
-  "serialNumber": "S24U987654321",
+  "imei": "359876543210999",
+  "serialNumber": "S24U987654999",
   "purchaseDate": "2026-07-01T00:00:00Z",
-  "invoiceNumber": "INV-2026-0001",
+  "invoiceNumber": "INV-2026-9999",
   "warrantyExpiry": "2028-07-01T00:00:00Z"
 }
 
@@ -99,9 +104,7 @@ Authorization: Bearer {{authToken}}
 ###
 
 ### Search Customers (By Name, Phone, Serial, or IMEI)
-GET {{UniGroup.CRM.API_HostAddress}}/api/customers/search?searchTerm=01012345678
+GET {{UniGroup.CRM.API_HostAddress}}/api/customers/search?searchTerm=01087654321
 Authorization: Bearer {{authToken}}
 
 ###
-
-
