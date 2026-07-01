@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "71/JIF4ZoXg=",
+  "dgSpecHash": "d9WWlo7sByc=",
   "success": true,
-  "projectFilePath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj",
+  "projectFilePath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\SMART HOME\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\SMART HOME\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",

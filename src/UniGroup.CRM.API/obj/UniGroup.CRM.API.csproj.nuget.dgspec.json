@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj": {}
+    "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj": {}
   },
   "projects": {
-    "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj": {
+    "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj",
+        "projectUniqueName": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj",
         "projectName": "UniGroup.CRM.API",
-        "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj",
+        "projectPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj",
         "packagesPath": "C:\\Users\\SMART HOME\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.API\\obj\\",
+        "outputPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.API\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\SMART HOME\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -26,11 +26,11 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj": {
-                "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj"
+              "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj": {
+                "projectPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj"
               },
-              "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj": {
-                "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj"
+              "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj": {
+                "projectPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj"
               }
             }
           }
@@ -89,14 +89,14 @@
         }
       }
     },
-    "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj": {
+    "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj",
+        "projectUniqueName": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj",
         "projectName": "UniGroup.CRM.Application",
-        "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj",
+        "projectPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj",
         "packagesPath": "C:\\Users\\SMART HOME\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\obj\\",
+        "outputPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Application\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\SMART HOME\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -111,8 +111,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj": {
-                "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj"
+              "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj": {
+                "projectPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj"
               }
             }
           }
@@ -158,14 +158,14 @@
         }
       }
     },
-    "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj": {
+    "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj",
+        "projectUniqueName": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj",
         "projectName": "UniGroup.CRM.Domain",
-        "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj",
+        "projectPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj",
         "packagesPath": "C:\\Users\\SMART HOME\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\obj\\",
+        "outputPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\SMART HOME\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -223,14 +223,14 @@
         }
       }
     },
-    "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj": {
+    "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj",
+        "projectUniqueName": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj",
         "projectName": "UniGroup.CRM.Infrastructure",
-        "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj",
+        "projectPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj",
         "packagesPath": "C:\\Users\\SMART HOME\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Infrastructure\\obj\\",
+        "outputPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\SMART HOME\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -245,8 +245,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj": {
-                "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj"
+              "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj": {
+                "projectPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj"
               }
             }
           }

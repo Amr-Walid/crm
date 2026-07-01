@@ -1091,11 +1091,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj",
+      "projectUniqueName": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj",
       "projectName": "UniGroup.CRM.Application",
-      "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj",
+      "projectPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj",
       "packagesPath": "C:\\Users\\SMART HOME\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\obj\\",
+      "outputPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Application\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\SMART HOME\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -1110,8 +1110,8 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj": {
-              "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj"
+            "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj": {
+              "projectPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj"
             }
           }
         }
