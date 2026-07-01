@@ -30,8 +30,8 @@ public class JwtProvider : IJwtProvider
     /// </summary>
     /// <param name="user">The user entity.</param>
     /// <param name="roles">Roles assigned to the user.</param>
-    /// <returns>A signed JWT token string.</returns>
-    public string GenerateToken(ApplicationUser user, IList<string> roles)
+    /// <returns>A TokenResult containing the signed JWT token string and its expiration.</returns>
+    public TokenResult GenerateToken(ApplicationUser user, IList<string> roles)
     {
         var claims = new List<Claim>
         {
@@ -51,14 +51,18 @@ public class JwtProvider : IJwtProvider
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+        var expiration = DateTime.UtcNow.AddMinutes(_options.TokenLifetimeInMinutes);
+
         var token = new JwtSecurityToken(
             issuer: _options.Issuer,
             audience: _options.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_options.TokenLifetimeInMinutes),
+            expires: expiration,
             signingCredentials: creds);
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+        return new TokenResult(tokenString, expiration);
     }
 
     /// <summary>

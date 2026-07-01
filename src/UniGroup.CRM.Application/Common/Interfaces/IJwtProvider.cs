@@ -3,6 +3,11 @@
 namespace UniGroup.CRM.Application.Common.Interfaces;
 
 /// <summary>
+/// Result of generating a JWT token.
+/// </summary>
+public record TokenResult(string Token, DateTime Expiration);
+
+/// <summary>
 /// Defines methods for generating JSON Web Tokens (JWT) and refresh tokens.
 /// </summary>
 public interface IJwtProvider
@@ -12,8 +17,8 @@ public interface IJwtProvider
     /// </summary>
     /// <param name="user">The application user.</param>
     /// <param name="roles">The roles assigned to the user.</param>
-    /// <returns>A string representing the JWT token.</returns>
-    string GenerateToken(ApplicationUser user, IList<string> roles);
+    /// <returns>A TokenResult containing the token string and its expiration date.</returns>
+    TokenResult GenerateToken(ApplicationUser user, IList<string> roles);
 
     /// <summary>
     /// Generates a cryptographically secure refresh token.
