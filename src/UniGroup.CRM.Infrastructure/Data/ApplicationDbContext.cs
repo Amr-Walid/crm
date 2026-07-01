@@ -127,6 +127,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.ToTable("DeviceBrands");
             entity.HasKey(db => db.Id);
             entity.Property(db => db.Name).HasMaxLength(100).IsRequired();
+            // Unique index to prevent duplicate brand names at the DB level
+            entity.HasIndex(db => db.Name).IsUnique();
         });
 
         // Configure DeviceModel entity mappings
@@ -135,6 +137,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.ToTable("DeviceModels");
             entity.HasKey(dm => dm.Id);
             entity.Property(dm => dm.Name).HasMaxLength(150).IsRequired();
+            // Composite unique index: same model name cannot appear twice under same brand
+            entity.HasIndex(dm => new { dm.BrandId, dm.Name }).IsUnique();
 
             entity.HasOne(dm => dm.Brand)
                 .WithMany(b => b.DeviceModels)

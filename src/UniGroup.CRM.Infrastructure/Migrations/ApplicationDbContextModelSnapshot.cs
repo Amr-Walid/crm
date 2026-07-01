@@ -410,6 +410,9 @@ namespace UniGroup.CRM.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.ToTable("DeviceBrands", (string)null);
                 });
 
@@ -429,7 +432,8 @@ namespace UniGroup.CRM.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BrandId");
+                    b.HasIndex("BrandId", "Name")
+                        .IsUnique();
 
                     b.ToTable("DeviceModels", (string)null);
                 });

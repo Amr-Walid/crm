@@ -52,17 +52,16 @@ public class GetCallerProfileQueryHandler : IRequestHandler<GetCallerProfileQuer
     {
         var normalizedPhone = request.PhoneNumber?.Trim() ?? string.Empty;
 
-        // Single query: navigate through CustomerPhones to reach the owning Customer,
-        // with all required navigation properties eagerly loaded.
-        // FirstOrDefaultAsync returns null when the phone is unknown – no exception is thrown.
-        var customer = await _context.CustomerPhones
+        // Start from Customers and filter via CustomerPhones navigation.
+        // This ensures Include() works reliably — EF Core does not guarantee
+        // Include() is applied after a .Select() projection on a different entity.
+        var customer = await _context.Customers
             .AsNoTracking()
-            .Where(p => p.Phone == normalizedPhone)
-            .Select(p => p.Customer)
             .Include(c => c.CustomerPhones)
             .Include(c => c.CustomerDevices)
                 .ThenInclude(d => d.Model)
                     .ThenInclude(m => m.Brand)
+            .Where(c => c.CustomerPhones.Any(p => p.Phone == normalizedPhone))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (customer == null)

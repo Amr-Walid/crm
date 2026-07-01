@@ -1,5 +1,112 @@
 @UniGroup.CRM.API_HostAddress = http://localhost:5112
 
+### ═══════════════════════════════
+### PHASE 1 - Auth (Login First)
+### ═══════════════════════════════
+
+# @name login
+POST {{UniGroup.CRM.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@unigroup.com",
+  "password": "Password123!"
+}
+
+###
+
+@authToken = {{login.response.body.token}}
+@customerId = 20df9317-2933-4260-bb53-7dc53ec14d64
+
+### ═══════════════════════════════
+### PHASE 3 - Caller ID Tests
+### ═══════════════════════════════
+
+### TEST 1: Caller ID - عميل موجود (يجب يرجع 360° profile)
+GET {{UniGroup.CRM.API_HostAddress}}/api/calls/caller-id?phoneNumber=01012345678
+Authorization: Bearer {{authToken}}
+
+###
+
+### TEST 2: Caller ID - رقم مجهول (يجب يرجع null)
+GET {{UniGroup.CRM.API_HostAddress}}/api/calls/caller-id?phoneNumber=01099999999
+Authorization: Bearer {{authToken}}
+
+###
+
+### TEST 3: Log Call - واردة من عميل معروف
+POST {{UniGroup.CRM.API_HostAddress}}/api/calls
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "customerId": "20df9317-2933-4260-bb53-7dc53ec14d64",
+  "direction": "Inbound",
+  "phoneNumber": "01012345678",
+  "durationSeconds": 185,
+  "summary": "استفسر عن حالة الضمان. الضمان ساري حتى 2028.",
+  "recordingUrl": null
+}
+
+###
+
+### TEST 4: Log Call - من رقم غير مسجل
+POST {{UniGroup.CRM.API_HostAddress}}/api/calls
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "customerId": null,
+  "direction": "Inbound",
+  "phoneNumber": "01055555555",
+  "durationSeconds": 45,
+  "summary": "استفسر عن ساعات العمل.",
+  "recordingUrl": null
+}
+
+###
+
+### TEST 5: Call History للعميل
+GET {{UniGroup.CRM.API_HostAddress}}/api/calls/history/{{customerId}}?page=1&pageSize=10
+Authorization: Bearer {{authToken}}
+
+###
+
+### ═══════════════════════════════
+### PHASE 3 - Unified Search Tests
+### ═══════════════════════════════
+
+### TEST 6: Search by Name
+GET {{UniGroup.CRM.API_HostAddress}}/api/search?q=Ahmed
+Authorization: Bearer {{authToken}}
+
+###
+
+### TEST 7: Search by Phone
+GET {{UniGroup.CRM.API_HostAddress}}/api/search?q=01012345678
+Authorization: Bearer {{authToken}}
+
+###
+
+### TEST 8: Search by IMEI
+GET {{UniGroup.CRM.API_HostAddress}}/api/search?q=359876543210777
+Authorization: Bearer {{authToken}}
+
+###
+
+### TEST 9: Search by Serial Number
+GET {{UniGroup.CRM.API_HostAddress}}/api/search?q=S24U987654777
+Authorization: Bearer {{authToken}}
+
+###
+
+### TEST 10: Search - not found (يجب يرجع [])
+GET {{UniGroup.CRM.API_HostAddress}}/api/search?q=XXXXXXXXXNOTFOUND
+Authorization: Bearer {{authToken}}
+
+###
+
+
 ### Login as the registered user to get Token
 # @name login
 POST {{UniGroup.CRM.API_HostAddress}}/api/auth/login
