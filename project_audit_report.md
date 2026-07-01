@@ -260,7 +260,7 @@ src/
 
 | Entity | الحقول الرئيسية |
 |---|---|
-| `Ticket` | Id (T-YYYY-NNNN), CustomerId, DeviceId, Title, Description, Category, Status (8 حالات), Priority, AssignedToId, DepartmentId, SlaDeadline |
+| `Ticket` | Id (T-YYYY-NNNN), CustomerId, DeviceId, Title, Description, Category, Status (8 حالات), Priority, AssignedToId, DepartmentId, SlaDeadline, ChatwootConversationId (nullable) |
 | `Department` | Id, Name, Description |
 | `TicketHistory` | Id, TicketId, FromStatus, ToStatus, ChangedById, Note, CreatedAt |
 | `InternalNote` | Id, TicketId, AuthorId, Content, CreatedAt |
@@ -276,7 +276,11 @@ New → Open → In Progress → Waiting For Customer → Resolved → Closed
 ```
 
 **توصيات:**
-1. استخدام `ITicketStatusTransitionValidator` للتحكم في الانتقالات المسموحة
-2. SLA Engine يوقف العداد عند `Waiting_For_Customer` ويعيد تشغيله عند رد العميل
-3. رقم التذكرة يكون Readable Format: `T-2026-00001`
-4. الـ `TicketHistory` يُسجل تلقائياً في كل `TransitionTicketStatusCommand`
+1. استخدام `ITicketStatusTransitionValidator` للتحكم في الانتقالات المسموحة.
+2. SLA Engine يوقف العداد عند `Waiting_For_Customer` ويعيد تشغيله عند رد العميل.
+3. رقم التذكرة يكون Readable Format: `T-2026-00001`.
+4. الـ `TicketHistory` يُسجل تلقائياً في كل `TransitionTicketStatusCommand`.
+5. **دمج Chatwoot (جديد):**
+   * **Phase 4:** إضافة حقل `ChatwootConversationId` لربط التذكرة بمحادثة الدعم الفني على الواتساب/الفيسبوك مباشرة.
+   * **Phase 6:** ربط الـ `NotificationService` الخاص بالواتساب بـ Chatwoot Messages API لإرسال رسائل التحديث التلقائية واستبيان CSAT للعملاء، وإنشاء Endpoint مستقل `/api/webhooks/chatwoot` لاستقبال المحادثات وتحديث بيانات العملاء تلقائياً.
+
