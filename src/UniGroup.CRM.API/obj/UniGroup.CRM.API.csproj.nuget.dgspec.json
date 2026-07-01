@@ -1,0 +1,318 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj",
+        "projectName": "UniGroup.CRM.API",
+        "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.API\\UniGroup.CRM.API.csproj",
+        "packagesPath": "C:\\Users\\SMART HOME\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.API\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\SMART HOME\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj": {
+                "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj"
+              },
+              "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj": {
+                "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Microsoft.AspNetCore.OpenApi": {
+              "target": "Package",
+              "version": "[9.0.17, )"
+            },
+            "Microsoft.EntityFrameworkCore.Tools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.315/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj",
+        "projectName": "UniGroup.CRM.Application",
+        "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj",
+        "packagesPath": "C:\\Users\\SMART HOME\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\SMART HOME\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj": {
+                "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "MediatR": {
+              "target": "Package",
+              "version": "[14.1.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.315/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj",
+        "projectName": "UniGroup.CRM.Domain",
+        "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj",
+        "packagesPath": "C:\\Users\\SMART HOME\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Domain\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\SMART HOME\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.Identity.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.315/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj",
+        "projectName": "UniGroup.CRM.Infrastructure",
+        "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Infrastructure\\UniGroup.CRM.Infrastructure.csproj",
+        "packagesPath": "C:\\Users\\SMART HOME\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Infrastructure\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\SMART HOME\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj": {
+                "projectPath": "C:\\Users\\SMART HOME\\.gemini\\antigravity\\brain\\50af9a90-20cc-4ec1-aedd-7c44f981fa5a\\.system_generated\\worktrees\\subagent-ASP-NET-Core-Builder-self-baffbb78\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Microsoft.AspNetCore.Identity.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Microsoft.EntityFrameworkCore.SqlServer": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Microsoft.EntityFrameworkCore.Tools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Microsoft.IdentityModel.Tokens": {
+              "target": "Package",
+              "version": "[8.19.1, )"
+            },
+            "System.IdentityModel.Tokens.Jwt": {
+              "target": "Package",
+              "version": "[8.19.1, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.315/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
