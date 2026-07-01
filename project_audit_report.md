@@ -216,14 +216,51 @@ src/
 │   ├── Common/Interfaces/
 │   │   └── IApplicationDbContext.cs
 │   └── Features/
-│       ├── Auth/Commands/         ← Phase 1
-│       ├── Customers/
-│       │   ├── Commands/          ← Phase 2
-│       │   └── Queries/           ← Phase 2
-│       ├── Devices/Commands/      ← Phase 2
-│       └── Calls/
-│           ├── Commands/          ← Phase 3
-│           └── Queries/           ← Phase 3 (inc. SearchSystem)
+│       ├── Auth/                                                   ← Phase 1
+│       │   ├── Commands/
+│       │   │   ├── Login/
+│       │   │   │   └── LoginCommand.cs                             ← Phase 1
+│       │   │   └── Register/
+│       │   │       └── RegisterCommand.cs                          ← Phase 1
+│       │   └── Common/
+│       │       └── AuthResponse.cs                                 ← Phase 1
+│       │
+│       ├── Customers/                                              ← Phase 2
+│       │   ├── Commands/
+│       │   │   └── CreateCustomer/
+│       │   │       └── CreateCustomerCommand.cs                    ← Phase 2
+│       │   └── Queries/
+│       │       ├── Common/                                         ← Phase 2
+│       │       │   ├── CustomerDetailsDto.cs                       ← Phase 2
+│       │       │   ├── CustomerDeviceDto.cs                        ← Phase 2
+│       │       │   └── CustomerPhoneDto.cs                         ← Phase 2
+│       │       ├── GetCustomerDetails/
+│       │       │   └── GetCustomerDetailsQuery.cs                  ← Phase 2
+│       │       └── SearchCustomers/
+│       │           └── SearchCustomersQuery.cs                     ← Phase 2
+│       │
+│       ├── Devices/                                                ← Phase 2
+│       │   └── Commands/
+│       │       ├── AddCustomerDevice/
+│       │       │   └── AddCustomerDeviceCommand.cs                 ← Phase 2
+│       │       ├── CreateDeviceBrand/
+│       │       │   └── CreateDeviceBrandCommand.cs                 ← Phase 2
+│       │       └── CreateDeviceModel/
+│       │           └── CreateDeviceModelCommand.cs                 ← Phase 2
+│       │
+│       └── Calls/                                                  ← Phase 3
+│           ├── Commands/
+│           │   └── LogCall/
+│           │       └── LogCallCommand.cs                           ← Phase 3
+│           └── Queries/
+│               ├── Common/                                         ← Phase 3
+│               │   └── CallDto.cs                                  ← Phase 3
+│               ├── GetCallHistory/
+│               │   └── GetCallHistoryQuery.cs                      ← Phase 3
+│               ├── GetCallerProfile/
+│               │   └── GetCallerProfileQuery.cs                    ← Phase 3
+│               └── SearchSystem/
+│                   └── SearchSystemQuery.cs                        ← Phase 3
 │
 ├── UniGroup.CRM.Infrastructure/
 │   ├── Data/ApplicationDbContext.cs
