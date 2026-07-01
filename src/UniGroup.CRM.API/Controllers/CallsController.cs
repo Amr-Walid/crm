@@ -71,7 +71,19 @@ public class CallsController : ControllerBase
             );
 
             var callId = await _sender.Send(command, cancellationToken);
-            return CreatedAtAction(nameof(GetCallHistory), new { customerId = request.CustomerId }, callId);
+
+            // When customerId is null (unknown caller), CreatedAtAction would fail
+            // because the history route requires a non-null Guid. Return Created with
+            // a relative URI instead to maintain RFC 9110 semantics.
+            if (request.CustomerId.HasValue)
+            {
+                return CreatedAtAction(
+                    nameof(GetCallHistory),
+                    new { customerId = request.CustomerId.Value },
+                    callId);
+            }
+
+            return Created($"/api/calls/{callId}", callId);
         }
         catch (ArgumentException ex)
         {
