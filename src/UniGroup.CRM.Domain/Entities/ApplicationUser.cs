@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
+using System.Collections.Generic;
 
 namespace UniGroup.CRM.Domain.Entities;
 
@@ -31,4 +32,9 @@ public class ApplicationUser : IdentityUser<Guid>
     /// Gets or sets the refresh tokens associated with the user.
     /// </summary>
     public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+
+    /// <summary>
+    /// Gets or sets the call records handled by this agent.
+    /// </summary>
+    public virtual ICollection<Call> Calls { get; set; } = new List<Call>();
 }

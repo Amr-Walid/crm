@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using UniGroup.CRM.Application.Common.Interfaces;
 using UniGroup.CRM.Domain.Entities;
@@ -50,6 +50,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     /// Gets or sets the database set for customer devices.
     /// </summary>
     public DbSet<CustomerDevice> CustomerDevices => Set<CustomerDevice>();
+
+    /// <summary>
+    /// Gets or sets the database set for call records.
+    /// </summary>
+    public DbSet<Call> Calls => Set<Call>();
 
     /// <summary>
     /// Configures the model and table mappings.
@@ -164,6 +169,35 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
                 .WithMany(m => m.CustomerDevices)
                 .HasForeignKey(cd => cd.ModelId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure Call entity mappings
+        builder.Entity<Call>(entity =>
+        {
+            entity.ToTable("Calls");
+            entity.HasKey(c => c.Id);
+
+            entity.Property(c => c.PhoneNumber).HasMaxLength(50).IsRequired();
+            entity.Property(c => c.Summary).HasMaxLength(2000);
+            entity.Property(c => c.RecordingUrl).HasMaxLength(500);
+
+            // Performance indexes for Caller ID lookup and reporting
+            entity.HasIndex(c => c.PhoneNumber);
+            entity.HasIndex(c => c.CustomerId);
+            entity.HasIndex(c => c.AgentId);
+
+            // Relationship with ApplicationUser (Agent) – restricted delete to preserve call history
+            entity.HasOne(c => c.Agent)
+                .WithMany(u => u.Calls)
+                .HasForeignKey(c => c.AgentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Optional relationship with Customer – set null when customer is deleted
+            entity.HasOne(c => c.Customer)
+                .WithMany(cu => cu.Calls)
+                .HasForeignKey(c => c.CustomerId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

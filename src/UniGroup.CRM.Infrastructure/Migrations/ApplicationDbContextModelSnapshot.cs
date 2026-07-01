@@ -243,6 +243,51 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Call", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AgentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Direction")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DurationSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("RecordingUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgentId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("PhoneNumber");
+
+                    b.ToTable("Calls", (string)null);
+                });
+
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Customer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -483,6 +528,24 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Call", b =>
+                {
+                    b.HasOne("UniGroup.CRM.Domain.Entities.ApplicationUser", "Agent")
+                        .WithMany("Calls")
+                        .HasForeignKey("AgentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("UniGroup.CRM.Domain.Entities.Customer", "Customer")
+                        .WithMany("Calls")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Agent");
+
+                    b.Navigation("Customer");
+                });
+
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.CustomerDevice", b =>
                 {
                     b.HasOne("UniGroup.CRM.Domain.Entities.Customer", "Customer")
@@ -537,11 +600,15 @@ namespace UniGroup.CRM.Infrastructure.Migrations
 
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.ApplicationUser", b =>
                 {
+                    b.Navigation("Calls");
+
                     b.Navigation("RefreshTokens");
                 });
 
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Customer", b =>
                 {
+                    b.Navigation("Calls");
+
                     b.Navigation("CustomerDevices");
 
                     b.Navigation("CustomerPhones");

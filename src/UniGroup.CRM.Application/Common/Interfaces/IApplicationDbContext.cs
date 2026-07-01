@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using UniGroup.CRM.Domain.Entities;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,6 +34,11 @@ public interface IApplicationDbContext
     /// Gets the database set for customer devices.
     /// </summary>
     DbSet<CustomerDevice> CustomerDevices { get; }
+
+    /// <summary>
+    /// Gets the database set for call records.
+    /// </summary>
+    DbSet<Call> Calls { get; }
 
     /// <summary>
     /// Saves all changes made in this context to the database.

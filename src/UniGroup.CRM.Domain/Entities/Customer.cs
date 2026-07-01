@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace UniGroup.CRM.Domain.Entities;
@@ -52,4 +52,9 @@ public class Customer
     /// Gets or sets the devices owned by this customer.
     /// </summary>
     public virtual ICollection<CustomerDevice> CustomerDevices { get; set; } = new List<CustomerDevice>();
+
+    /// <summary>
+    /// Gets or sets the call records associated with this customer.
+    /// </summary>
+    public virtual ICollection<Call> Calls { get; set; } = new List<Call>();
 }
