@@ -1,13 +1,16 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using UniGroup.CRM.Application.Common.Interfaces;
 using UniGroup.CRM.Domain.Entities;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace UniGroup.CRM.Infrastructure.Data;
 
 /// <summary>
 /// Database context for the CRM application, inheriting from IdentityDbContext.
 /// </summary>
-public class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>, IApplicationDbContext
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ApplicationDbContext"/> class.
@@ -22,6 +25,31 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     /// Gets or sets the database set for refresh tokens.
     /// </summary>
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    /// <summary>
+    /// Gets or sets the database set for customers.
+    /// </summary>
+    public DbSet<Customer> Customers => Set<Customer>();
+
+    /// <summary>
+    /// Gets or sets the database set for customer phone numbers.
+    /// </summary>
+    public DbSet<CustomerPhone> CustomerPhones => Set<CustomerPhone>();
+
+    /// <summary>
+    /// Gets or sets the database set for device brands.
+    /// </summary>
+    public DbSet<DeviceBrand> DeviceBrands => Set<DeviceBrand>();
+
+    /// <summary>
+    /// Gets or sets the database set for device models.
+    /// </summary>
+    public DbSet<DeviceModel> DeviceModels => Set<DeviceModel>();
+
+    /// <summary>
+    /// Gets or sets the database set for customer devices.
+    /// </summary>
+    public DbSet<CustomerDevice> CustomerDevices => Set<CustomerDevice>();
 
     /// <summary>
     /// Configures the model and table mappings.
@@ -60,6 +88,82 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
                 .WithMany(u => u.RefreshTokens)
                 .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure Customer entity mappings
+        builder.Entity<Customer>(entity =>
+        {
+            entity.ToTable("Customers");
+            entity.HasKey(c => c.Id);
+            entity.Property(c => c.Name).HasMaxLength(200).IsRequired();
+            entity.Property(c => c.Email).HasMaxLength(150);
+            entity.Property(c => c.Province).HasMaxLength(100);
+            entity.Property(c => c.City).HasMaxLength(100);
+            entity.Property(c => c.AddressDetails).HasMaxLength(500);
+        });
+
+        // Configure CustomerPhone entity mappings
+        builder.Entity<CustomerPhone>(entity =>
+        {
+            entity.ToTable("CustomerPhones");
+            entity.HasKey(cp => cp.Id);
+            entity.Property(cp => cp.Phone).HasMaxLength(50).IsRequired();
+            entity.HasIndex(cp => cp.Phone).IsUnique();
+
+            entity.HasOne(cp => cp.Customer)
+                .WithMany(c => c.CustomerPhones)
+                .HasForeignKey(cp => cp.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure DeviceBrand entity mappings
+        builder.Entity<DeviceBrand>(entity =>
+        {
+            entity.ToTable("DeviceBrands");
+            entity.HasKey(db => db.Id);
+            entity.Property(db => db.Name).HasMaxLength(100).IsRequired();
+        });
+
+        // Configure DeviceModel entity mappings
+        builder.Entity<DeviceModel>(entity =>
+        {
+            entity.ToTable("DeviceModels");
+            entity.HasKey(dm => dm.Id);
+            entity.Property(dm => dm.Name).HasMaxLength(150).IsRequired();
+
+            entity.HasOne(dm => dm.Brand)
+                .WithMany(b => b.DeviceModels)
+                .HasForeignKey(dm => dm.BrandId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure CustomerDevice entity mappings
+        builder.Entity<CustomerDevice>(entity =>
+        {
+            entity.ToTable("CustomerDevices");
+            entity.HasKey(cd => cd.Id);
+            entity.Property(cd => cd.IMEI).HasMaxLength(100);
+            entity.Property(cd => cd.SerialNumber).HasMaxLength(100);
+            entity.Property(cd => cd.InvoiceNumber).HasMaxLength(100);
+
+            // Filtered unique indexes to allow multiple null/empty values
+            entity.HasIndex(cd => cd.IMEI)
+                .IsUnique()
+                .HasFilter("[IMEI] IS NOT NULL AND [IMEI] != ''");
+
+            entity.HasIndex(cd => cd.SerialNumber)
+                .IsUnique()
+                .HasFilter("[SerialNumber] IS NOT NULL AND [SerialNumber] != ''");
+
+            entity.HasOne(cd => cd.Customer)
+                .WithMany(c => c.CustomerDevices)
+                .HasForeignKey(cd => cd.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(cd => cd.Model)
+                .WithMany(m => m.CustomerDevices)
+                .HasForeignKey(cd => cd.ModelId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
