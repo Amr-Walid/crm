@@ -1,6 +1,26 @@
-@UniGroup.CRM.API_HostAddress = http://localhost:5112
+@UniGroup.CRM.API_HostAddress = https://localhost:7170
 
-GET {{UniGroup.CRM.API_HostAddress}}/weatherforecast/
-Accept: application/json
+### Register a new user
+POST {{UniGroup.CRM.API_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "testuser@unigroup.com",
+  "password": "Password123!",
+  "firstName": "Test",
+  "lastName": "User"
+}
 
 ###
+
+### Login as the registered user
+POST {{UniGroup.CRM.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@unigroup.com",
+  "password": "Password123!"
+}
+
+###
+
