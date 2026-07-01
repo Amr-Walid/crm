@@ -67,7 +67,7 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "brandId": "{{brandId}}",
+  "brandId": {{brandId}},
   "name": "Galaxy S24 Ultra"
 }
 
@@ -81,8 +81,8 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "customerId": "{{customerId}}",
-  "modelId": "{{modelId}}",
+  "customerId": {{customerId}},
+  "modelId": {{modelId}},
   "imei": "359876543210123",
   "serialNumber": "S24U987654321",
   "purchaseDate": "2026-07-01T00:00:00Z",
