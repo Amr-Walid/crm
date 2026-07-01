@@ -243,6 +243,152 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Customer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AddressDetails")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Province")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Customers", (string)null);
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.CustomerDevice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("IMEI")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("InvoiceNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("ModelId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("PurchaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SerialNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("WarrantyExpiry")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("IMEI")
+                        .IsUnique()
+                        .HasFilter("[IMEI] IS NOT NULL AND [IMEI] != ''");
+
+                    b.HasIndex("ModelId");
+
+                    b.HasIndex("SerialNumber")
+                        .IsUnique()
+                        .HasFilter("[SerialNumber] IS NOT NULL AND [SerialNumber] != ''");
+
+                    b.ToTable("CustomerDevices", (string)null);
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.CustomerPhone", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("Phone")
+                        .IsUnique();
+
+                    b.ToTable("CustomerPhones", (string)null);
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.DeviceBrand", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeviceBrands", (string)null);
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.DeviceModel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BrandId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BrandId");
+
+                    b.ToTable("DeviceModels", (string)null);
+                });
+
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -337,6 +483,47 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.CustomerDevice", b =>
+                {
+                    b.HasOne("UniGroup.CRM.Domain.Entities.Customer", "Customer")
+                        .WithMany("CustomerDevices")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UniGroup.CRM.Domain.Entities.DeviceModel", "Model")
+                        .WithMany("CustomerDevices")
+                        .HasForeignKey("ModelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Model");
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.CustomerPhone", b =>
+                {
+                    b.HasOne("UniGroup.CRM.Domain.Entities.Customer", "Customer")
+                        .WithMany("CustomerPhones")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.DeviceModel", b =>
+                {
+                    b.HasOne("UniGroup.CRM.Domain.Entities.DeviceBrand", "Brand")
+                        .WithMany("DeviceModels")
+                        .HasForeignKey("BrandId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Brand");
+                });
+
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("UniGroup.CRM.Domain.Entities.ApplicationUser", "User")
@@ -351,6 +538,23 @@ namespace UniGroup.CRM.Infrastructure.Migrations
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("RefreshTokens");
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Customer", b =>
+                {
+                    b.Navigation("CustomerDevices");
+
+                    b.Navigation("CustomerPhones");
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.DeviceBrand", b =>
+                {
+                    b.Navigation("DeviceModels");
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.DeviceModel", b =>
+                {
+                    b.Navigation("CustomerDevices");
                 });
 #pragma warning restore 612, 618
         }
