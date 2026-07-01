@@ -13,7 +13,8 @@ Content-Type: application/json
 
 ###
 
-### Login as the registered user
+# @name login
+### Login as the registered user to get Token
 POST {{UniGroup.CRM.API_HostAddress}}/api/auth/login
 Content-Type: application/json
 
@@ -23,4 +24,84 @@ Content-Type: application/json
 }
 
 ###
+
+@authToken = {{login.response.body.token}}
+
+### Create a new Customer
+# @name createCustomer
+POST {{UniGroup.CRM.API_HostAddress}}/api/customers
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Ahmed Walid",
+  "email": "ahmed.walid@unigroup.com",
+  "province": "Cairo",
+  "city": "Maadi",
+  "addressDetails": "12 Road 9, Maadi, Cairo",
+  "phone": "01012345678"
+}
+
+###
+
+@customerId = {{createCustomer.response.body}}
+
+### Create a Device Brand
+# @name createBrand
+POST {{UniGroup.CRM.API_HostAddress}}/api/devices/brands
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Samsung"
+}
+
+###
+
+@brandId = {{createBrand.response.body}}
+
+### Create a Device Model
+# @name createModel
+POST {{UniGroup.CRM.API_HostAddress}}/api/devices/models
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "brandId": "{{brandId}}",
+  "name": "Galaxy S24 Ultra"
+}
+
+###
+
+@modelId = {{createModel.response.body}}
+
+### Assign a Device to the Customer (with Warranty)
+POST {{UniGroup.CRM.API_HostAddress}}/api/devices/assign
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "modelId": "{{modelId}}",
+  "imei": "359876543210123",
+  "serialNumber": "S24U987654321",
+  "purchaseDate": "2026-07-01T00:00:00Z",
+  "invoiceNumber": "INV-2026-0001",
+  "warrantyExpiry": "2028-07-01T00:00:00Z"
+}
+
+###
+
+### Get Customer 360° View Details by ID (Calculates Warranty Status)
+GET {{UniGroup.CRM.API_HostAddress}}/api/customers/{{customerId}}
+Authorization: Bearer {{authToken}}
+
+###
+
+### Search Customers (By Name, Phone, Serial, or IMEI)
+GET {{UniGroup.CRM.API_HostAddress}}/api/customers/search?searchTerm=01012345678
+Authorization: Bearer {{authToken}}
+
+###
+
 
