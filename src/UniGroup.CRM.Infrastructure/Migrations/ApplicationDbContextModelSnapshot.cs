@@ -243,6 +243,50 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Attachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StorageUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("TicketId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("UploadedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TicketId");
+
+                    b.HasIndex("UploadedById");
+
+                    b.ToTable("Attachments", (string)null);
+                });
+
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Call", b =>
                 {
                     b.Property<Guid>("Id")
@@ -397,6 +441,35 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.ToTable("CustomerPhones", (string)null);
                 });
 
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Department", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Departments", (string)null);
+                });
+
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.DeviceBrand", b =>
                 {
                     b.Property<Guid>("Id")
@@ -436,6 +509,43 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("DeviceModels", (string)null);
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.InternalNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(3000)
+                        .HasColumnType("nvarchar(3000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsEdited")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("TicketId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("InternalNotes", (string)null);
                 });
 
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.RefreshToken", b =>
@@ -479,6 +589,132 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens", (string)null);
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Ticket", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid?>("AssignedToId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ChatwootConversationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CustomerDeviceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ResolutionNote")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("SlaBreached")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("SlaDeadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("SlaPausedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<long>("TotalPausedSeconds")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedToId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("CustomerDeviceId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("Priority");
+
+                    b.HasIndex("SlaDeadline");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("Tickets", (string)null);
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.TicketHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ChangedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("FromStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("TicketId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<long?>("TimeInStatus")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("ToStatus")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangedById");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("TicketHistories", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -530,6 +766,25 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Attachment", b =>
+                {
+                    b.HasOne("UniGroup.CRM.Domain.Entities.Ticket", "Ticket")
+                        .WithMany("Attachments")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UniGroup.CRM.Domain.Entities.ApplicationUser", "UploadedBy")
+                        .WithMany()
+                        .HasForeignKey("UploadedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Ticket");
+
+                    b.Navigation("UploadedBy");
                 });
 
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Call", b =>
@@ -591,6 +846,25 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.Navigation("Brand");
                 });
 
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.InternalNote", b =>
+                {
+                    b.HasOne("UniGroup.CRM.Domain.Entities.ApplicationUser", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("UniGroup.CRM.Domain.Entities.Ticket", "Ticket")
+                        .WithMany("InternalNotes")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Ticket");
+                });
+
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("UniGroup.CRM.Domain.Entities.ApplicationUser", "User")
@@ -602,8 +876,61 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Ticket", b =>
+                {
+                    b.HasOne("UniGroup.CRM.Domain.Entities.ApplicationUser", "AssignedTo")
+                        .WithMany("AssignedTickets")
+                        .HasForeignKey("AssignedToId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("UniGroup.CRM.Domain.Entities.CustomerDevice", "CustomerDevice")
+                        .WithMany()
+                        .HasForeignKey("CustomerDeviceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("UniGroup.CRM.Domain.Entities.Customer", "Customer")
+                        .WithMany("Tickets")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("UniGroup.CRM.Domain.Entities.Department", "Department")
+                        .WithMany("Tickets")
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AssignedTo");
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("CustomerDevice");
+
+                    b.Navigation("Department");
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.TicketHistory", b =>
+                {
+                    b.HasOne("UniGroup.CRM.Domain.Entities.ApplicationUser", "ChangedBy")
+                        .WithMany()
+                        .HasForeignKey("ChangedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("UniGroup.CRM.Domain.Entities.Ticket", "Ticket")
+                        .WithMany("Histories")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChangedBy");
+
+                    b.Navigation("Ticket");
+                });
+
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.ApplicationUser", b =>
                 {
+                    b.Navigation("AssignedTickets");
+
                     b.Navigation("Calls");
 
                     b.Navigation("RefreshTokens");
@@ -616,6 +943,13 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.Navigation("CustomerDevices");
 
                     b.Navigation("CustomerPhones");
+
+                    b.Navigation("Tickets");
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Department", b =>
+                {
+                    b.Navigation("Tickets");
                 });
 
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.DeviceBrand", b =>
@@ -626,6 +960,15 @@ namespace UniGroup.CRM.Infrastructure.Migrations
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.DeviceModel", b =>
                 {
                     b.Navigation("CustomerDevices");
+                });
+
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Ticket", b =>
+                {
+                    b.Navigation("Attachments");
+
+                    b.Navigation("Histories");
+
+                    b.Navigation("InternalNotes");
                 });
 #pragma warning restore 612, 618
         }
