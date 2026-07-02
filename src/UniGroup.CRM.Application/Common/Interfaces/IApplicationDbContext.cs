@@ -41,6 +41,31 @@ public interface IApplicationDbContext
     DbSet<Call> Calls { get; }
 
     /// <summary>
+    /// Gets the database set for departments.
+    /// </summary>
+    DbSet<Department> Departments { get; }
+
+    /// <summary>
+    /// Gets the database set for tickets.
+    /// </summary>
+    DbSet<Ticket> Tickets { get; }
+
+    /// <summary>
+    /// Gets the database set for ticket histories.
+    /// </summary>
+    DbSet<TicketHistory> TicketHistories { get; }
+
+    /// <summary>
+    /// Gets the database set for internal notes.
+    /// </summary>
+    DbSet<InternalNote> InternalNotes { get; }
+
+    /// <summary>
+    /// Gets the database set for attachments.
+    /// </summary>
+    DbSet<Attachment> Attachments { get; }
+
+    /// <summary>
     /// Saves all changes made in this context to the database.
     /// </summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
