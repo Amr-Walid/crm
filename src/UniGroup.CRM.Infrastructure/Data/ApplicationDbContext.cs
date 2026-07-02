@@ -57,6 +57,31 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<Call> Calls => Set<Call>();
 
     /// <summary>
+    /// Gets or sets the database set for departments.
+    /// </summary>
+    public DbSet<Department> Departments => Set<Department>();
+
+    /// <summary>
+    /// Gets or sets the database set for tickets.
+    /// </summary>
+    public DbSet<Ticket> Tickets => Set<Ticket>();
+
+    /// <summary>
+    /// Gets or sets the database set for ticket histories.
+    /// </summary>
+    public DbSet<TicketHistory> TicketHistories => Set<TicketHistory>();
+
+    /// <summary>
+    /// Gets or sets the database set for internal notes.
+    /// </summary>
+    public DbSet<InternalNote> InternalNotes => Set<InternalNote>();
+
+    /// <summary>
+    /// Gets or sets the database set for attachments.
+    /// </summary>
+    public DbSet<Attachment> Attachments => Set<Attachment>();
+
+    /// <summary>
     /// Configures the model and table mappings.
     /// </summary>
     /// <param name="builder">The builder used to construct the database schema.</param>
@@ -202,6 +227,116 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
                 .HasForeignKey(c => c.CustomerId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure Department entity mappings
+        builder.Entity<Department>(entity =>
+        {
+            entity.ToTable("Departments");
+            entity.HasKey(d => d.Id);
+            entity.Property(d => d.Name).HasMaxLength(100).IsRequired();
+            entity.Property(d => d.Description).HasMaxLength(300);
+            entity.HasIndex(d => d.Name).IsUnique();
+        });
+
+        // Configure Ticket entity mappings
+        builder.Entity<Ticket>(entity =>
+        {
+            entity.ToTable("Tickets");
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.Id).HasMaxLength(20).IsRequired();
+            entity.Property(t => t.Title).HasMaxLength(200).IsRequired();
+            entity.Property(t => t.Description).HasMaxLength(4000).IsRequired();
+            entity.Property(t => t.ResolutionNote).HasMaxLength(2000);
+            entity.Property(t => t.ChatwootConversationId).HasMaxLength(100);
+
+            // Indexes for performance
+            entity.HasIndex(t => t.Status);
+            entity.HasIndex(t => t.Priority);
+            entity.HasIndex(t => t.SlaDeadline);
+            entity.HasIndex(t => t.CreatedAt);
+            entity.HasIndex(t => t.AssignedToId);
+            entity.HasIndex(t => t.CustomerId);
+
+            // Relationships
+            entity.HasOne(t => t.Customer)
+                .WithMany(c => c.Tickets)
+                .HasForeignKey(t => t.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(t => t.CustomerDevice)
+                .WithMany()
+                .HasForeignKey(t => t.CustomerDeviceId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(t => t.AssignedTo)
+                .WithMany(u => u.AssignedTickets)
+                .HasForeignKey(t => t.AssignedToId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(t => t.Department)
+                .WithMany(d => d.Tickets)
+                .HasForeignKey(t => t.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure TicketHistory entity mappings
+        builder.Entity<TicketHistory>(entity =>
+        {
+            entity.ToTable("TicketHistories");
+            entity.HasKey(th => th.Id);
+            entity.Property(th => th.TicketId).HasMaxLength(20).IsRequired();
+            entity.Property(th => th.Note).HasMaxLength(1000);
+
+            entity.HasOne(th => th.Ticket)
+                .WithMany(t => t.Histories)
+                .HasForeignKey(th => th.TicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(th => th.ChangedBy)
+                .WithMany()
+                .HasForeignKey(th => th.ChangedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure InternalNote entity mappings
+        builder.Entity<InternalNote>(entity =>
+        {
+            entity.ToTable("InternalNotes");
+            entity.HasKey(inote => inote.Id);
+            entity.Property(inote => inote.TicketId).HasMaxLength(20).IsRequired();
+            entity.Property(inote => inote.Content).HasMaxLength(3000).IsRequired();
+
+            entity.HasOne(inote => inote.Ticket)
+                .WithMany(t => t.InternalNotes)
+                .HasForeignKey(inote => inote.TicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(inote => inote.Author)
+                .WithMany()
+                .HasForeignKey(inote => inote.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure Attachment entity mappings
+        builder.Entity<Attachment>(entity =>
+        {
+            entity.ToTable("Attachments");
+            entity.HasKey(a => a.Id);
+            entity.Property(a => a.TicketId).HasMaxLength(20).IsRequired();
+            entity.Property(a => a.FileName).HasMaxLength(255).IsRequired();
+            entity.Property(a => a.StorageUrl).HasMaxLength(1000).IsRequired();
+            entity.Property(a => a.ContentType).HasMaxLength(100).IsRequired();
+
+            entity.HasOne(a => a.Ticket)
+                .WithMany(t => t.Attachments)
+                .HasForeignKey(a => a.TicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(a => a.UploadedBy)
+                .WithMany()
+                .HasForeignKey(a => a.UploadedById)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
