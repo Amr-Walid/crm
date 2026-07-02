@@ -79,6 +79,9 @@ function Add-TestResult($name, $expected, $actual, $details) {
     $color = if ($status -eq "PASS") { "Green" } else { "Red" }
     
     Write-Host "[ $status ] - $name (Expected: $expected, Actual: $actual)" -ForegroundColor $color
+    if ($status -eq "FAIL" -and $global:LastResponseContent) {
+        Write-Host "         Response Content: $global:LastResponseContent" -ForegroundColor Magenta
+    }
     
     $global:results += [PSCustomObject]@{
         TestName     = $name
@@ -122,6 +125,7 @@ function Send-Request($method, $route, $body = $null, $headers = @{}, $contentTy
         }
     }
     
+    $global:LastResponseContent = $content
     return [PSCustomObject]@{
         StatusCode = $statusCode
         Content = $content

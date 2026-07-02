@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj": {}
+    "c:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj": {}
   },
   "projects": {
-    "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj": {
+    "c:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj",
+        "projectUniqueName": "c:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj",
         "projectName": "UniGroup.CRM.Domain",
-        "projectPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj",
+        "projectPath": "c:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\UniGroup.CRM.Domain.csproj",
         "packagesPath": "C:\\Users\\SMART HOME\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\obj\\",
+        "outputPath": "c:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\SMART HOME\\AppData\\Roaming\\NuGet\\NuGet.Config"
