@@ -51,6 +51,13 @@ public static class DependencyInjection
         // Register JWT Service Provider
         services.AddScoped<IJwtProvider, JwtProvider>();
 
+        // Register Ticket and File Storage Services
+        services.AddScoped<ITicketNumberGenerator, TicketNumberGenerator>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
+
+        // Register SLA Background Monitor
+        services.AddHostedService<SlaMonitorService>();
+
         // Configure JWT Authentication
         var jwtSection = configuration.GetSection("Jwt");
         var secret = jwtSection.GetValue<string>("Secret");
