@@ -172,3 +172,169 @@ GET {{UniGroup.CRM.API_HostAddress}}/api/customers/search?searchTerm=01012345678
 Authorization: Bearer {{authToken}}
 
 ###
+
+### ═══════════════════════════════
+### PHASE 4 - Tickets & Departments Tests
+### ═══════════════════════════════
+
+@staticAgentId = b8cc4a0f-c5f7-4f97-3916-08ded74840b4
+@staticCustomerIdVal = 20df9317-2933-4260-bb53-7dc53ec14d64
+@staticDeviceIdVal = feca8d9a-d8d9-4849-9de8-c2804ec36788
+
+### 1. Create Department (Admin role)
+# @name createDepartment
+POST {{UniGroup.CRM.API_HostAddress}}/api/departments
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Hardware Maintenance",
+  "description": "Handles hardware, screen, and battery repairs.",
+  "isActive": true
+}
+
+###
+
+@departmentId = {{createDepartment.response.body}}
+
+### 2. Get Departments
+GET {{UniGroup.CRM.API_HostAddress}}/api/departments
+Authorization: Bearer {{authToken}}
+
+###
+
+### 3. Create Ticket (Agent role)
+# @name createTicket
+POST {{UniGroup.CRM.API_HostAddress}}/api/tickets
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "customerId": "{{staticCustomerIdVal}}",
+  "customerDeviceId": "{{staticDeviceIdVal}}",
+  "title": "Screen Cracked",
+  "description": "Customer dropped the phone and screen is completely cracked.",
+  "category": 0,
+  "priority": 1
+}
+
+###
+
+@ticketId = {{createTicket.response.body}}
+
+### 4. Assign Ticket (Team Leader role)
+PATCH {{UniGroup.CRM.API_HostAddress}}/api/tickets/{{ticketId}}/assign
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "assignedToId": "{{staticAgentId}}",
+  "departmentId": "{{departmentId}}",
+  "note": "Assigning to Hardware Maintenance department"
+}
+
+###
+
+### 5. Add Internal Note (Agent role)
+POST {{UniGroup.CRM.API_HostAddress}}/api/tickets/{{ticketId}}/notes
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "content": "Screener replacement parts ordered from supplier."
+}
+
+###
+
+### 6. Add Attachment (Agent role)
+POST {{UniGroup.CRM.API_HostAddress}}/api/tickets/{{ticketId}}/attachments
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+This is a test attachment file content.
+--boundary--
+
+###
+
+### 7. Get Ticket Details
+GET {{UniGroup.CRM.API_HostAddress}}/api/tickets/{{ticketId}}
+Authorization: Bearer {{authToken}}
+
+###
+
+### 8. Get Tickets list with paging and filter
+GET {{UniGroup.CRM.API_HostAddress}}/api/tickets?status=0&priority=1&page=1&pageSize=10
+Authorization: Bearer {{authToken}}
+
+###
+
+### 9. Get My Tickets
+GET {{UniGroup.CRM.API_HostAddress}}/api/tickets/my?status=0
+Authorization: Bearer {{authToken}}
+
+###
+
+### 10a. Change ticket status: New -> Open (Valid transition)
+PATCH {{UniGroup.CRM.API_HostAddress}}/api/tickets/{{ticketId}}/status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "newStatus": 1,
+  "note": "Acknowledging the new ticket"
+}
+
+###
+
+### 10b. Change ticket status: Open -> Resolved (Invalid transition - expect 400)
+PATCH {{UniGroup.CRM.API_HostAddress}}/api/tickets/{{ticketId}}/status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "newStatus": 6,
+  "note": "Trying to resolve directly without InProgress"
+}
+
+###
+
+### 10c. Change ticket status: Open -> InProgress (Valid transition)
+PATCH {{UniGroup.CRM.API_HostAddress}}/api/tickets/{{ticketId}}/status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "newStatus": 2,
+  "note": "Starting to work on the screen repair"
+}
+
+###
+
+### 10d. Change ticket status: InProgress -> WaitingForCustomer (Valid transition - pauses SLA)
+PATCH {{UniGroup.CRM.API_HostAddress}}/api/tickets/{{ticketId}}/status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "newStatus": 3,
+  "note": "Waiting for customer to verify passcode"
+}
+
+###
+
+### 10e. Change ticket status: WaitingForCustomer -> InProgress (Valid transition - resumes SLA)
+PATCH {{UniGroup.CRM.API_HostAddress}}/api/tickets/{{ticketId}}/status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "newStatus": 2,
+  "note": "Customer provided passcode, resuming work"
+}
+
+###
+
