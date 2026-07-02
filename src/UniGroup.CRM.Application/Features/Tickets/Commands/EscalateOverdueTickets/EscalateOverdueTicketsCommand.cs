@@ -43,7 +43,7 @@ public class EscalateOverdueTicketsCommandHandler : IRequestHandler<EscalateOver
             .ToListAsync(cancellationToken);
 
         var overdueTickets = activeTickets
-            .Where(t => now > t.SlaDeadline.Value.AddSeconds(t.TotalPausedSeconds))
+            .Where(t => now > t.SlaDeadline!.Value.AddSeconds(t.TotalPausedSeconds))
             .ToList();
 
         if (!overdueTickets.Any())
