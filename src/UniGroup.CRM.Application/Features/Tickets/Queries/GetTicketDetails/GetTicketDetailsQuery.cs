@@ -34,7 +34,7 @@ public class GetTicketDetailsQueryHandler : IRequestHandler<GetTicketDetailsQuer
     {
         var ticket = await _context.Tickets
             .Include(t => t.Customer)
-            .Include(t => t.CustomerDevice)
+            .Include(t => t.CustomerDevice!)
                 .ThenInclude(d => d.Model)
                     .ThenInclude(m => m.Brand)
             .Include(t => t.AssignedTo)
