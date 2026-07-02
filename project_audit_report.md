@@ -198,6 +198,26 @@ d.WarrantyExpiry > currentDate ? "Active" : "Expired"
 | T9 | Unified Search بالـ Serial | GET /api/search?q=S24U987654777 | ✅ 200 |
 | T10 | Unified Search — لا نتائج | GET /api/search?q=XXXXXXXXX | ✅ 200 (0 results) |
 
+### Phase 4 — 15/15 اختبار ✅
+
+| # | الاختبار | الـ Endpoint | النتيجة |
+|:-:|---|---|:-:|
+| T1 | Login Authenticated | POST /api/auth/login | ✅ 200 |
+| T2 | Create Department (Admin Role) | POST /api/departments | ✅ 201 |
+| T3 | Get Departments | GET /api/departments | ✅ 200 |
+| T4 | Create Ticket (Agent Role) | POST /api/tickets | ✅ 201 |
+| T5 | Assign Ticket | PATCH /api/tickets/{id}/assign | ✅ 200 |
+| T6 | Add Internal Note | POST /api/tickets/{id}/notes | ✅ 200 |
+| T7 | Add Attachment (.jpg) | POST /api/tickets/{id}/attachments | ✅ 200 |
+| T8 | Get Ticket Details | GET /api/tickets/{id} | ✅ 200 |
+| T9 | Get Tickets List with Paging/Filtering | GET /api/tickets | ✅ 200 |
+| T10 | Get My Tickets | GET /api/tickets/my | ✅ 200 |
+| T11 | Transition Status New -> Open (Valid) | PATCH /api/tickets/{id}/status | ✅ 200 |
+| T12 | Transition Status Open -> Resolved (Invalid) | PATCH /api/tickets/{id}/status | ✅ 400 |
+| T13 | Transition Status Open -> InProgress (Valid) | PATCH /api/tickets/{id}/status | ✅ 200 |
+| T14 | Transition Status InProgress -> WaitingForCustomer (Valid - Pauses SLA) | PATCH /api/tickets/{id}/status | ✅ 200 |
+| T15 | Transition Status WaitingForCustomer -> InProgress (Valid - Resumes SLA) | PATCH /api/tickets/{id}/status | ✅ 200 |
+
 ---
 
 ## 7. مشاكل اكتُشفت وتم إصلاحها (Issues Found & Fixed)
@@ -208,6 +228,9 @@ d.WarrantyExpiry > currentDate ? "Active" : "Expired"
 | 2 | `DeviceBrand.Name` بدون Unique Index على مستوى DB | 🟡 Data Integrity | ApplicationDbContext.cs | إضافة `HasIndex(db => db.Name).IsUnique()` |
 | 3 | `DeviceModel` بدون Composite Unique Index على `(BrandId, Name)` | 🟡 Data Integrity | ApplicationDbContext.cs | إضافة `HasIndex(dm => new { dm.BrandId, dm.Name }).IsUnique()` |
 | 4 | `LogCallCommand` مع `customerId = null` يرجع 500 — `CreatedAtAction` يفشل في توليد Route بـ null parameter | 🔴 Critical Bug | CallsController.cs | إضافة شرط: إذا `CustomerId == null` → `return Created($"/api/calls/{callId}", callId)` |
+| 5 | `DbUpdateConcurrencyException` في `AssignTicketCommand` و `TransitionTicketStatusCommand` بسبب إضافة السجل التاريخي عبر `ticket.Histories.Add()` ووجود User Tracker | 🔴 Critical Bug | AssignTicketCommand.cs / TransitionTicketStatusCommand.cs | استخدام `AsNoTracking()` عند استعلام الكيانات المساعدة لمنع تلوث الـ Tracker، وإضافة السجل مباشرةً لـ `_context.TicketHistories.Add()` بدلاً من Navigation Property لتجنب مشاكل التزامن في EF Core. |
+| 6 | فشل اختبار الرفع T7 بسبب استخدام ملف `.txt` بينما الكود يقيد الرفع لصور و PDF فقط | 🟢 Testing Bug | run_phase4_tests.ps1 | تعديل سيناريو الاختبار T7 لرفع ملف `.jpg` بدلاً من `.txt` ليتوافق مع التحقق من الامتدادات، وإضافة `-UseBasicParsing` لتفادي أخطاء محرك IE في PowerShell 5.1. |
+
 
 ---
 
