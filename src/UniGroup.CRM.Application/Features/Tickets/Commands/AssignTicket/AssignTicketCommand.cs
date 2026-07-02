@@ -48,11 +48,12 @@ public class AssignTicketCommandHandler : IRequestHandler<AssignTicketCommand>
             throw new Exception($"Ticket with ID {request.TicketId} does not exist.");
         }
 
-        // Validate assigned user exists
+        // Validate assigned user exists using AsNoTracking to avoid polluting the change tracker
         string? agentName = null;
         if (request.AssignedToId.HasValue)
         {
             var agent = await _context.Tickets.Entry(ticket).Context.Set<ApplicationUser>()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == request.AssignedToId.Value, cancellationToken);
             if (agent == null)
             {
@@ -66,6 +67,7 @@ public class AssignTicketCommandHandler : IRequestHandler<AssignTicketCommand>
         if (request.DepartmentId.HasValue)
         {
             var dept = await _context.Departments
+                .AsNoTracking()
                 .FirstOrDefaultAsync(d => d.Id == request.DepartmentId.Value, cancellationToken);
             if (dept == null)
             {
@@ -75,7 +77,6 @@ public class AssignTicketCommandHandler : IRequestHandler<AssignTicketCommand>
         }
 
         var oldDeptId = ticket.DepartmentId;
-        var oldAssignedId = ticket.AssignedToId;
 
         // Perform assignment
         ticket.AssignedToId = request.AssignedToId;
@@ -96,7 +97,7 @@ public class AssignTicketCommandHandler : IRequestHandler<AssignTicketCommand>
             logNote = request.Note ?? $"Ticket assigned to agent '{nextAgentName}'.";
         }
 
-        // Save assignment in TicketHistory
+        // Add history directly to DbSet to avoid EF Core change-tracker confusion
         var history = new TicketHistory
         {
             Id = Guid.NewGuid(),
@@ -109,7 +110,7 @@ public class AssignTicketCommandHandler : IRequestHandler<AssignTicketCommand>
             CreatedAt = DateTime.UtcNow
         };
 
-        ticket.Histories.Add(history);
+        _context.TicketHistories.Add(history);
 
         await _context.SaveChangesAsync(cancellationToken);
     }

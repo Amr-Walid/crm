@@ -142,7 +142,7 @@ public class TransitionTicketStatusCommandHandler : IRequestHandler<TransitionTi
         ticket.Status = newStatus;
         ticket.UpdatedAt = now;
 
-        // Add history entry
+        // Add history directly to DbSet to avoid EF Core change-tracker confusion
         var history = new TicketHistory
         {
             Id = Guid.NewGuid(),
@@ -155,7 +155,7 @@ public class TransitionTicketStatusCommandHandler : IRequestHandler<TransitionTi
             CreatedAt = now
         };
 
-        ticket.Histories.Add(history);
+        _context.TicketHistories.Add(history);
 
         await _context.SaveChangesAsync(cancellationToken);
     }

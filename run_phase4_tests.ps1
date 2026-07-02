@@ -110,7 +110,7 @@ function Send-Request($method, $route, $body = $null, $headers = @{}, $contentTy
             $params.Add("ContentType", $contentType)
         }
         
-        $response = Invoke-WebRequest @params
+        $response = Invoke-WebRequest @params -UseBasicParsing
         $statusCode = $response.StatusCode
         $content = $response.Content
     } catch {
@@ -208,14 +208,14 @@ $noteBody = @{
 $res6 = Send-Request -Method Post -Route "/api/tickets/$ticketId/notes" -Body $noteBody -headers $headers
 Add-TestResult -name "T6: Add Internal Note" -expected 200 -actual $res6.StatusCode -details "Added note to ticket"
 
-# --- TEST CASE 7: Add Attachment ---
+# --- TEST CASE 7: Add Attachment (JPG image) ---
 $boundary = "----WebKitFormBoundary" + [System.Guid]::NewGuid().ToString().Substring(0,8)
-$contentType = "multipart/form-data; boundary=$boundary"
-$multipartBody = "--$boundary`r`nContent-Disposition: form-data; name=`"file`"; filename=`"test.txt`"`r`nContent-Type: text/plain`r`n`r`nThis is a test attachment file content.`r`n--$boundary--`r`n"
+$attachContentType = "multipart/form-data; boundary=$boundary"
+$multipartBody = "--$boundary`r`nContent-Disposition: form-data; name=`"file`"; filename=`"test.jpg`"`r`nContent-Type: image/jpeg`r`n`r`nFakeJPEGContent`r`n--$boundary--`r`n"
 $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($multipartBody)
 
-$res7 = Send-Request -Method Post -Route "/api/tickets/$ticketId/attachments" -Body $bodyBytes -headers $headers -contentType $contentType
-Add-TestResult -name "T7: Add Attachment" -expected 200 -actual $res7.StatusCode -details "Uploaded text attachment"
+$res7 = Send-Request -Method Post -Route "/api/tickets/$ticketId/attachments" -Body $bodyBytes -headers $headers -contentType $attachContentType
+Add-TestResult -name "T7: Add Attachment (.jpg)" -expected 200 -actual $res7.StatusCode -details "Uploaded jpg attachment"
 
 # --- TEST CASE 8: Get Ticket Details ---
 $res8 = Send-Request -Method Get -Route "/api/tickets/$ticketId" -headers $headers
