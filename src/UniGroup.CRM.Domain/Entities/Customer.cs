@@ -57,4 +57,9 @@ public class Customer
     /// Gets or sets the call records associated with this customer.
     /// </summary>
     public virtual ICollection<Call> Calls { get; set; } = new List<Call>();
+
+    /// <summary>
+    /// Gets or sets the tickets associated with this customer.
+    /// </summary>
+    public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
 }

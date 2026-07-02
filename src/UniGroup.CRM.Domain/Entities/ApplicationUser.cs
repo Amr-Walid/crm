@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using System;
 using System.Collections.Generic;
 
 namespace UniGroup.CRM.Domain.Entities;
@@ -37,4 +38,9 @@ public class ApplicationUser : IdentityUser<Guid>
     /// Gets or sets the call records handled by this agent.
     /// </summary>
     public virtual ICollection<Call> Calls { get; set; } = new List<Call>();
+
+    /// <summary>
+    /// Gets or sets the tickets assigned to this agent.
+    /// </summary>
+    public virtual ICollection<Ticket> AssignedTickets { get; set; } = new List<Ticket>();
 }
