@@ -58,6 +58,18 @@ public static class DependencyInjection
         // Register SLA Background Monitor
         services.AddHostedService<SlaMonitorService>();
 
+        // Register HybridCache
+#pragma warning disable EXTEXP0018
+        services.AddHybridCache(options =>
+        {
+            options.DefaultEntryOptions = new Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(1),
+                LocalCacheExpiration = TimeSpan.FromSeconds(30)
+            };
+        });
+#pragma warning restore EXTEXP0018
+
         // Configure JWT Authentication
         var jwtSection = configuration.GetSection("Jwt");
         var secret = jwtSection.GetValue<string>("Secret");
