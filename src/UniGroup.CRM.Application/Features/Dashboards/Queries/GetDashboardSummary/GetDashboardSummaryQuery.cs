@@ -40,14 +40,13 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
         var todayStart = targetDate.Date;
         var cacheKey = $"dashboard-summary-{todayStart:yyyy-MM-dd}";
 
-#pragma warning disable EXTEXP0018
         return await _hybridCache.GetOrCreateAsync(
             cacheKey,
             async ct => await BuildSummaryAsync(todayStart, ct),
             new HybridCacheEntryOptions { Expiration = TimeSpan.FromSeconds(60) },
+            tags: new[] { "dashboard" },
             cancellationToken: cancellationToken
         );
-#pragma warning restore EXTEXP0018
     }
 
     private async Task<DashboardSummaryDto> BuildSummaryAsync(DateTime todayStart, CancellationToken cancellationToken)

@@ -358,6 +358,10 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.PrimitiveCollection<string>("PreferredChannels")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Province")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");

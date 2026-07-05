@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using UniGroup.CRM.Application.Common.Interfaces;
 using UniGroup.CRM.Application.Features.Customers.Queries.Common;
@@ -6,6 +6,8 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
+using UniGroup.CRM.Domain.Entities;
 
 namespace UniGroup.CRM.Application.Features.Customers.Queries.GetCustomerDetails;
 
@@ -21,6 +23,16 @@ public class GetCustomerDetailsQueryHandler : IRequestHandler<GetCustomerDetails
 {
     private readonly IApplicationDbContext _context;
 
+    private static readonly Func<DbContext, Guid, Task<Customer?>> _compiledCustomerQuery =
+        EF.CompileAsyncQuery((DbContext context, Guid id) =>
+            context.Set<Customer>()
+                .AsNoTracking()
+                .Include(c => c.CustomerPhones)
+                .Include(c => c.CustomerDevices)
+                    .ThenInclude(d => d.Model)
+                        .ThenInclude(m => m.Brand)
+                .FirstOrDefault(c => c.Id == id));
+
     /// <summary>
     /// Initializes a new instance of the <see cref="GetCustomerDetailsQueryHandler"/> class.
     /// </summary>
@@ -34,13 +46,8 @@ public class GetCustomerDetailsQueryHandler : IRequestHandler<GetCustomerDetails
     /// </summary>
     public async Task<CustomerDetailsDto> Handle(GetCustomerDetailsQuery request, CancellationToken cancellationToken)
     {
-        var customer = await _context.Customers
-            .AsNoTracking()
-            .Include(c => c.CustomerPhones)
-            .Include(c => c.CustomerDevices)
-                .ThenInclude(d => d.Model)
-                    .ThenInclude(m => m.Brand)
-            .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
+        var dbContext = (DbContext)_context;
+        var customer = await _compiledCustomerQuery(dbContext, request.Id);
 
         if (customer == null)
         {

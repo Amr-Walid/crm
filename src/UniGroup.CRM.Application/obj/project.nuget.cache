@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "Sx77jTF514g=",
+  "dgSpecHash": "axMvujIrAWg=",
   "success": true,
   "projectFilePath": "c:\\Users\\SMART HOME\\Documents\\Uni-Group\\crm customer service\\src\\UniGroup.CRM.Application\\UniGroup.CRM.Application.csproj",
   "expectedPackageFiles": [
@@ -13,22 +13,23 @@
     "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\9.0.0\\microsoft.entityframeworkcore.abstractions.9.0.0.nupkg.sha512",
     "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.entityframeworkcore.analyzers\\9.0.0\\microsoft.entityframeworkcore.analyzers.9.0.0.nupkg.sha512",
     "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.entityframeworkcore.relational\\9.0.0\\microsoft.entityframeworkcore.relational.9.0.0.nupkg.sha512",
-    "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.caching.abstractions\\9.0.0\\microsoft.extensions.caching.abstractions.9.0.0.nupkg.sha512",
-    "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.caching.memory\\9.0.0\\microsoft.extensions.caching.memory.9.0.0.nupkg.sha512",
+    "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.caching.abstractions\\10.0.9\\microsoft.extensions.caching.abstractions.10.0.9.nupkg.sha512",
+    "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.caching.hybrid\\10.7.0\\microsoft.extensions.caching.hybrid.10.7.0.nupkg.sha512",
+    "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.caching.memory\\10.0.9\\microsoft.extensions.caching.memory.10.0.9.nupkg.sha512",
     "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\9.0.0\\microsoft.extensions.configuration.abstractions.9.0.0.nupkg.sha512",
     "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\9.0.0\\microsoft.extensions.dependencyinjection.9.0.0.nupkg.sha512",
-    "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.0\\microsoft.extensions.dependencyinjection.abstractions.10.0.0.nupkg.sha512",
+    "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.9\\microsoft.extensions.dependencyinjection.abstractions.10.0.9.nupkg.sha512",
     "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.identity.core\\9.0.0\\microsoft.extensions.identity.core.9.0.0.nupkg.sha512",
     "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.identity.stores\\9.0.0\\microsoft.extensions.identity.stores.9.0.0.nupkg.sha512",
     "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.logging\\9.0.0\\microsoft.extensions.logging.9.0.0.nupkg.sha512",
-    "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\10.0.0\\microsoft.extensions.logging.abstractions.10.0.0.nupkg.sha512",
-    "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.options\\9.0.0\\microsoft.extensions.options.9.0.0.nupkg.sha512",
-    "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.primitives\\9.0.0\\microsoft.extensions.primitives.9.0.0.nupkg.sha512",
+    "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\10.0.9\\microsoft.extensions.logging.abstractions.10.0.9.nupkg.sha512",
+    "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.options\\10.0.9\\microsoft.extensions.options.10.0.9.nupkg.sha512",
+    "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.extensions.primitives\\10.0.9\\microsoft.extensions.primitives.10.0.9.nupkg.sha512",
     "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.identitymodel.abstractions\\8.14.0\\microsoft.identitymodel.abstractions.8.14.0.nupkg.sha512",
     "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.identitymodel.jsonwebtokens\\8.14.0\\microsoft.identitymodel.jsonwebtokens.8.14.0.nupkg.sha512",
     "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.identitymodel.logging\\8.14.0\\microsoft.identitymodel.logging.8.14.0.nupkg.sha512",
     "C:\\Users\\SMART HOME\\.nuget\\packages\\microsoft.identitymodel.tokens\\8.14.0\\microsoft.identitymodel.tokens.8.14.0.nupkg.sha512",
-    "C:\\Users\\SMART HOME\\.nuget\\packages\\system.diagnostics.diagnosticsource\\10.0.0\\system.diagnostics.diagnosticsource.10.0.0.nupkg.sha512"
+    "C:\\Users\\SMART HOME\\.nuget\\packages\\system.diagnostics.diagnosticsource\\10.0.9\\system.diagnostics.diagnosticsource.10.0.9.nupkg.sha512"
   ],
   "logs": []
 }

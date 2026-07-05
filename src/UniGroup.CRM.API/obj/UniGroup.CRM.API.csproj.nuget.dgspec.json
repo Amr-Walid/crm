@@ -136,6 +136,10 @@
             "MediatR": {
               "target": "Package",
               "version": "[14.1.0, )"
+            },
+            "Microsoft.Extensions.Caching.Hybrid": {
+              "target": "Package",
+              "version": "[10.7.0, )"
             }
           },
           "imports": [
@@ -284,6 +288,10 @@
               "suppressParent": "All",
               "target": "Package",
               "version": "[9.0.0, )"
+            },
+            "Microsoft.Extensions.Caching.Hybrid": {
+              "target": "Package",
+              "version": "[10.7.0, )"
             },
             "Microsoft.IdentityModel.Tokens": {
               "target": "Package",

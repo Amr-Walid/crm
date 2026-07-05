@@ -62,4 +62,10 @@ public class Customer
     /// Gets or sets the tickets associated with this customer.
     /// </summary>
     public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
+
+    /// <summary>
+    /// Gets or sets the preferred notification channels (e.g. "WhatsApp", "Email").
+    /// Mapped as a primitive collection (JSON array column) in EF Core 9.
+    /// </summary>
+    public List<string> PreferredChannels { get; set; } = new List<string>();
 }

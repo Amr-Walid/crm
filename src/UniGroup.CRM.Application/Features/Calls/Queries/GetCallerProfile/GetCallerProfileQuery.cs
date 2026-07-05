@@ -7,6 +7,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using UniGroup.CRM.Domain.Entities;
+
 namespace UniGroup.CRM.Application.Features.Calls.Queries.GetCallerProfile;
 
 /// <summary>
@@ -25,6 +27,16 @@ public record GetCallerProfileQuery(string PhoneNumber) : IRequest<CustomerDetai
 public class GetCallerProfileQueryHandler : IRequestHandler<GetCallerProfileQuery, CustomerDetailsDto?>
 {
     private readonly IApplicationDbContext _context;
+
+    private static readonly Func<DbContext, string, Task<Customer?>> _compiledCallerQuery =
+        EF.CompileAsyncQuery((DbContext context, string phone) =>
+            context.Set<Customer>()
+                .AsNoTracking()
+                .Include(c => c.CustomerPhones)
+                .Include(c => c.CustomerDevices)
+                    .ThenInclude(d => d.Model)
+                        .ThenInclude(m => m.Brand)
+                .FirstOrDefault(c => c.CustomerPhones.Any(p => p.Phone == phone)));
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GetCallerProfileQueryHandler"/> class.
@@ -52,17 +64,9 @@ public class GetCallerProfileQueryHandler : IRequestHandler<GetCallerProfileQuer
     {
         var normalizedPhone = request.PhoneNumber?.Trim() ?? string.Empty;
 
-        // Start from Customers and filter via CustomerPhones navigation.
-        // This ensures Include() works reliably — EF Core does not guarantee
-        // Include() is applied after a .Select() projection on a different entity.
-        var customer = await _context.Customers
-            .AsNoTracking()
-            .Include(c => c.CustomerPhones)
-            .Include(c => c.CustomerDevices)
-                .ThenInclude(d => d.Model)
-                    .ThenInclude(m => m.Brand)
-            .Where(c => c.CustomerPhones.Any(p => p.Phone == normalizedPhone))
-            .FirstOrDefaultAsync(cancellationToken);
+        // Execute via EF Core Compiled Query for high performance
+        var dbContext = (DbContext)_context;
+        var customer = await _compiledCallerQuery(dbContext, normalizedPhone);
 
         if (customer == null)
         {

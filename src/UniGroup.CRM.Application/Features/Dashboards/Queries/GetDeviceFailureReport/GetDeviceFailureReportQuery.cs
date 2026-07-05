@@ -43,14 +43,13 @@ public class GetDeviceFailureReportQueryHandler : IRequestHandler<GetDeviceFailu
     {
         var cacheKey = $"device-failures-{request.DateFrom?.ToString("yyyy-MM-dd") ?? "all"}-{request.DateTo?.ToString("yyyy-MM-dd") ?? "all"}-{request.BrandId?.ToString() ?? "all"}-{request.ModelId?.ToString() ?? "all"}";
 
-#pragma warning disable EXTEXP0018
         return await _hybridCache.GetOrCreateAsync(
             cacheKey,
             async ct => await BuildFailureReportAsync(request, ct),
             new HybridCacheEntryOptions { Expiration = TimeSpan.FromMinutes(10) },
+            tags: new[] { "dashboard", "devices" },
             cancellationToken: cancellationToken
         );
-#pragma warning restore EXTEXP0018
     }
 
     private async Task<List<DeviceFailureReportDto>> BuildFailureReportAsync(GetDeviceFailureReportQuery request, CancellationToken cancellationToken)

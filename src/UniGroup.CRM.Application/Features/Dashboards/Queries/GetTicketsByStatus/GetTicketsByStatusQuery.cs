@@ -42,14 +42,13 @@ public class GetTicketsByStatusQueryHandler : IRequestHandler<GetTicketsByStatus
     {
         var cacheKey = $"tickets-by-status-{request.DepartmentId?.ToString() ?? "all"}-{request.DateFrom?.ToString("yyyy-MM-dd") ?? "all"}-{request.DateTo?.ToString("yyyy-MM-dd") ?? "all"}";
 
-#pragma warning disable EXTEXP0018
         return await _hybridCache.GetOrCreateAsync(
             cacheKey,
             async ct => await BuildTicketsByStatusAsync(request, ct),
             new HybridCacheEntryOptions { Expiration = TimeSpan.FromSeconds(60) },
+            tags: new[] { "dashboard", "tickets" },
             cancellationToken: cancellationToken
         );
-#pragma warning restore EXTEXP0018
     }
 
     private async Task<Dictionary<TicketStatus, int>> BuildTicketsByStatusAsync(GetTicketsByStatusQuery request, CancellationToken cancellationToken)

@@ -40,14 +40,13 @@ public class GetHourlyCallVolumeQueryHandler : IRequestHandler<GetHourlyCallVolu
         var dateStart = targetDate.Date;
         var cacheKey = $"hourly-call-volume-{dateStart:yyyy-MM-dd}";
 
-#pragma warning disable EXTEXP0018
         return await _hybridCache.GetOrCreateAsync(
             cacheKey,
             async ct => await BuildHourlyCallVolumeAsync(dateStart, ct),
             new HybridCacheEntryOptions { Expiration = TimeSpan.FromMinutes(5) },
+            tags: new[] { "dashboard", "calls" },
             cancellationToken: cancellationToken
         );
-#pragma warning restore EXTEXP0018
     }
 
     private async Task<List<HourlyCallVolumeDto>> BuildHourlyCallVolumeAsync(DateTime dateStart, CancellationToken cancellationToken)

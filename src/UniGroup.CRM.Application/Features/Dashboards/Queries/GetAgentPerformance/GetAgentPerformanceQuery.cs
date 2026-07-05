@@ -44,14 +44,13 @@ public class GetAgentPerformanceQueryHandler : IRequestHandler<GetAgentPerforman
     {
         var cacheKey = $"agent-performance-{request.DateFrom?.ToString("yyyy-MM-dd") ?? "all"}-{request.DateTo?.ToString("yyyy-MM-dd") ?? "all"}-{request.AgentId?.ToString() ?? "all"}";
 
-#pragma warning disable EXTEXP0018
         return await _hybridCache.GetOrCreateAsync(
             cacheKey,
             async ct => await BuildPerformanceAsync(request, ct),
             new HybridCacheEntryOptions { Expiration = TimeSpan.FromMinutes(5) },
+            tags: new[] { "dashboard", "agents" },
             cancellationToken: cancellationToken
         );
-#pragma warning restore EXTEXP0018
     }
 
     private async Task<List<AgentPerformanceDto>> BuildPerformanceAsync(GetAgentPerformanceQuery request, CancellationToken cancellationToken)
