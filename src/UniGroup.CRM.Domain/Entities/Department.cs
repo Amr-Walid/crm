@@ -37,4 +37,9 @@ public class Department
     /// Gets or sets the tickets assigned to this department.
     /// </summary>
     public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
+
+    /// <summary>
+    /// Gets or sets the users (agents) who belong to this department.
+    /// </summary>
+    public virtual ICollection<ApplicationUser> Users { get; set; } = new List<ApplicationUser>();
 }

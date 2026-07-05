@@ -95,6 +95,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.ToTable("Users");
             entity.Property(u => u.FirstName).HasMaxLength(100).IsRequired();
             entity.Property(u => u.LastName).HasMaxLength(100).IsRequired();
+
+            // Optional relationship: each user optionally belongs to one department
+            entity.HasOne(u => u.Department)
+                .WithMany(d => d.Users)
+                .HasForeignKey(u => u.DepartmentId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<ApplicationRole>(entity =>
@@ -209,11 +216,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.Property(c => c.PhoneNumber).HasMaxLength(50).IsRequired();
             entity.Property(c => c.Summary).HasMaxLength(2000);
             entity.Property(c => c.RecordingUrl).HasMaxLength(500);
+            entity.Property(c => c.TicketId).HasMaxLength(20);
 
             // Performance indexes for Caller ID lookup and reporting
             entity.HasIndex(c => c.PhoneNumber);
             entity.HasIndex(c => c.CustomerId);
             entity.HasIndex(c => c.AgentId);
+            entity.HasIndex(c => c.TicketId);
 
             // Relationship with ApplicationUser (Agent) – restricted delete to preserve call history
             entity.HasOne(c => c.Agent)
@@ -225,6 +234,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.HasOne(c => c.Customer)
                 .WithMany(cu => cu.Calls)
                 .HasForeignKey(c => c.CustomerId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Optional relationship with Ticket – set null when ticket is deleted
+            entity.HasOne(c => c.Ticket)
+                .WithMany()
+                .HasForeignKey(c => c.TicketId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
         });

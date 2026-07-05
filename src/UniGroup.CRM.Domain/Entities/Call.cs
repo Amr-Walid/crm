@@ -21,6 +21,12 @@ public class Call
     public Guid? CustomerId { get; set; }
 
     /// <summary>
+    /// Gets or sets the optional ticket identifier this call is related to.
+    /// Null when the call is not linked to a specific support ticket.
+    /// </summary>
+    public string? TicketId { get; set; }
+
+    /// <summary>
     /// Gets or sets the identifier of the agent who handled this call.
     /// </summary>
     public Guid AgentId { get; set; }
@@ -66,6 +72,12 @@ public class Call
     /// unknown callers.
     /// </summary>
     public virtual Customer? Customer { get; set; }
+
+    /// <summary>
+    /// Gets or sets the ticket this call is linked to. May be null when the
+    /// call is a general inquiry not tied to a specific ticket.
+    /// </summary>
+    public virtual Ticket? Ticket { get; set; }
 
     /// <summary>
     /// Gets or sets the application user (agent) who handled the call.

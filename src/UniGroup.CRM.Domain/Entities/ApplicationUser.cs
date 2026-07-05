@@ -30,6 +30,17 @@ public class ApplicationUser : IdentityUser<Guid>
     public bool IsActive { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets the identifier of the department this user belongs to.
+    /// Null for system accounts or users not yet assigned to a department.
+    /// </summary>
+    public Guid? DepartmentId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the department this user belongs to.
+    /// </summary>
+    public virtual Department? Department { get; set; }
+
+    /// <summary>
     /// Gets or sets the refresh tokens associated with the user.
     /// </summary>
     public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();

@@ -177,6 +177,9 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -231,6 +234,8 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DepartmentId");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -321,6 +326,10 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<string>("TicketId")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AgentId");
@@ -328,6 +337,8 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.HasIndex("CustomerId");
 
                     b.HasIndex("PhoneNumber");
+
+                    b.HasIndex("TicketId");
 
                     b.ToTable("Calls", (string)null);
                 });
@@ -772,6 +783,16 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("UniGroup.CRM.Domain.Entities.ApplicationUser", b =>
+                {
+                    b.HasOne("UniGroup.CRM.Domain.Entities.Department", "Department")
+                        .WithMany("Users")
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Department");
+                });
+
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Attachment", b =>
                 {
                     b.HasOne("UniGroup.CRM.Domain.Entities.Ticket", "Ticket")
@@ -804,9 +825,16 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("UniGroup.CRM.Domain.Entities.Ticket", "Ticket")
+                        .WithMany()
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Agent");
 
                     b.Navigation("Customer");
+
+                    b.Navigation("Ticket");
                 });
 
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.CustomerDevice", b =>
@@ -954,6 +982,8 @@ namespace UniGroup.CRM.Infrastructure.Migrations
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.Department", b =>
                 {
                     b.Navigation("Tickets");
+
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("UniGroup.CRM.Domain.Entities.DeviceBrand", b =>
