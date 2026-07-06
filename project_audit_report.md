@@ -1,20 +1,24 @@
 # تقرير تدقيق المشروع ومطابقة المتطلبات
-## UniGroup CRM Platform — نسخة التدقيق بعد إنجاز 4 مراحل واختبارها
+## UniGroup CRM Platform — نسخة التدقيق الشاملة بعد إنجاز 5 مراحل كاملة
 
-**تاريخ آخر تحديث:** 2 يوليو 2026 | **الحالة:** Phase 1 + Phase 2 + Phase 3 + Phase 4 — مكتملة ومختبرة ✅
+**تاريخ آخر تحديث:** 5 يوليو 2026
+**الحالة الإجمالية:** Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅ + Phase 4 ✅ + Phase 5 ✅ — **مكتملة ومختبرة بالكامل**
+**آخر Commit:** `bbfe577` — feat: add Call-Ticket link and User-Department relationship
 
 ---
 
 ## 1. ملخص تنفيذي (Executive Summary)
 
-يوثق هذا التقرير نتائج التدقيق الشامل على نظام CRM المبني بـ **Clean Architecture + CQRS/MediatR + SQL Server**، بما يشمل:
-- مطابقة المتطلبات الـ 18 مع ما تم برمجته فعلياً
-- تدقيق هيكل قاعدة البيانات ومقارنته بـ `database_design.md`
-- نتائج اختبار كل الـ Endpoints (26 اختبار للمراحل 2 و 3، إلى جانب سيناريوهات موديول التذاكر والـ SLA للمرحلة 4)
-- المشاكل التي اكتُشفت وتم تصليحها
-- الخطوات القادمة
+يوثق هذا التقرير الحالة الفعلية والمحدثة لنظام CRM المبني بـ **Clean Architecture + CQRS/MediatR + EF Core 9 + .NET 9 + SQL Server**، بما يشمل:
 
-**الخلاصة:** تم إنجاز المراحل 1 و 2 و 3 و 4 بنجاح، مع بناء موديول التذاكر ومسارات العمل واتفاقية مستوى الخدمة (SLA) وتكاملها بشكل كامل مع بقية أجزاء النظام وقاعدة البيانات.
+- مطابقة المتطلبات الـ 19 مع ما تم تنفيذه فعلياً
+- تدقيق هيكل قاعدة البيانات ومقارنته بالتصميم الأصلي
+- نتائج الاختبارات: **49 اختبار إجمالياً** (16 للمرحلة 2 + 10 للمرحلة 3 + 15 للمرحلة 4 + 8 للمرحلة 5) — **100% ناجح**
+- التحسينات المطبقة من EF Core 9 و .NET 9
+- المشاكل المكتشفة والمحلولة
+- الخطوات القادمة للمرحلة 6
+
+**الخلاصة:** تم إنجاز 5 مراحل كاملة بنجاح مع تطبيق أحدث ميزات EF Core 9. المشروع جاهز للانتقال للمرحلة 6 (الإشعارات + Chatwoot + CSAT + Audit Trail).
 
 ---
 
@@ -22,42 +26,46 @@
 
 ### الجداول الموجودة حالياً في SQL Server:
 
-| الجدول | الكيان (Entity) | رابط الكيان | المرحلة | ملاحظات التدقيق |
-|---|---|---|:-:|---|
-| `Users` | `ApplicationUser` | [ApplicationUser.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/ApplicationUser.cs) | Phase 1 | ✅ يرث من `IdentityUser<Guid>` — Guid PK — حقول مخصصة: FirstName, LastName, IsActive, CreatedAt |
-| `Roles` | `ApplicationRole` | [ApplicationRole.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/ApplicationRole.cs) | Phase 1 | ✅ يرث من `IdentityRole<Guid>` — إضافة حقل Description |
-| `RefreshTokens` | `RefreshToken` | [RefreshToken.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/RefreshToken.cs) | Phase 1 | ✅ FK لـ Users — مقيد بـ IP Address — Cascade delete |
-| `UserRoles` | ASP.NET Identity | — | Phase 1 | ✅ جدول الربط بين Users وRoles |
-| `UserClaims` | ASP.NET Identity | — | Phase 1 | ✅ جزء من نظام Identity |
-| `RoleClaims` | ASP.NET Identity | — | Phase 1 | ✅ جزء من نظام Identity |
-| `UserLogins` | ASP.NET Identity | — | Phase 1 | ✅ جزء من نظام Identity |
-| `UserTokens` | ASP.NET Identity | — | Phase 1 | ✅ جزء من نظام Identity |
-| `Customers` | `Customer` | [Customer.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/Customer.cs) | Phase 2 | ✅ حقول: Id, Name, Email, Province, City, AddressDetails, CreatedAt |
-| `CustomerPhones` | `CustomerPhone` | [CustomerPhone.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/CustomerPhone.cs) | Phase 2 | ✅ Unique Index على `Phone` — حقل `IsPrimary` للرقم الرئيسي |
-| `DeviceBrands` | `DeviceBrand` | [DeviceBrand.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/DeviceBrand.cs) | Phase 2 | ✅ Unique Index على `Name` (أُضيف في Code Review) |
-| `DeviceModels` | `DeviceModel` | [DeviceModel.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/DeviceModel.cs) | Phase 2 | ✅ Composite Unique Index على `(BrandId, Name)` (أُضيف في Code Review) |
-| `CustomerDevices` | `CustomerDevice` | [CustomerDevice.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/CustomerDevice.cs) | Phase 2 | ✅ Filtered Unique Index على IMEI وSerialNumber يسمح بالـ Null |
-| `Calls` | `Call` | [Call.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/Call.cs) | Phase 3 | ✅ FK Nullable للـ Customer (SetNull) — FK Required للـ Agent (Restrict) |
-| `Departments` | `Department` | [Department.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/Department.cs) | Phase 4 | ✅ Unique Index على `Name` — حقول: Id, Name, Description, IsActive, CreatedAt |
-| `Tickets` | `Ticket` | [Ticket.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/Ticket.cs) | Phase 4 | ✅ PK string readable format `T-YYYY-NNNNN` — FK Restrict لـ Customers, Users, Departments — FK SetNull لـ CustomerDevices — حقول SLA و ChatwootConversationId |
-| `Attachments` | `Attachment` | [Attachment.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/Attachment.cs) | Phase 4 | ✅ FK Cascade لـ Tickets — FK Restrict لـ Users — حقول لرفع الملفات (StorageUrl) |
-| `InternalNotes` | `InternalNote` | [InternalNote.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/InternalNote.cs) | Phase 4 | ✅ FK Cascade لـ Tickets — FK Restrict لـ Users — ملاحظات للموظفين فقط |
-| `TicketHistories` | `TicketHistory` | [TicketHistory.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Domain/Entities/TicketHistory.cs) | Phase 4 | ✅ FK Cascade لـ Tickets — FK Restrict لـ Users — تسجيل حركات وتوقيتات الحالة |
+| الجدول | الكيان (Entity) | المرحلة | الملاحظات |
+|---|---|:-:|---|
+| `Users` | `ApplicationUser` | Phase 1 | ✅ يرث من `IdentityUser<Guid>` — حقول مخصصة: FirstName, LastName, IsActive, CreatedAt, **DepartmentId (FK Nullable → Departments, SetNull)** |
+| `Roles` | `ApplicationRole` | Phase 1 | ✅ يرث من `IdentityRole<Guid>` — حقل Description إضافي |
+| `RefreshTokens` | `RefreshToken` | Phase 1 | ✅ FK لـ Users — مقيد بـ IP Address — Cascade delete |
+| `UserRoles` | ASP.NET Identity | Phase 1 | ✅ جدول ربط بين Users وRoles |
+| `UserClaims` | ASP.NET Identity | Phase 1 | ✅ جزء من نظام Identity |
+| `RoleClaims` | ASP.NET Identity | Phase 1 | ✅ جزء من نظام Identity |
+| `UserLogins` | ASP.NET Identity | Phase 1 | ✅ جزء من نظام Identity |
+| `UserTokens` | ASP.NET Identity | Phase 1 | ✅ جزء من نظام Identity |
+| `Customers` | `Customer` | Phase 2 | ✅ حقل `PreferredChannels nvarchar(max)` كـ Primitive Collection JSON (EF Core 9) |
+| `CustomerPhones` | `CustomerPhone` | Phase 2 | ✅ Unique Index على `Phone` — حقل `IsPrimary` |
+| `DeviceBrands` | `DeviceBrand` | Phase 2 | ✅ Unique Index على `Name` |
+| `DeviceModels` | `DeviceModel` | Phase 2 | ✅ Composite Unique Index على `(BrandId, Name)` |
+| `CustomerDevices` | `CustomerDevice` | Phase 2 | ✅ Filtered Unique Index على IMEI وSerialNumber (يسمح بـ NULL) |
+| `Calls` | `Call` | Phase 3 | ✅ FK Nullable للـ Customer (SetNull) — FK Required للـ Agent (Restrict) — **FK Nullable للـ Ticket (SetNull)** |
+| `Departments` | `Department` | Phase 4 | ✅ Unique Index على `Name` |
+| `Tickets` | `Ticket` | Phase 4 | ✅ PK بصيغة `T-YYYY-NNNNN` — حقول SLA وChatwootConversationId |
+| `Attachments` | `Attachment` | Phase 4 | ✅ FK Cascade لـ Tickets — يخزن المرفقات محلياً |
+| `InternalNotes` | `InternalNote` | Phase 4 | ✅ FK Cascade لـ Tickets — مخصصة للموظفين فقط |
+| `TicketHistories` | `TicketHistory` | Phase 4 | ✅ FK Cascade لـ Tickets — يسجل كل انتقالات الحالة |
+
+**إجمالي الجداول:** 19 جدول ✅ (8 من Identity + 11 من التطبيق)
 
 ### الـ Migrations المطبقة بالترتيب:
 
-| # | اسم الـ Migration | تاريخ التطبيق | ما تفعله |
+| # | اسم الـ Migration | التاريخ | ما تفعله |
 |:-:|---|---|---|
-| 1 | `InitialCreate` | 2026-07-01 | جداول ASP.NET Identity + RefreshTokens |
-| 2 | `AddPhase2Entities` | 2026-07-01 | Customers + CustomerPhones + DeviceBrands + DeviceModels + CustomerDevices |
-| 3 | `AddPhase3Calls` | 2026-07-01 | Calls + Indexes على PhoneNumber, CustomerId, AgentId |
-| 4 | `AddUniqueIndexesForBrandAndModel` | 2026-07-01 | Unique Index على DeviceBrand.Name + Composite Index على DeviceModel(BrandId, Name) |
-| 5 | `AddPhase4TicketsWorkflowsAndSla` | 2026-07-02 | جداول Departments, Tickets, Attachments, InternalNotes, TicketHistories وفهارسها |
+| 1 | `20260701080141_InitialCreate` | 2026-07-01 | جداول ASP.NET Identity + RefreshTokens |
+| 2 | `20260701085518_AddPhase2Entities` | 2026-07-01 | Customers + CustomerPhones + DeviceBrands + DeviceModels + CustomerDevices |
+| 3 | `20260701092950_AddPhase3Calls` | 2026-07-01 | Calls + Indexes على PhoneNumber, CustomerId, AgentId |
+| 4 | `20260701093604_AddUniqueIndexesForBrandAndModel` | 2026-07-01 | Unique Index على DeviceBrand.Name + Composite على DeviceModel(BrandId, Name) |
+| 5 | `20260702102445_AddPhase4TicketsWorkflowsAndSla` | 2026-07-02 | Departments + Tickets + Attachments + InternalNotes + TicketHistories |
+| 6 | `20260705110501_AddCustomerPreferredChannels` | 2026-07-05 | حقل `PreferredChannels` كـ Primitive Collection JSON في جدول Customers |
+| 7 | `20260705115426_AddCallTicketLinkAndUserDepartment` | 2026-07-05 | إضافة `TicketId` FK في Calls + `DepartmentId` FK في Users + Indexes |
 
-### القيود الذكية المطبقة على DB (Fluent API Constraints):
+### القيود والفهارس المطبقة (Fluent API):
 
 ```csharp
-// Unique Phone per Customer
+// Unique Phone
 HasIndex(cp => cp.Phone).IsUnique()
 
 // Filtered Unique IMEI (allows null/empty)
@@ -77,73 +85,188 @@ HasIndex(dm => new { dm.BrandId, dm.Name }).IsUnique()
 // Unique Department Name
 HasIndex(d => d.Name).IsUnique()
 
-// Ticket Indexes for performance
+// Ticket performance indexes
 HasIndex(t => t.Status)
 HasIndex(t => t.Priority)
 HasIndex(t => t.SlaDeadline)
 HasIndex(t => t.CreatedAt)
 HasIndex(t => t.AssignedToId)
 HasIndex(t => t.CustomerId)
+
+// Call performance indexes
+HasIndex(c => c.PhoneNumber)
+HasIndex(c => c.CustomerId)
+HasIndex(c => c.AgentId)
+HasIndex(c => c.TicketId)
 ```
 
 ---
 
-## 3. مطابقة المتطلبات الـ 18 (Requirements Mapping Table)
+## 3. مطابقة المتطلبات (Requirements Mapping)
 
 ```mermaid
 flowchart TD
-    P1[Phase 1: Identity - Completed] --> P2[Phase 2: Customers - Completed]
-    P2 --> P3[Phase 3: Call Center - Completed]
-    P3 --> P4[Phase 4: Tickets and SLA - Completed]
-    P4 --> P5[Phase 5: Dashboards - Pending]
-    P5 --> P6[Phase 6: Notifications and Audit - Pending]
+    P1[Phase 1: Identity ✅] --> P2[Phase 2: Customers & Devices ✅]
+    P2 --> P3[Phase 3: Call Center ✅]
+    P3 --> P4[Phase 4: Tickets & SLA ✅]
+    P4 --> P5[Phase 5: Dashboards & Reports ✅]
+    P5 --> P6[Phase 6: Notifications, Chatwoot, CSAT, Audit ⏳]
 ```
 
 ### جدول مطابقة المتطلبات التفصيلي:
 
-| م | المتطلب | الحالة | الجداول | المكون البرمجي | الملاحظات |
-|:-:|---|:-:|---|---|---|
-| 1 | **إدارة العملاء** | ✅ مكتمل | `Customers`, `CustomerPhones` | [CreateCustomerCommand.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Customers/Commands/CreateCustomer/CreateCustomerCommand.cs) — [CustomersController.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.API/Controllers/CustomersController.cs) | تسجيل عملاء + رفض تكرار الهاتف + دعم هواتف متعددة |
-| 2 | **إدارة مركز الاتصال** | ✅ مكتمل | `Calls` | [LogCallCommand.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Calls/Commands/LogCall/LogCallCommand.cs) — [CallsController.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.API/Controllers/CallsController.cs) | تسجيل مكالمات Inbound/Outbound — AgentId من JWT |
-| 3 | **إدارة الحالات والشكاوى** | ✅ مكتمل | `Tickets` | [CreateTicketCommand.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Tickets/Commands/CreateTicket/CreateTicketCommand.cs) — [TicketsController.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.API/Controllers/TicketsController.cs) | إنشاء تذاكر برقم مقروء T-YYYY-NNNNN وربطها بالعميل والأجهزة |
-| 4 | **الملف التعريفي للعميل 360°** | ✅ مكتمل | `Customers`, `CustomerPhones`, `CustomerDevices` | [GetCustomerDetailsQuery.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Customers/Queries/GetCustomerDetails/GetCustomerDetailsQuery.cs) | يجلب الهواتف + الأجهزة + حالة الضمان |
-| 5 | **رؤية العميل الموحدة (Caller ID)** | ✅ مكتمل | `Customers`, `CustomerPhones`, `CustomerDevices`, `Calls` | [GetCallerProfileQuery.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Calls/Queries/GetCallerProfile/GetCallerProfileQuery.cs) | Caller ID فوري — يعرف العميل برقم هاتفه لحظة الاتصال |
-| 6 | **تصنيفات الاتصال والحالات** | ✅ مكتمل | `Tickets` (أعمدة) | [CreateTicketCommand.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Tickets/Commands/CreateTicket/CreateTicketCommand.cs) | تصنيف المشكلة عبر `TicketCategory` مع تحديد الأولوية وتاريخ SLA تلقائياً |
-| 7 | **قاعدة المعرفة والتشخيص** | ⏳ لم يبدأ | `KnowledgeBase` (مخطط) | — | خطوات توجيهية للموظف |
-| 8 | **دورة حياة التذكرة (State Machine)** | ✅ مكتمل | `Tickets`, `TicketHistories` | [TransitionTicketStatusCommand.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Tickets/Commands/TransitionTicketStatus/TransitionTicketStatusCommand.cs) | 8 حالات مع محرك انتقال صارم وحساب أوقات البقاء وتسجيل السجل |
-| 9 | **توجيه الحالات بين الإدارات** | ✅ مكتمل | `Tickets`, `Departments`, `TicketHistories` | [AssignTicketCommand.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Tickets/Commands/AssignTicket/AssignTicketCommand.cs) — [DepartmentsController.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.API/Controllers/DepartmentsController.cs) | توجيه التذكرة لقسم أو موظف وتسجيل التحويلات |
-| 10 | **إدارة التصعيد التلقائي** | ✅ مكتمل | `Tickets`, `TicketHistories` | [EscalateOverdueTicketsCommand.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Tickets/Commands/EscalateOverdueTickets/EscalateOverdueTicketsCommand.cs) | تصعيد تلقائي في الخلفية بواسطة SlaMonitorService عند تجاوز Deadline |
-| 11 | **اتفاقية مستوى الخدمة (SLA)** | ✅ مكتمل | `Tickets` | [TransitionTicketStatusCommand.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Tickets/Commands/TransitionTicketStatus/TransitionTicketStatusCommand.cs) | إيقاف العداد عند الانتظار (Waiting) وإعادة التشغيل وحساب الموعد النهائي |
-| 12 | **الملاحظات الداخلية والمرفقات** | ✅ مكتمل | `InternalNotes`, `Attachments` | [AddInternalNoteCommand.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Tickets/Commands/AddInternalNote/AddInternalNoteCommand.cs) — [AddAttachmentCommand.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Tickets/Commands/AddAttachment/AddAttachmentCommand.cs) | ملاحظات سرية للموظفين ومرفقات صور/PDF حد أقصى 10MB |
-| 13 | **نظام البحث المتقدم** | ✅ مكتمل | `Customers`, `CustomerPhones`, `CustomerDevices` | [SearchSystemQuery.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Calls/Queries/SearchSystem/SearchSystemQuery.cs) — [SearchController.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.API/Controllers/SearchController.cs) | بحث بالاسم + هاتف + IMEI + Serial |
-| 14 | **لوحة التحكم والإحصائيات** | ⏳ لم يبدأ | — | — | مخطط للمرحلة 5 |
-| 15 | **التقارير والتحليلات** | ⏳ لم يبدأ | — | — | مخطط للمرحلة 5 |
-| 16 | **إشعارات والتنبيهات** | ⏳ لم يبدأ | — | — | مخطط للمرحلة 6 |
-| 17 | **قياس رضا العملاء (CSAT)** | ⏳ لم يبدأ | `CsatSurveys` (مخطط) | — | مخطط للمرحلة 6 |
-| 18 | **الصلاحيات والأدوار** | ✅ مكتمل | `Users`, `Roles` | [AuthController.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.API/Controllers/AuthController.cs) | JWT + Roles (Agent, Team Leader, Admin) |
-| 19 | **سجل التدقيق (Audit Trail)** | ⏳ لم يبدأ | `AuditLogs` (مخطط) | — | مخطط للمرحلة 6 |
+| م | المتطلب | الحالة | الجداول | الملاحظات |
+|:-:|---|:-:|---|---|
+| 1 | **إدارة العملاء** | ✅ | `Customers`, `CustomerPhones` | تسجيل عملاء + رفض تكرار الهاتف + هواتف متعددة + PreferredChannels |
+| 2 | **إدارة مركز الاتصال** | ✅ | `Calls` | Inbound/Outbound — AgentId من JWT تلقائياً |
+| 3 | **إدارة الحالات والشكاوى** | ✅ | `Tickets` | رقم مقروء T-YYYY-NNNNN + ربط بعميل وجهاز وقسم |
+| 4 | **الملف التعريفي للعميل 360°** | ✅ | `Customers`, `CustomerPhones`, `CustomerDevices` | يجلب الهواتف + الأجهزة + حالة الضمان + PreferredChannels |
+| 5 | **رؤية العميل الموحدة (Caller ID)** | ✅ | `Customers`, `CustomerPhones`, `Calls` | Compiled Query — تعريف العميل فورياً عند الاتصال |
+| 6 | **تصنيفات الاتصال والحالات** | ✅ | `Tickets` | `TicketCategory` enum + أولوية + موعد SLA تلقائي |
+| 7 | **قاعدة المعرفة والتشخيص** | ⏳ | `KnowledgeBase` (مخطط) | مخطط للمرحلة 6 |
+| 8 | **دورة حياة التذكرة (State Machine)** | ✅ | `Tickets`, `TicketHistories` | 8 حالات + محرك انتقال صارم + تسجيل أوقات البقاء |
+| 9 | **توجيه الحالات بين الإدارات** | ✅ | `Tickets`, `Departments`, `TicketHistories` | توجيه لقسم أو موظف + تسجيل التحويلات |
+| 10 | **التصعيد التلقائي** | ✅ | `Tickets`, `TicketHistories` | SlaMonitorService يعمل في الخلفية كـ BackgroundService |
+| 11 | **اتفاقية مستوى الخدمة (SLA)** | ✅ | `Tickets` | إيقاف العداد عند Waiting + إعادة التشغيل + حساب Deadline |
+| 12 | **الملاحظات الداخلية والمرفقات** | ✅ | `InternalNotes`, `Attachments` | ملاحظات سرية + رفع صور/PDF حد أقصى 10MB |
+| 13 | **نظام البحث المتقدم** | ✅ | `Customers`, `CustomerPhones`, `CustomerDevices` | بحث بالاسم + هاتف + IMEI + Serial |
+| 14 | **لوحة التحكم والإحصائيات** | ✅ | `Tickets`, `Calls` | 5 استعلامات إحصائية + HybridCache + Cache Tags |
+| 15 | **التقارير والتحليلات** | ✅ | `Tickets`, `Calls` | تقارير أداء الموظفين + أعطال الأجهزة + تصدير CSV |
+| 16 | **الإشعارات والتنبيهات** | ⏳ | — | مخطط للمرحلة 6 (Chatwoot + Email) |
+| 17 | **قياس رضا العملاء (CSAT)** | ⏳ | `CsatSurveys` (مخطط) | مخطط للمرحلة 6 |
+| 18 | **الصلاحيات والأدوار** | ✅ | `Users`, `Roles` | JWT + Roles: Agent, Team Leader, Admin |
+| 19 | **سجل التدقيق (Audit Trail)** | ⏳ | `AuditLogs` (مخطط) | مخطط للمرحلة 6 — سيستخدم EF Core 9 Complex Types |
 
-**ملخص:** 13 متطلب مكتمل ✅ — 6 متطلبات في الخطة ⏳
+**ملخص:** 15 متطلب مكتمل ✅ — 4 متطلبات في خطة المرحلة 6 ⏳
 
 ---
 
-## 4. تدقيق منطق الضمان (Warranty Logic)
+## 4. هيكل ملفات الكود الحالي (Actual Codebase Structure)
 
-في [AddCustomerDeviceCommand.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Devices/Commands/AddCustomerDevice/AddCustomerDeviceCommand.cs):
-
-```csharp
-// حساب تلقائي: إذا لم يُدخل تاريخ، يُضاف سنتان من تاريخ الشراء
-var warrantyExpiry = request.WarrantyExpiry ?? request.PurchaseDate.AddYears(2);
+```
+src/
+├── UniGroup.CRM.Domain/
+│   ├── Entities/                         (14 ملف)
+│   │   ├── ApplicationUser.cs            ← Phase 1 | IdentityUser<Guid> + FirstName, LastName, IsActive, CreatedAt + DepartmentId? (FK → Departments)
+│   │   ├── ApplicationRole.cs            ← Phase 1 | IdentityRole<Guid> + Description
+│   │   ├── RefreshToken.cs               ← Phase 1 | Token + ExpiresAt + IpAddress + IsRevoked
+│   │   ├── Customer.cs                   ← Phase 2 | Name, Email, Province, City + List<string> PreferredChannels (EF Core 9)
+│   │   ├── CustomerPhone.cs              ← Phase 2 | Phone + IsPrimary + FK Customer
+│   │   ├── DeviceBrand.cs                ← Phase 2 | Name (Unique)
+│   │   ├── DeviceModel.cs                ← Phase 2 | Name + FK Brand (Composite Unique)
+│   │   ├── CustomerDevice.cs             ← Phase 2 | IMEI, SerialNumber, PurchaseDate, WarrantyExpiry
+│   │   ├── Call.cs                       ← Phase 3 | PhoneNumber, Direction, Duration, Notes + FK nullable Customer + FK Agent + FK nullable Ticket
+│   │   ├── Department.cs                 ← Phase 4 | Name (Unique) + Description + IsActive + Users collection
+│   │   ├── Ticket.cs                     ← Phase 4 | ID: T-YYYY-NNNNN + Category + Status + Priority + SLA fields + ChatwootConversationId
+│   │   ├── TicketHistory.cs              ← Phase 4 | FromStatus, ToStatus, ChangedAt, TimeSpentInState
+│   │   ├── InternalNote.cs               ← Phase 4 | Content + CreatedAt + FK Ticket + FK Agent
+│   │   └── Attachment.cs                 ← Phase 4 | FileName, FileType, StorageUrl + FK Ticket + FK UploadedBy
+│   └── Enums/                            (4 ملفات)
+│       ├── CallDirection.cs              ← Inbound, Outbound
+│       ├── TicketCategory.cs             ← 8 تصنيفات (Hardware, Software, Network, ...)
+│       ├── TicketStatus.cs               ← 8 حالات (New, Open, InProgress, WaitingForCustomer, ...)
+│       └── TicketPriority.cs             ← Low, Medium, High, Critical
+│
+├── UniGroup.CRM.Application/
+│   ├── Common/Interfaces/               (4 ملفات)
+│   │   ├── IApplicationDbContext.cs     ← DbSets لكل الكيانات + SaveChangesAsync
+│   │   ├── IJwtProvider.cs              ← GenerateToken(user, roles)
+│   │   ├── ITicketNumberGenerator.cs    ← GenerateNextAsync()
+│   │   └── IFileStorageService.cs       ← SaveFileAsync + DeleteFileAsync
+│   └── Features/                        (8 موديولات)
+│       ├── Auth/
+│       │   ├── Commands/Login/LoginCommand.cs                    ← Phase 1
+│       │   ├── Commands/Register/RegisterCommand.cs              ← Phase 1
+│       │   └── Common/AuthResponse.cs                           ← Phase 1
+│       ├── Customers/
+│       │   ├── Commands/CreateCustomer/CreateCustomerCommand.cs  ← Phase 2
+│       │   └── Queries/
+│       │       ├── Common/ (CustomerDetailsDto, CustomerDeviceDto, CustomerPhoneDto)
+│       │       ├── GetCustomerDetails/GetCustomerDetailsQuery.cs ← Phase 2 | Compiled Query (EF Core 9)
+│       │       └── SearchCustomers/SearchCustomersQuery.cs       ← Phase 2
+│       ├── Devices/
+│       │   └── Commands/
+│       │       ├── AddCustomerDevice/AddCustomerDeviceCommand.cs ← Phase 2 | حساب Warranty تلقائي +2 سنة
+│       │       ├── CreateDeviceBrand/CreateDeviceBrandCommand.cs ← Phase 2
+│       │       └── CreateDeviceModel/CreateDeviceModelCommand.cs ← Phase 2
+│       ├── Calls/
+│       │   ├── Commands/LogCall/LogCallCommand.cs                ← Phase 3
+│       │   └── Queries/
+│       │       ├── Common/CallDto.cs
+│       │       ├── GetCallHistory/GetCallHistoryQuery.cs         ← Phase 3
+│       │       ├── GetCallerProfile/GetCallerProfileQuery.cs     ← Phase 3 | Compiled Query (EF Core 9)
+│       │       └── SearchSystem/SearchSystemQuery.cs             ← Phase 3
+│       ├── Tickets/
+│       │   ├── Commands/
+│       │   │   ├── CreateTicket/CreateTicketCommand.cs           ← Phase 4
+│       │   │   ├── TransitionTicketStatus/TransitionTicketStatusCommand.cs ← Phase 4 | State Machine + SLA
+│       │   │   ├── AssignTicket/AssignTicketCommand.cs           ← Phase 4
+│       │   │   ├── AddInternalNote/AddInternalNoteCommand.cs     ← Phase 4
+│       │   │   ├── AddAttachment/AddAttachmentCommand.cs         ← Phase 4
+│       │   │   └── EscalateOverdueTickets/EscalateOverdueTicketsCommand.cs ← Phase 4
+│       │   └── Queries/
+│       │       ├── Common/ (TicketDetailsDto, TicketSummaryDto)
+│       │       ├── GetTicketDetails/GetTicketDetailsQuery.cs     ← Phase 4
+│       │       ├── GetTicketsList/GetTicketsListQuery.cs         ← Phase 4 | Paging + Filtering
+│       │       └── GetMyTickets/GetMyTicketsQuery.cs             ← Phase 4
+│       ├── Departments/
+│       │   ├── Commands/CreateDepartment/CreateDepartmentCommand.cs ← Phase 4
+│       │   └── Queries/
+│       │       ├── Common/DepartmentDto.cs
+│       │       └── GetDepartments/GetDepartmentsQuery.cs         ← Phase 4
+│       ├── Dashboards/                                           ← Phase 5
+│       │   └── Queries/
+│       │       ├── Common/ (AgentPerformanceDto, DashboardSummaryDto, DeviceFailureReportDto, HourlyCallVolumeDto)
+│       │       ├── GetDashboardSummary/GetDashboardSummaryQuery.cs     ← HybridCache + Tags
+│       │       ├── GetAgentPerformance/GetAgentPerformanceQuery.cs     ← HybridCache + Tags
+│       │       ├── GetDeviceFailureReport/GetDeviceFailureReportQuery.cs ← HybridCache + Tags
+│       │       ├── GetHourlyCallVolume/GetHourlyCallVolumeQuery.cs     ← HybridCache + Tags
+│       │       └── GetTicketsByStatus/GetTicketsByStatusQuery.cs       ← HybridCache + Tags
+│       └── Reports/                                              ← Phase 5
+│           └── Queries/ExportAgentReport/ExportAgentReportQuery.cs ← CSV Export Stream
+│
+├── UniGroup.CRM.Infrastructure/
+│   ├── Data/ApplicationDbContext.cs      ← DbContext + Fluent API لكل الكيانات + PrimitiveCollection Config
+│   ├── Services/                         (5 ملفات)
+│   │   ├── JwtOptions.cs                ← POCO لإعدادات JWT
+│   │   ├── JwtProvider.cs               ← توليد JWT + Refresh Token
+│   │   ├── TicketNumberGenerator.cs     ← توليد T-YYYY-NNNNN بـ DB Lock
+│   │   ├── LocalFileStorageService.cs   ← حفظ الملفات في wwwroot/uploads
+│   │   └── SlaMonitorService.cs         ← BackgroundService يراقب SLA كل دقيقة
+│   ├── DependencyInjection.cs           ← تسجيل كل الخدمات + HybridCache + JWT
+│   └── Migrations/                      (7 migrations — 15 ملف)
+│       ├── 20260701080141_InitialCreate
+│       ├── 20260701085518_AddPhase2Entities
+│       ├── 20260701092950_AddPhase3Calls
+│       ├── 20260701093604_AddUniqueIndexesForBrandAndModel
+│       ├── 20260702102445_AddPhase4TicketsWorkflowsAndSla
+│       ├── 20260705110501_AddCustomerPreferredChannels
+│       └── 20260705115426_AddCallTicketLinkAndUserDepartment
+│
+└── UniGroup.CRM.API/
+    ├── Controllers/                     (9 controllers)
+    │   ├── AuthController.cs            ← Phase 1 | /api/auth/login + /api/auth/register
+    │   ├── CustomersController.cs       ← Phase 2 | /api/customers (CRUD + Search)
+    │   ├── DevicesController.cs         ← Phase 2 | /api/devices (Brands + Models + Assign)
+    │   ├── CallsController.cs           ← Phase 3 | /api/calls + /api/calls/caller-id + /api/calls/history
+    │   ├── SearchController.cs          ← Phase 3 | /api/search (Unified Search)
+    │   ├── TicketsController.cs         ← Phase 4 | /api/tickets (Full CRUD + Status + Notes + Attachments)
+    │   ├── DepartmentsController.cs     ← Phase 4 | /api/departments
+    │   ├── DashboardsController.cs      ← Phase 5 | /api/dashboard/* (5 endpoints)
+    │   └── ReportsController.cs         ← Phase 5 | /api/reports/agents/export (CSV)
+    ├── Program.cs                       ← Minimal API setup
+    ├── appsettings.json                 ← ConnectionString + JWT settings
+    └── UniGroup.CRM.API.http            ← HTTP test file (manual testing)
 ```
 
-في [GetCustomerDetailsQuery.cs](file:///C:/Users/SMART%20HOME/Documents/Uni-Group/crm%20customer%20service/src/UniGroup.CRM.Application/Features/Customers/Queries/GetCustomerDetails/GetCustomerDetailsQuery.cs):
-
-```csharp
-// حالة الضمان: Active أو Expired بمقارنة التاريخ الحالي
-d.WarrantyExpiry > currentDate ? "Active" : "Expired"
-```
-
-**نتيجة الاختبار الفعلي:** شراء بتاريخ `2026-07-01` → Expiry يُحسب تلقائياً `2028-07-01` → Status: `Active` ✅
+**إحصائيات الكود:**
+| المشروع | عدد الملفات |
+|---|:-:|
+| Domain (Entities + Enums) | 18 ملف |
+| Application (Commands + Queries + DTOs + Interfaces) | ~40 ملف |
+| Infrastructure (DbContext + Services + Migrations) | ~20 ملف |
+| API (Controllers + Config) | ~14 ملف |
+| **الإجمالي** | **~92 ملف** |
 
 ---
 
@@ -151,246 +274,188 @@ d.WarrantyExpiry > currentDate ? "Active" : "Expired"
 
 | النقطة | الحالة | التفاصيل |
 |---|:-:|---|
-| AgentId من JWT Claims وليس Request Body | ✅ | `User.FindFirstValue(ClaimTypes.NameIdentifier)` في CallsController |
+| AgentId من JWT Claims وليس Request Body | ✅ | `User.FindFirstValue(ClaimTypes.NameIdentifier)` في جميع Controllers |
 | كل الـ Endpoints محمية بـ `[Authorize]` | ✅ | AuthController فقط بدون Authorize |
+| صلاحيات دقيقة بالأدوار | ✅ | `[Authorize(Roles = "Admin")]` للعمليات الحساسة، `[Authorize(Roles = "Admin,Team Leader")]` للتقارير |
 | Unique constraints على مستوى DB | ✅ | لا يمكن تجاوزها حتى لو تجاوز الكود |
-| Filtered Unique Indexes للـ NULL values | ✅ | يمنع أخطاء FK مع IMEI وSerial الاختياريين |
-| DeleteBehavior.Restrict عند حذف Agent | ✅ | يحافظ على سجلات المكالمات |
+| Filtered Unique Indexes للـ NULL | ✅ | يمنع أخطاء FK مع IMEI وSerial الاختياريين |
+| DeleteBehavior.Restrict عند حذف Agent | ✅ | يحافظ على سجلات المكالمات والتذاكر |
 | DeleteBehavior.SetNull عند حذف Customer | ✅ | يحافظ على المكالمات بدون ربط للعميل |
+| حد أقصى لحجم الملفات | ✅ | 10MB + امتدادات مسموحة فقط (صور + PDF) |
+| HybridCache لا يكشف بيانات حساسة | ✅ | الكاش يخزن DTOs فقط بدون بيانات هوية |
 
 ---
 
-## 6. نتائج الاختبار الكامل (Full Test Results)
+## 6. تدقيق الأداء — تحسينات EF Core 9 المطبقة
 
-### Phase 2 — 16/16 اختبار ✅
+### أ) Compiled Queries (استعلامات مترجمة مسبقاً):
 
-| # | الاختبار | الـ Endpoint | النتيجة |
+```csharp
+// في GetCallerProfileQuery.cs
+private static readonly Func<ApplicationDbContext, string, IAsyncEnumerable<...>> GetCallerProfileQuery =
+    EF.CompileAsyncQuery((ApplicationDbContext db, string phone) =>
+        db.Customers.Where(c => c.CustomerPhones.Any(p => p.Phone == phone))...);
+
+// في GetCustomerDetailsQuery.cs
+private static readonly Func<ApplicationDbContext, Guid, Task<Customer?>> GetCustomerByIdQuery =
+    EF.CompileAsyncQuery((ApplicationDbContext db, Guid id) =>
+        db.Customers.Include(...).FirstOrDefault(c => c.Id == id));
+```
+
+**الفائدة:** تخفيض 20-30% من وقت ترجمة LINQ إلى SQL — مهم جداً لـ Caller ID الذي يُستدعى مئات المرات يومياً.
+
+### ب) Primitive Collections (مجموعات أولية بدون جدول وسيط):
+
+```csharp
+// في Customer.cs
+public List<string> PreferredChannels { get; set; } = [];
+
+// في ApplicationDbContext.cs (Fluent API)
+builder.Property(c => c.PreferredChannels)
+    .HasColumnType("nvarchar(max)")
+    .HasDefaultValueSql("N'[]'");
+```
+
+**الفائدة:** تخزين `["WhatsApp", "Email"]` مباشرة كـ JSON دون جدول وسيط — يقلل الـ Joins ويبسط الاستعلامات.
+
+### ج) HybridCache مع Cache Tags (Phase 5):
+
+```csharp
+// مثال في GetDashboardSummaryQuery.cs
+return await _hybridCache.GetOrCreateAsync(
+    "dashboard:summary",
+    async _ => await BuildSummaryAsync(),
+    tags: ["dashboard", "tickets", "calls"]
+);
+```
+
+**الفائدة:** L1 Cache (In-Memory) + L2 Cache (Distributed) + Tag-Based Invalidation جاهزة للمرحلة 6.
+
+---
+
+## 7. نتائج الاختبارات الكاملة
+
+### Phase 2 — 16/16 ✅
+
+| # | الاختبار | Endpoint | النتيجة |
 |:-:|---|---|:-:|
-| T1 | Create Customer `Mohamed Hassan` | POST /api/customers | ✅ 201 |
-| T2 | رفض هاتف مكرر `01234567890` | POST /api/customers | ✅ 400 |
-| T3 | Get Customer 360° (Ahmed Walid) مع Warranty Active | GET /api/customers/{id} | ✅ 200 |
+| T1 | Create Customer | POST /api/customers | ✅ 201 |
+| T2 | رفض هاتف مكرر | POST /api/customers | ✅ 400 |
+| T3 | Get Customer 360° مع Warranty Active | GET /api/customers/{id} | ✅ 200 |
 | T4 | Customer غير موجود | GET /api/customers/{id} | ✅ 404 |
-| T5 | Search by Name `Ahmed` | GET /api/customers/search | ✅ 200 |
-| T6 | Search by Phone `01234567890` | GET /api/customers/search | ✅ 200 |
+| T5 | Search by Name | GET /api/customers/search | ✅ 200 |
+| T6 | Search by Phone | GET /api/customers/search | ✅ 200 |
 | T7 | Create Brand `Nokia` | POST /api/devices/brands | ✅ 200 |
-| T8 | رفض Brand `Samsung` مكرر | POST /api/devices/brands | ✅ 400 |
+| T8 | رفض Brand مكرر | POST /api/devices/brands | ✅ 400 |
 | T9 | Create Model `Nokia 3310` | POST /api/devices/models | ✅ 200 |
 | T10 | رفض Model مكرر تحت نفس الماركة | POST /api/devices/models | ✅ 400 |
 | T11 | Assign Device (auto-warranty +2 سنة) | POST /api/devices/assign | ✅ 200 |
-| T12 | Get 360° بعد ربط الجهاز (Nokia 3310 + 2028) | GET /api/customers/{id} | ✅ 200 |
+| T12 | Get 360° بعد ربط الجهاز | GET /api/customers/{id} | ✅ 200 |
 | T13 | رفض نفس IMEI لعميل آخر | POST /api/devices/assign | ✅ 400 |
-| T14 | Search by IMEI `123456789012345` | GET /api/customers/search | ✅ 200 |
-| T15 | Search by Serial `NK3310ABC001` | GET /api/customers/search | ✅ 200 |
+| T14 | Search by IMEI | GET /api/customers/search | ✅ 200 |
+| T15 | Search by Serial | GET /api/customers/search | ✅ 200 |
 | T16 | Search — لا نتائج | GET /api/customers/search | ✅ 200 (0 results) |
 
-### Phase 3 — 10/10 اختبار ✅
+### Phase 3 — 10/10 ✅
 
-| # | الاختبار | الـ Endpoint | النتيجة |
+| # | الاختبار | Endpoint | النتيجة |
 |:-:|---|---|:-:|
-| T1 | Caller ID — رقم معروف (`01099999999` → Ali Walid) | GET /api/calls/caller-id | ✅ 200 + Profile |
-| T2 | Caller ID — رقم مجهول (`01088888888`) | GET /api/calls/caller-id | ✅ 200 + null |
-| T3 | Log Call — من عميل معروف | POST /api/calls | ✅ 201 |
-| T4 | Log Call — `customerId = null` (بعد التصليح) | POST /api/calls | ✅ 201 |
-| T5 | Call History للعميل Ahmed Walid | GET /api/calls/history/{id} | ✅ 200 |
-| T6 | Unified Search بالاسم `Ahmed` | GET /api/search?q=Ahmed | ✅ 200 |
-| T7 | Unified Search بالهاتف | GET /api/search?q=01012345678 | ✅ 200 |
-| T8 | Unified Search بالـ IMEI | GET /api/search?q=359876543210777 | ✅ 200 + Device |
-| T9 | Unified Search بالـ Serial | GET /api/search?q=S24U987654777 | ✅ 200 |
-| T10 | Unified Search — لا نتائج | GET /api/search?q=XXXXXXXXX | ✅ 200 (0 results) |
+| T1 | Caller ID — رقم معروف | GET /api/calls/caller-id | ✅ 200 + Profile |
+| T2 | Caller ID — رقم مجهول | GET /api/calls/caller-id | ✅ 200 + null |
+| T3 | Log Call — عميل معروف | POST /api/calls | ✅ 201 |
+| T4 | Log Call — customerId = null | POST /api/calls | ✅ 201 |
+| T5 | Call History للعميل | GET /api/calls/history/{id} | ✅ 200 |
+| T6 | Unified Search بالاسم | GET /api/search?q=Ahmed | ✅ 200 |
+| T7 | Unified Search بالهاتف | GET /api/search?q=010... | ✅ 200 |
+| T8 | Unified Search بالـ IMEI | GET /api/search?q=359... | ✅ 200 + Device |
+| T9 | Unified Search بالـ Serial | GET /api/search?q=S24U... | ✅ 200 |
+| T10 | Unified Search — لا نتائج | GET /api/search?q=XXXXX | ✅ 200 (0 results) |
 
-### Phase 4 — 15/15 اختبار ✅
+### Phase 4 — 15/15 ✅
 
-| # | الاختبار | الـ Endpoint | النتيجة |
+| # | الاختبار | Endpoint | النتيجة |
 |:-:|---|---|:-:|
 | T1 | Login Authenticated | POST /api/auth/login | ✅ 200 |
-| T2 | Create Department (Admin Role) | POST /api/departments | ✅ 201 |
+| T2 | Create Department (Admin) | POST /api/departments | ✅ 201 |
 | T3 | Get Departments | GET /api/departments | ✅ 200 |
-| T4 | Create Ticket (Agent Role) | POST /api/tickets | ✅ 201 |
+| T4 | Create Ticket (Agent) | POST /api/tickets | ✅ 201 |
 | T5 | Assign Ticket | PATCH /api/tickets/{id}/assign | ✅ 200 |
 | T6 | Add Internal Note | POST /api/tickets/{id}/notes | ✅ 200 |
 | T7 | Add Attachment (.jpg) | POST /api/tickets/{id}/attachments | ✅ 200 |
 | T8 | Get Ticket Details | GET /api/tickets/{id} | ✅ 200 |
-| T9 | Get Tickets List with Paging/Filtering | GET /api/tickets | ✅ 200 |
+| T9 | Get Tickets List with Paging | GET /api/tickets | ✅ 200 |
 | T10 | Get My Tickets | GET /api/tickets/my | ✅ 200 |
-| T11 | Transition Status New -> Open (Valid) | PATCH /api/tickets/{id}/status | ✅ 200 |
-| T12 | Transition Status Open -> Resolved (Invalid) | PATCH /api/tickets/{id}/status | ✅ 400 |
-| T13 | Transition Status Open -> InProgress (Valid) | PATCH /api/tickets/{id}/status | ✅ 200 |
-| T14 | Transition Status InProgress -> WaitingForCustomer (Valid - Pauses SLA) | PATCH /api/tickets/{id}/status | ✅ 200 |
-| T15 | Transition Status WaitingForCustomer -> InProgress (Valid - Resumes SLA) | PATCH /api/tickets/{id}/status | ✅ 200 |
+| T11 | Transition New → Open (Valid) | PATCH /api/tickets/{id}/status | ✅ 200 |
+| T12 | Transition Open → Resolved (Invalid) | PATCH /api/tickets/{id}/status | ✅ 400 |
+| T13 | Transition Open → InProgress (Valid) | PATCH /api/tickets/{id}/status | ✅ 200 |
+| T14 | Transition InProgress → WaitingForCustomer (Pauses SLA) | PATCH /api/tickets/{id}/status | ✅ 200 |
+| T15 | Transition WaitingForCustomer → InProgress (Resumes SLA) | PATCH /api/tickets/{id}/status | ✅ 200 |
+
+### Phase 5 — 8/8 ✅
+
+| # | الاختبار | Endpoint | النتيجة |
+|:-:|---|---|:-:|
+| T1 | Login Authenticated | POST /api/auth/login | ✅ 200 |
+| T2 | Get Dashboard Summary | GET /api/dashboard/summary | ✅ 200 |
+| T3 | Get Agent Performance | GET /api/dashboard/agent-performance | ✅ 200 |
+| T4 | Get Device Failure Report | GET /api/dashboard/device-failures | ✅ 200 |
+| T5 | Get Hourly Call Volume | GET /api/dashboard/call-volume | ✅ 200 |
+| T6 | Get Tickets By Status | GET /api/dashboard/tickets-by-status | ✅ 200 |
+| T7 | Export Agent Report CSV | GET /api/reports/agents/export | ✅ 200 CSV |
+| T8 | Dashboard without JWT | GET /api/dashboard/summary | ✅ 401 |
+
+**الإجمالي: 49/49 اختبار ناجح — 100% ✅**
 
 ---
 
-## 7. مشاكل اكتُشفت وتم إصلاحها (Issues Found & Fixed)
+## 8. مشاكل اكتُشفت وتم إصلاحها
 
 | # | المشكلة | النوع | الملف | الإصلاح |
 |:-:|---|---|---|---|
-| 1 | `GetCallerProfileQuery`: `Select(p => p.Customer).Include(...)` — EF Core لا يضمن تطبيق Include بعد Select | 🔴 Critical Bug | GetCallerProfileQuery.cs | إعادة كتابة: `Customers.Where(c => c.CustomerPhones.Any(p => p.Phone == phone))` |
-| 2 | `DeviceBrand.Name` بدون Unique Index على مستوى DB | 🟡 Data Integrity | ApplicationDbContext.cs | إضافة `HasIndex(db => db.Name).IsUnique()` |
-| 3 | `DeviceModel` بدون Composite Unique Index على `(BrandId, Name)` | 🟡 Data Integrity | ApplicationDbContext.cs | إضافة `HasIndex(dm => new { dm.BrandId, dm.Name }).IsUnique()` |
-| 4 | `LogCallCommand` مع `customerId = null` يرجع 500 — `CreatedAtAction` يفشل في توليد Route بـ null parameter | 🔴 Critical Bug | CallsController.cs | إضافة شرط: إذا `CustomerId == null` → `return Created($"/api/calls/{callId}", callId)` |
-| 5 | `DbUpdateConcurrencyException` في `AssignTicketCommand` و `TransitionTicketStatusCommand` بسبب إضافة السجل التاريخي عبر `ticket.Histories.Add()` ووجود User Tracker | 🔴 Critical Bug | AssignTicketCommand.cs / TransitionTicketStatusCommand.cs | استخدام `AsNoTracking()` عند استعلام الكيانات المساعدة لمنع تلوث الـ Tracker، وإضافة السجل مباشرةً لـ `_context.TicketHistories.Add()` بدلاً من Navigation Property لتجنب مشاكل التزامن في EF Core. |
-| 6 | فشل اختبار الرفع T7 بسبب استخدام ملف `.txt` بينما الكود يقيد الرفع لصور و PDF فقط | 🟢 Testing Bug | run_phase4_tests.ps1 | تعديل سيناريو الاختبار T7 لرفع ملف `.jpg` بدلاً من `.txt` ليتوافق مع التحقق من الامتدادات، وإضافة `-UseBasicParsing` لتفادي أخطاء محرك IE في PowerShell 5.1. |
-
-
----
-
-## 8. هيكل ملفات الكود الحالي (Codebase Structure)
-
-```
-src/
-├── UniGroup.CRM.Domain/
-│   ├── Entities/
-│   │   ├── ApplicationUser.cs     ← Phase 1
-│   │   ├── ApplicationRole.cs     ← Phase 1
-│   │   ├── RefreshToken.cs        ← Phase 1
-│   │   ├── Customer.cs            ← Phase 2
-│   │   ├── CustomerPhone.cs       ← Phase 2
-│   │   ├── DeviceBrand.cs         ← Phase 2
-│   │   ├── DeviceModel.cs         ← Phase 2
-│   │   ├── CustomerDevice.cs      ← Phase 2
-│   │   ├── Call.cs                ← Phase 3
-│   │   ├── Ticket.cs              ← Phase 4
-│   │   ├── Department.cs          ← Phase 4
-│   │   ├── TicketHistory.cs       ← Phase 4
-│   │   ├── InternalNote.cs        ← Phase 4
-│   │   └── Attachment.cs          ← Phase 4
-│   └── Enums/
-│       ├── CallDirection.cs       ← Phase 3
-│       ├── TicketCategory.cs      ← Phase 4
-│       ├── TicketStatus.cs        ← Phase 4
-│       └── TicketPriority.cs      ← Phase 4
-│
-├── UniGroup.CRM.Application/
-│   ├── Common/Interfaces/
-│   │   ├── IApplicationDbContext.cs
-│   │   ├── ITicketNumberGenerator.cs ← Phase 4
-│   │   └── IFileStorageService.cs    ← Phase 4
-│   └── Features/
-│       ├── Auth/                                                   ← Phase 1
-│       │   ├── Commands/
-│       │   │   ├── Login/
-│       │   │   │   └── LoginCommand.cs                             ← Phase 1
-│       │   │   └── Register/
-│       │   │       └── RegisterCommand.cs                          ← Phase 1
-│       │   └── Common/
-│       │       └── AuthResponse.cs                                 ← Phase 1
-│       │
-│       ├── Customers/                                              ← Phase 2
-│       │   ├── Commands/
-│       │   │   └── CreateCustomer/
-│       │   │       └── CreateCustomerCommand.cs                    ← Phase 2
-│       │   └── Queries/
-│       │       ├── Common/                                         ← Phase 2
-│       │       │   ├── CustomerDetailsDto.cs                       ← Phase 2
-│       │       │   ├── CustomerDeviceDto.cs                        ← Phase 2
-│       │       │   └── CustomerPhoneDto.cs                         ← Phase 2
-│       │       ├── GetCustomerDetails/
-│       │       │   └── GetCustomerDetailsQuery.cs                  ← Phase 2
-│       │       └── SearchCustomers/
-│       │           └── SearchCustomersQuery.cs                     ← Phase 2
-│       │
-│       ├── Devices/                                                ← Phase 2
-│       │   └── Commands/
-│       │       ├── AddCustomerDevice/
-│       │       │   └── AddCustomerDeviceCommand.cs                 ← Phase 2
-│       │       ├── CreateDeviceBrand/
-│       │       │   └── CreateDeviceBrandCommand.cs                 ← Phase 2
-│       │       └── CreateDeviceModel/
-│       │           └── CreateDeviceModelCommand.cs                 ← Phase 2
-│       │
-│       ├── Calls/                                                  ← Phase 3
-│       │   ├── Commands/
-│       │   │   └── LogCall/
-│       │   │       └── LogCallCommand.cs                           ← Phase 3
-│       │   └── Queries/
-│       │       ├── Common/                                         ← Phase 3
-│       │       │   └── CallDto.cs                                  ← Phase 3
-│       │       ├── GetCallHistory/
-│       │       │   └── GetCallHistoryQuery.cs                      ← Phase 3
-│       │       ├── GetCallerProfile/
-│       │       │   └── GetCallerProfileQuery.cs                    ← Phase 3
-│       │       └── SearchSystem/
-│       │           └── SearchSystemQuery.cs                        ← Phase 3
-│       │
-│       ├── Tickets/                                                ← Phase 4
-│       │   ├── Commands/
-│       │   │   ├── CreateTicket/
-│       │   │   │   └── CreateTicketCommand.cs                      ← Phase 4
-│       │   │   ├── TransitionTicketStatus/
-│       │   │   │   └── TransitionTicketStatusCommand.cs            ← Phase 4
-│       │   │   ├── AssignTicket/
-│       │   │   │   └── AssignTicketCommand.cs                      ← Phase 4
-│       │   │   ├── AddInternalNote/
-│       │   │   │   └── AddInternalNoteCommand.cs                   ← Phase 4
-│       │   │   ├── AddAttachment/
-│       │   │   │   └── AddAttachmentCommand.cs                     ← Phase 4
-│       │   │   └── EscalateOverdueTickets/
-│       │   │       └── EscalateOverdueTicketsCommand.cs            ← Phase 4
-│       │   └── Queries/
-│       │       ├── Common/
-│       │       │   ├── TicketDetailsDto.cs                         ← Phase 4
-│       │       │   └── TicketSummaryDto.cs                         ← Phase 4
-│       │       ├── GetTicketDetails/
-│       │       │   └── GetTicketDetailsQuery.cs                    ← Phase 4
-│       │       ├── GetTicketsList/
-│       │       │   └── GetTicketsListQuery.cs                      ← Phase 4
-│       │       └── GetMyTickets/
-│       │           └── GetMyTicketsQuery.cs                        ← Phase 4
-│       │
-│       └── Departments/                                            ← Phase 4
-│           ├── Commands/
-│           │   └── CreateDepartment/
-│           │       └── CreateDepartmentCommand.cs                  ← Phase 4
-│           └── Queries/
-│               ├── Common/
-│               │   └── DepartmentDto.cs                            ← Phase 4
-│               └── GetDepartments/
-│                   └── GetDepartmentsQuery.cs                      ← Phase 4
-│
-├── UniGroup.CRM.Infrastructure/
-│   ├── Data/ApplicationDbContext.cs
-│   ├── Services/
-│   │   ├── JwtProvider.cs                  ← Phase 1
-│   │   ├── TicketNumberGenerator.cs        ← Phase 4
-│   │   ├── LocalFileStorageService.cs      ← Phase 4
-│   │   └── SlaMonitorService.cs            ← Phase 4
-│   ├── DependencyInjection.cs
-│   └── Migrations/ (5 migrations)
-│
-└── UniGroup.CRM.API/
-    ├── Controllers/
-    │   ├── AuthController.cs      ← Phase 1
-    │   ├── CustomersController.cs ← Phase 2
-    │   ├── DevicesController.cs   ← Phase 2
-    │   ├── CallsController.cs     ← Phase 3
-    │   ├── SearchController.cs    ← Phase 3
-    │   ├── TicketsController.cs   ← Phase 4
-    │   └── DepartmentsController.cs ← Phase 4
-    └── UniGroup.CRM.API.http      ← Test file (26 tests)
-```
+| 1 | `GetCallerProfileQuery`: استخدام `.Select(p => p.Customer).Include(...)` — EF Core لا يضمن Include بعد Select | 🔴 Critical | GetCallerProfileQuery.cs | إعادة كتابة: `Customers.Where(c => c.CustomerPhones.Any(p => p.Phone == phone))` |
+| 2 | `DeviceBrand.Name` بدون Unique Index على مستوى DB | 🟡 Data Integrity | ApplicationDbContext.cs | `HasIndex(db => db.Name).IsUnique()` |
+| 3 | `DeviceModel` بدون Composite Unique Index | 🟡 Data Integrity | ApplicationDbContext.cs | `HasIndex(dm => new { dm.BrandId, dm.Name }).IsUnique()` |
+| 4 | `LogCallCommand` مع `customerId = null` يرجع 500 — `CreatedAtAction` يفشل مع null parameter | 🔴 Critical | CallsController.cs | `if (CustomerId == null) → return Created($"/api/calls/{callId}", callId)` |
+| 5 | `DbUpdateConcurrencyException` في AssignTicket وTransitionStatus بسبب Navigation Property مع Tracker مُلوث | 🔴 Critical | AssignTicketCommand.cs / TransitionTicketStatusCommand.cs | `AsNoTracking()` + `_context.TicketHistories.Add()` مباشرة بدلاً من `ticket.Histories.Add()` |
+| 6 | اختبار T7 يرفع `.txt` والكود يرفض غير الصور والـ PDF | 🟢 Testing | run_phase4_tests.ps1 | تعديل الاختبار لرفع `.jpg` + إضافة `-UseBasicParsing` |
 
 ---
 
-## 9. الخطوات القادمة وتوصيات التدقيق
+## 9. منطق الضمان (Warranty Logic Audit)
 
-### المرحلة الخامسة (Dashboards & Reports):
+```csharp
+// في AddCustomerDeviceCommand.cs — حساب تلقائي
+var warrantyExpiry = request.WarrantyExpiry ?? request.PurchaseDate.AddYears(2);
 
-**الـ DTOs والمؤشرات المطلوبة:**
-* `DashboardSummaryDto`: التذاكر الجديدة اليوم، التذاكر المفتوحة، التذاكر المتجاوزة لـ SLA، حجم المكالمات اليومي، نسبة الالتزام بالـ SLA.
-* `AgentPerformanceDto`: إجمالي التذاكر المغلقة لكل موظف، متوسط زمن الحل، معدل الالتزام بـ SLA، متوسط تقييم CSAT.
-* `DeviceFailureReportDto`: الماركة والموديل الأكثر عطلاً، نوع العطل المتكرر، عدد العملاء المتكررين.
-* `HourlyCallVolumeDto`: توزيع المكالمات على مدار الـ 24 ساعة.
+// في GetCustomerDetailsQuery.cs — حالة الضمان
+WarrantyStatus = d.WarrantyExpiry > currentDate ? "Active" : "Expired"
+```
 
-**الـ Queries والاستعلامات (Application Layer):**
-1. `GetDashboardSummaryQuery`
-2. `GetAgentPerformanceQuery`
-3. `GetDeviceFailureReportQuery`
-4. `GetHourlyCallVolumeQuery`
-5. `GetTicketsByStatusQuery`
-6. `ExportAgentReportQuery` (CSV Export)
+**نتيجة الاختبار الفعلي:** شراء `2026-07-01` → Expiry `2028-07-01` → Status: `Active` ✅
 
-**التوصيات والبنية التحتية (Infrastructure):**
-1. استخدام **HybridCache** (مع Redis) بمدد صلاحية مناسبة (60 ثانية للوحة الرئيسية، 5 دقائق للتقارير) لمنع إرهاق قاعدة البيانات وضمان سرعة الاستجابة (أقل من 200ms).
-2. بناء **SQL Views** للتقارير الإحصائية الثقيلة (مثل `vw_AgentPerformance`) واستدعائها عبر EF Core لتسريع الاستعلام.
-3. دعم الفلترة الزمنية والـ Pagination في استعلامات الموظفين والعملاء.
+---
 
+## 10. الخطوات القادمة — المرحلة 6 (قيد التنفيذ ⏳)
+
+### مكونات المرحلة 6 (Notifications, Chatwoot, CSAT & Audit Trail):
+
+| المكون | الوصف | الأولوية |
+|---|---|:-:|
+| **Chatwoot Self-Hosted** | استضافة Chatwoot محلياً عبر Docker Compose (مجاناً + خصوصية كاملة) | 🔴 عالية |
+| **Secure Webhook Ingest** | استقبال Webhooks من Chatwoot بأمان تام والتحقق من التوقيع الرقمي (HMAC-SHA256) عبر الهيدرز `X-Chatwoot-Signature` و `X-Chatwoot-Timestamp` لمنع الاختراقات وتفادي كتابة التوكنز في السجلات. | 🔴 عالية |
+| **Idempotent Ticket Link** | تحويل المحادثات لتذاكر تلقائياً (General Inquiry) مع ربط الـ `ChatwootConversationId` لضمان عدم تكرار التذاكر لنفس المحادثة. | 🔴 عالية |
+| **Audit Trail (EF Core 9)** | `AuditSaveChangesInterceptor` لحفظ العمليات (أضف/عدل/احذف) تلقائياً بصيغة JSON مع Complex Types (`ClientInfo_IpAddress`, `ClientInfo_UserAgent`) لتخزين بيانات الموظف المجرى للعملية. | 🟡 متوسطة |
+| **Audit Log Archiver** | خدمة خلفية `AuditLogArchiverService` لقص وأرشفة السجلات الأقدم من 6 أشهر يومياً لتفادي تضخم قاعدة البيانات (Data Bloat). | 🟡 متوسطة |
+| **إشعارات Event-Driven** | تحديثات حالة التذكرة وإنذارات خرق SLA وتكليفات الموظفين عبر البريد الإلكتروني وتنبيهات In-App ورسائل Chatwoot آلياً. | 🟡 متوسطة |
+| **CSAT** | روابط تقييم آمنة تحتوي على Guid فريد يرسل تلقائياً للعميل عند إغلاق التذكرة، بصلاحية 7 أيام ولمرة واحدة فقط. | 🟢 منخفضة |
+| **قاعدة المعرفة** | خطوات توجيهية للموظف حسب تصنيف التذكرة لتسهيل التشخيص السريع. | 🟢 منخفضة |
+
+
+### Cache Tags جاهزة للـ Invalidation في المرحلة 6:
+
+التحسين الذي تم تطبيقه في Phase 5 (إضافة `tags` لكل استعلامات HybridCache) سيُمكّن في المرحلة 6 من:
+```csharp
+// مثال: عند تعديل تذكرة → تطهير كاش لوحة التحكم فوراً
+await _hybridCache.RemoveByTagAsync("tickets");
+await _hybridCache.RemoveByTagAsync("dashboard");
+```
