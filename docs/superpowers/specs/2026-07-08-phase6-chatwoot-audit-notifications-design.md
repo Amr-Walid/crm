@@ -42,9 +42,9 @@ graph TD
     Archiver[Audit Log Archiver Service] -->|Daily Purge > 6 Months| DB
 ```
 
-### Key Performance Patterns:
-1. **Inbox Pattern for Webhooks:** The controller validates the HMAC signature, pushes the raw payload to `Channel<ChatwootWebhookPayload>`, and returns `202 Accepted` immediately.
-2. **Outbox Pattern for Auditing:** The `AuditSaveChangesInterceptor` captures modifications and pushes them to `Channel<AuditLog>`. A background service flushes them to the DB in batches of 50 or every 5 seconds, keeping main transactions short.
+### Key Performance Patterns & Resource Safety:
+1. **Inbox Pattern via Bounded Channels:** The controller validates the HMAC signature, pushes the raw payload to a **Bounded Channel** (capacity: 10,000) using `BoundedChannelFullMode.Wait` to prevent OutOfMemory crashes under extreme traffic, and returns `202 Accepted` immediately.
+2. **Outbox Pattern via Bounded Channels:** The `AuditSaveChangesInterceptor` captures modifications and pushes them to a **Bounded Channel** (capacity: 5,000) for asynchronous flushing. Main database transactions are kept extremely short.
 3. **EF Core 9 Compiled Queries:** Used to resolve customer phone numbers and existing tickets during webhook ingestion.
 
 ---
@@ -70,7 +70,7 @@ Tracks all modifications automatically. Implemented using **EF Core 9 Complex Ty
 | `CreatedAt` | `datetime2` | NOT NULL, INDEX | UTC Timestamp |
 
 ### 3.2. `CsatSurveys`
-Stores customer ratings. Exposes opaque unique tokens for secure submissions.
+Stores customer ratings. Exposes opaque unique tokens for secure submissions. Expires after 7 days to prevent stale evaluations.
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
@@ -81,7 +81,16 @@ Stores customer ratings. Exposes opaque unique tokens for secure submissions.
 | `Feedback` | `nvarchar(1000)` | NULL | Optional text review |
 | `SurveyToken` | `nvarchar(450)` | UNIQUE INDEX, NOT NULL | Secure unique GUID token |
 | `SentAt` | `datetime2` | NOT NULL | Timestamp of link dispatch |
+| `ExpiresAt` | `datetime2` | NOT NULL | Timestamp when survey expires (SentAt + 7 days) |
 | `SubmittedAt` | `datetime2` | NULL | Timestamp of submission |
+
+### 3.2.b. `ProcessedWebhookEvents`
+Enforces Idempotency by logging unique Webhook event/message IDs to prevent duplicate ticket creation (At-least-once delivery resolution).
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `EventId` | `nvarchar(450)` | Primary Key | Unique Chatwoot Message/Event ID |
+| `ProcessedAt` | `datetime2` | NOT NULL | Timestamp when successfully processed |
 
 ### 3.3. `NotificationLogs`
 Audits alert deliveries.
@@ -100,10 +109,18 @@ Audits alert deliveries.
 
 ---
 
-## 4. Webhook Security & Signature Verification
-All payloads incoming to `POST /api/webhooks/chatwoot` must be validated to prevent malicious invocations.
+## 4. Webhook Security, Verification & Idempotency
+All payloads incoming to `POST /api/webhooks/chatwoot` must be validated to prevent malicious invocations and duplicate processing.
+
+### 4.1. Signature Verification
 - Chatwoot sends an `X-Chatwoot-Signature` (HMAC-SHA256 hash of the JSON body using a configured shared secret) along with `X-Chatwoot-Timestamp`.
 - The Webhook Controller intercepts the request, computes the SHA256 HMAC of the raw request body using the environment variable `CHATWOOT_WEBHOOK_SECRET`, and compares it securely using cryptographic constant-time comparison to prevent timing attacks.
+
+### 4.2. Webhook Idempotency (At-Least-Once Delivery Safety)
+- To prevent duplicate processing due to network retry loops, the processor uses the `ProcessedWebhookEvents` table.
+- Before performing any business logic (like creating a ticket or customer), the background worker queries the `ProcessedWebhookEvents` table using `EventId` (extracted from Chatwoot message/event ID).
+- If the ID exists, the webhook is immediately discarded as a duplicate.
+- If not, the worker executes the business logic and inserts the `EventId` into the database in the same database transaction.
 
 ---
 
@@ -137,23 +154,29 @@ To host Chatwoot locally on the new laptop, a `docker-compose.yml` file will be 
 - [ ] Generate EF Core migration: `dotnet ef migrations add AddPhase6Entities`.
 - [ ] Update DB schema: `dotnet ef database update`.
 
-### Step 3: Secure Webhook ingestion
+### Step 3: Secure Webhook ingestion & Idempotency
 - [ ] Implement signature validation utility using HMAC-SHA256 constant-time comparison.
 - [ ] Create `POST /api/webhooks/chatwoot` endpoint.
-- [ ] Configure in-memory Channel (`System.Threading.Channels`) for ingestion.
-- [ ] Implement `ChatwootWebhookProcessor` (Background Service) to consume webhooks, resolve customer identities (via phone/email), and auto-create tickets for new chat conversations.
+- [ ] Configure in-memory **Bounded Channel** (capacity: 10,000) for ingestion with BoundedChannelFullMode.Wait.
+- [ ] Implement `ProcessedWebhookEvents` check to ensure idempotency.
+- [ ] Implement `ChatwootWebhookProcessor` (Background Service) to consume webhooks, resolve customer identities, handle idempotency checks, and auto-create tickets.
+- [ ] Add Polly Retry policies inside the background processor for handling transient database faults.
+- [ ] Implement Graceful Shutdown support (using `CancellationToken` in `ExecuteAsync`) to flush pending webhook logs during application stops.
 
 ### Step 4: Asynchronous Auditing (EF Core Interceptor)
 - [ ] Implement `AuditSaveChangesInterceptor` inheriting from `SaveChangesInterceptor`.
-- [ ] Configure `Channel<AuditLog>` for audit log dispatch.
-- [ ] Implement `AuditLogProcessor` (Background Service) to buffer and batch-insert audit records to database.
+- [ ] Configure **Bounded Channel** (capacity: 5,000) for audit log dispatch.
+- [ ] Implement `AuditLogProcessor` (Background Service) to buffer and batch-insert audit records.
+- [ ] Implement Polly Retry policies for resilient audit logging.
+- [ ] Implement Graceful Shutdown support using `CancellationToken` to flush remaining audit logs to database before shutdown.
 - [ ] Implement `AuditLogArchiverService` (Hosted Service running daily) to archive logs older than 6 months.
 
 ### Step 5: Event-Driven Notifications & CSAT Feedback
 - [ ] Setup SMTP configurations for e-mail dispatch in Infrastructure.
 - [ ] Implement notification handlers for Domain Events (`TicketAssigned`, `SlaBreached`, `TicketResolved`).
-- [ ] Auto-create CSAT tokens upon Ticket closure, and send the survey link to Chatwoot chat room.
-- [ ] Add `POST /api/surveys/submit` endpoint for customer rating collection.
+- [ ] Auto-create CSAT tokens upon Ticket closure with a computed `ExpiresAt` (SentAt + 7 days).
+- [ ] Send the survey link to Chatwoot conversation.
+- [ ] Add `POST /api/surveys/submit` endpoint with validation logic verifying `SubmittedAt == null` and `UtcNow <= ExpiresAt`.
 
 ---
 
