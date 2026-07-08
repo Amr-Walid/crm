@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 
 # Configurations
 $BaseUrl = "http://localhost:5112"
-$WorkingDir = "c:\Users\SMART HOME\Documents\Uni-Group\crm customer service"
+$WorkingDir = $PSScriptRoot
 $ApiDir = "$WorkingDir\src\UniGroup.CRM.API"
 
 Write-Host "=========================================================" -ForegroundColor Cyan
