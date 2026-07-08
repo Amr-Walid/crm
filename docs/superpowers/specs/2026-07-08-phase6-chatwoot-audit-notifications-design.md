@@ -184,3 +184,22 @@ To host Chatwoot locally on the new laptop, a `docker-compose.yml` file will be 
 - **Mock Webhook Dispatch Tests:** PowerShell scripts simulating Chatwoot webhooks with custom HMAC headers to verify payload handling.
 - **Audit Verification Tests:** Perform CRUD operations on Tickets and verify that AuditLogs are successfully created asynchronously in the background.
 - **SLA Breach Notification Tests:** Trigger an SLA breach and confirm a notification log of type `SlaBreached` is written to `NotificationLogs`.
+
+---
+
+## 8. Critical Implementation Insights & Guidelines (Self-Review Guardrails)
+To guarantee high performance and avoid runtime crashes during execution, the following guardrails must be implemented:
+
+1. **Audit Interceptor Infinite Loop Bypass:**
+   - The `AuditSaveChangesInterceptor` must explicitly ignore entities of type `AuditLog` and `ProcessedWebhookEvent` to prevent cascading save recursion and database clutter.
+   - *Check:* `if (entry.Entity is AuditLog || entry.Entity is ProcessedWebhookEvent) continue;`
+
+2. **Dependency Injection Scope Safety in Background Services:**
+   - Since background processors run as `Singleton` hosted services, they **must not** inject `ApplicationDbContext` or `UserManager` directly in their constructor.
+   - They must inject `IServiceScopeFactory`, create a scope via `scopeFactory.CreateScope()`, and resolve database contexts within the processing loop.
+
+3. **HTTP Body Buffering for Signature Verification:**
+   - Since verifying the HMAC-SHA256 signature requires reading the raw request body stream, the webhook controller or custom middleware must call `HttpRequest.EnableBuffering()` before reading so the request stream can be read again by the JSON model binders.
+
+4. **Polly Retry Configuration:**
+   - Configure a Polly retry policy (e.g. 3 retries with exponential backoff: 2s, 4s, 8s) for database operations in background services to handle transient database locks or network drops smoothly.
