@@ -64,9 +64,6 @@ public class CreateTicketCommandHandler : IRequestHandler<CreateTicketCommand, s
             }
         }
 
-        // Generate consecutive ticket number (e.g. T-2026-00001)
-        var ticketNumber = await _numberGenerator.GenerateAsync(cancellationToken);
-
         // Calculate SLA Deadline based on priority
         var now = DateTime.UtcNow;
         var slaDuration = request.Priority switch
@@ -79,42 +76,58 @@ public class CreateTicketCommandHandler : IRequestHandler<CreateTicketCommand, s
         };
         var slaDeadline = now.Add(slaDuration);
 
-        // Create the Ticket
-        var ticket = new Ticket
+        // Generate the consecutive ticket number and save. Number generation and
+        // insertion are not one atomic step, so a concurrent writer (e.g. the
+        // Chatwoot webhook processor) may claim the same number first — on a
+        // unique-key collision we regenerate and retry (max 3 attempts).
+        const int maxAttempts = 3;
+        for (var attempt = 1; ; attempt++)
         {
-            Id = ticketNumber,
-            CustomerId = request.CustomerId,
-            CustomerDeviceId = request.CustomerDeviceId,
-            Title = request.Title,
-            Description = request.Description,
-            Category = request.Category,
-            Status = TicketStatus.New,
-            Priority = request.Priority,
-            SlaDeadline = slaDeadline,
-            SlaBreached = false,
-            TotalPausedSeconds = 0,
-            CreatedAt = now,
-            UpdatedAt = now
-        };
+            var ticketNumber = await _numberGenerator.GenerateAsync(cancellationToken);
 
-        // Create initial history record
-        var history = new TicketHistory
-        {
-            Id = Guid.NewGuid(),
-            TicketId = ticket.Id,
-            FromStatus = null,
-            ToStatus = TicketStatus.New,
-            ChangedById = request.CreatedById,
-            Note = "Ticket created.",
-            TimeInStatus = null,
-            CreatedAt = now
-        };
+            var ticket = new Ticket
+            {
+                Id = ticketNumber,
+                CustomerId = request.CustomerId,
+                CustomerDeviceId = request.CustomerDeviceId,
+                Title = request.Title,
+                Description = request.Description,
+                Category = request.Category,
+                Status = TicketStatus.New,
+                Priority = request.Priority,
+                SlaDeadline = slaDeadline,
+                SlaBreached = false,
+                TotalPausedSeconds = 0,
+                CreatedAt = now,
+                UpdatedAt = now
+            };
 
-        ticket.Histories.Add(history);
+            var history = new TicketHistory
+            {
+                Id = Guid.NewGuid(),
+                TicketId = ticket.Id,
+                FromStatus = null,
+                ToStatus = TicketStatus.New,
+                ChangedById = request.CreatedById,
+                Note = "Ticket created.",
+                TimeInStatus = null,
+                CreatedAt = now
+            };
 
-        _context.Tickets.Add(ticket);
-        await _context.SaveChangesAsync(cancellationToken);
+            ticket.Histories.Add(history);
+            _context.Tickets.Add(ticket);
 
-        return ticket.Id;
+            try
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+                return ticket.Id;
+            }
+            catch (DbUpdateException) when (attempt < maxAttempts)
+            {
+                // Detach the failed entities and retry with a freshly generated number.
+                _context.Tickets.Entry(ticket).State = EntityState.Detached;
+                _context.TicketHistories.Entry(history).State = EntityState.Detached;
+            }
+        }
     }
 }

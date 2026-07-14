@@ -8,7 +8,8 @@ using UniGroup.CRM.Application.Common.Interfaces;
 namespace UniGroup.CRM.Application.Features.Csat.Queries.GetSurveyByTicket;
 
 /// <summary>
-/// CSAT survey details for a single ticket (token excluded for security).
+/// CSAT survey details for a single ticket. Includes the survey token —
+/// this query is exposed via an Admin-only endpoint.
 /// </summary>
 /// <param name="Id">Survey id.</param>
 /// <param name="TicketId">Related ticket id.</param>
@@ -18,6 +19,7 @@ namespace UniGroup.CRM.Application.Features.Csat.Queries.GetSurveyByTicket;
 /// <param name="SentAt">Dispatch timestamp (UTC).</param>
 /// <param name="ExpiresAt">Expiration timestamp (UTC).</param>
 /// <param name="SubmittedAt">Submission timestamp (UTC), null when pending.</param>
+/// <param name="SurveyToken">The opaque survey token (Admin-only visibility).</param>
 public record CsatSurveyDto(
     Guid Id,
     string TicketId,
@@ -26,7 +28,8 @@ public record CsatSurveyDto(
     string? Feedback,
     DateTime SentAt,
     DateTime ExpiresAt,
-    DateTime? SubmittedAt);
+    DateTime? SubmittedAt,
+    string SurveyToken);
 
 /// <summary>
 /// Query returning the CSAT survey for a specific ticket, or null when none exists.
@@ -57,7 +60,7 @@ public class GetSurveyByTicketQueryHandler : IRequestHandler<GetSurveyByTicketQu
             .Where(s => s.TicketId == request.TicketId)
             .Select(s => new CsatSurveyDto(
                 s.Id, s.TicketId, s.CustomerId, s.Rating, s.Feedback,
-                s.SentAt, s.ExpiresAt, s.SubmittedAt))
+                s.SentAt, s.ExpiresAt, s.SubmittedAt, s.SurveyToken))
             .FirstOrDefaultAsync(cancellationToken);
     }
 }
