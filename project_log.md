@@ -27,10 +27,27 @@
 | 4 | التذاكر ومسارات العمل (Tickets & Workflows & SLA) | ✅ مكتمل ومختبر | 2026-07-02 | ✅ اجتاز الاختبار |
 | 5 | لوحات التحكم والتقارير (Dashboards & Reports) | ✅ مكتمل ومختبر | 2026-07-05 | ✅ اجتاز الاختبار |
 | 6 | الإشعارات والتدقيق والرضا (Notifications, Audit & CSAT + Chatwoot) | ✅ مكتمل ومختبر | 2026-07-14 | ✅ 12/12 اختبار ناجح |
+| 7 | قاعدة المعرفة وإرشاد المكالمات (Knowledge Base & Call Flow Guidance) | ✅ مكتمل ومختبر | 2026-07-14 | ✅ 8/8 اختبار ناجح |
 
 ---
 
 ## 3. سجل العمليات والإنجازات (Activity Log)
+
+---
+
+### [2026-07-14] — إنجاز المرحلة السابعة: قاعدة المعرفة وإرشاد المكالمات (Phase 7 Completed) ✅
+
+* **الحدث:** اكتمال تنفيذ واختبار المرحلة السابعة كاملة على فرع `genspark_ai_developer` — وحدة قاعدة المعرفة (Knowledge Base) التي تعرض للموظف أثناء المكالمة إرشادات تفاعلية (أسئلة يطرحها، خطوات تشخيص، إجابات جاهزة، وشروط تصعيد) حسب تصنيف التذكرة المختار، مع إدارة كاملة للمقالات من قبل الأدمن.
+* **ما تم تنفيذه:**
+  1. **الكيان والهجرة:** كيان `KnowledgeBaseArticle` جديد (Id, Category, Title, QuestionsToAsk, DiagnosisSteps, SuggestedAnswers, EscalationConditions, Keywords, IsActive, CreatedAt, UpdatedAt) + Migration `20260714105921_AddPhase7KnowledgeBase` مع **فهرس فريد مُفلتر** `IX_KnowledgeBaseArticles_Category_Active` على `Category` بشرط `[IsActive] = 1` يضمن مقالاً نشطاً واحداً فقط لكل تصنيف، وفهرس مساعد على `CreatedAt`.
+  2. **دعم Markdown:** جميع حقول المحتوى (الأسئلة/خطوات التشخيص/الإجابات المقترحة/شروط التصعيد) تُخزَّن كـ Markdown خام (`nvarchar(max)`) ويعيدها الـ DTO مع حقل `contentFormat: "markdown"` لإرشاد الواجهة إلى العارض المناسب.
+  3. **أداء المسار الساخن:** خدمة `KnowledgeBaseReadService` في طبقة Infrastructure تستخدم **EF Core 9 Compiled Query** (`EF.CompileAsyncQuery` + `AsNoTracking`) لاستعلام المقال النشط بالتصنيف — لأن هذا الاستعلام يُنفَّذ مع كل مكالمة واردة، فالتجميع المسبق يتجاوز ترجمة شجرة التعبير والبحث في Query Cache في كل نداء.
+  4. **CQRS كامل:** أوامر `CreateArticleCommand` / `UpdateArticleCommand` / `DeleteArticleCommand` واستعلامات `GetArticleByCategoryQuery` / `GetArticleByIdQuery` / `GetArticlesQuery` مع DTO موحد `KnowledgeBaseArticleDto`.
+  5. **حراسة المدخلات:** `KnowledgeBaseArticleGuard` مركزي يرفض المحتوى الفارغ/المكوَّن من مسافات فقط ويفرض حدود الأطوال (Title ≤ 200، كل كتلة محتوى ≤ 20,000، Keywords ≤ 500) برسالة مُجمَّعة واضحة (400)، بالإضافة لفحص ودّي مسبق لقيد "مقال نشط واحد لكل تصنيف" قبل الوصول للفهرس الفريد.
+  6. **بحث نصي متقدم:** `GetArticlesQuery` يقسّم عبارة البحث إلى Tokens (حد أقصى 8) ويطابق كل Token بشكل **غير حساس لحالة الأحرف** (`ToLower` → `LOWER()`) ضد العنوان وخطوات التشخيص والأسئلة والكلمات المفتاحية (دلالة AND)، مع فلاتر اختيارية للتصنيف والحالة النشطة وترقيم صفحات محصَّن (Page ≥ 1، PageSize بين 1 و100) وإرجاع `TotalPages`.
+  7. **الأمان:** `KnowledgeBaseController` تحت `[Authorize]` — القراءة لكل المستخدمين الموثَّقين (Admin/Agent/Team Leader) والكتابة (POST/PUT/DELETE) مقصورة على دور `Admin` فقط.
+  8. **البذر:** مقالان افتراضيان بمحتوى Markdown غني (ScreenDamage و BatteryIssue) يُزرعان ضمن كتلة `--seed` في Program.cs عند خلوّ الجدول.
+* **نتيجة الاختبار:** Phase 7: **8/8 ✅** (جلب بالتصنيف عبر الاستعلام المُجمَّع، إنشاء كأدمن، رفض 401 بدون JWT، رفض المحتوى الفارغ 400، رفض مقال نشط ثانٍ لنفس التصنيف 400، بحث غير حساس لحالة الأحرف بكلمة "BOOTLOOP"، تحديث، حذف 204) — بدون أي تراجع: Phase 4: **15/15 ✅** + Phase 5: **8/8 ✅** + Phase 6: **12/12 ✅**. البناء: 0 Errors / 0 Warnings.
 
 ---
 
@@ -388,9 +405,9 @@
 |---|---|
 | **الفرع** | `genspark_ai_developer` (PR → `master`) |
 | **حالة البناء** | ✅ Build Succeeded — 0 Errors, 0 Warnings |
-| **Migrations المطبقة** | `InitialCreate`, `AddPhase2Entities`, `AddPhase3Calls`, `AddUniqueIndexesForBrandAndModel`, `AddPhase4TicketsWorkflowsAndSla`, `AddCallTicketLinkAndUserDepartment`, `AddPhase6Entities` |
-| **عدد الجداول في DB** | 23 جدول (19 سابقة + AuditLogs + CsatSurveys + NotificationLogs + ProcessedWebhookEvents) |
-| **إجمالي الاختبارات** | ✅ 61 اختبار ناجح (المراحل 2–3: 26، المرحلة 4: 15، المرحلة 5: 8، المرحلة 6: 12) |
+| **Migrations المطبقة** | `InitialCreate`, `AddPhase2Entities`, `AddPhase3Calls`, `AddUniqueIndexesForBrandAndModel`, `AddPhase4TicketsWorkflowsAndSla`, `AddCallTicketLinkAndUserDepartment`, `AddPhase6Entities`, `AddPhase7KnowledgeBase` |
+| **عدد الجداول في DB** | 24 جدول (23 سابقة + KnowledgeBaseArticles) |
+| **إجمالي الاختبارات** | ✅ 69 اختبار ناجح (المراحل 2–3: 26، المرحلة 4: 15، المرحلة 5: 8، المرحلة 6: 12، المرحلة 7: 8) |
 
 ### الـ Endpoints الكاملة الجاهزة:
 
@@ -431,12 +448,18 @@
 | Audit | GET | `/api/audit-logs` | سجل التدقيق مصفح ومفلتر (Admin) |
 | Audit | GET | `/api/audit-logs/{id}` | تفاصيل قيد تدقيق مع Before/After (Admin) |
 | Notifications | GET | `/api/notifications/logs` | سجل الإشعارات المُرسلة (Admin) |
+| KnowledgeBase | GET | `/api/knowledge-base/category/{category}` | إرشاد المكالمة النشط حسب التصنيف — Compiled Query (كل المستخدمين الموثَّقين) |
+| KnowledgeBase | GET | `/api/knowledge-base/{id}` | تفاصيل مقال محدد (كل المستخدمين الموثَّقين) |
+| KnowledgeBase | GET | `/api/knowledge-base` | قائمة مصفحة + بحث نصي غير حساس لحالة الأحرف + فلاتر (كل المستخدمين الموثَّقين) |
+| KnowledgeBase | POST | `/api/knowledge-base` | إنشاء مقال إرشادي (Admin فقط) |
+| KnowledgeBase | PUT | `/api/knowledge-base/{id}` | تحديث مقال إرشادي (Admin فقط) |
+| KnowledgeBase | DELETE | `/api/knowledge-base/{id}` | حذف مقال إرشادي (Admin فقط) |
 
 ---
 
 ## 5. الخطوات القادمة (Next Actions)
 
-**جميع المراحل الست الأساسية مكتملة ✅** — المرشحون للمراحل التالية:
+**جميع المراحل السبع الأساسية مكتملة ✅** — المرشحون للمراحل التالية:
 
 - **النشر (Deployment):** تجهيز بيئة إنتاج (SQL Server + Chatwoot عبر `.docker/chatwoot/docker-compose.yml`)، وضبط أسرار الإنتاج (`Chatwoot:WebhookSecret`, `Smtp`, `Jwt:Secret`) عبر متغيرات بيئة/Key Vault بدلاً من appsettings.
 - **تفعيل تكامل Chatwoot فعلياً:** إنشاء حساب Bot وربط `Chatwoot:ApiUrl/AccountId/BotToken`، وتسجيل الـ webhook على `POST /api/webhooks/chatwoot`.

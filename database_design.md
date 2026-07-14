@@ -2,7 +2,7 @@
 
 > [!IMPORTANT]
 > هذا الملف يعكس **الهيكل الفعلي المنفذ والمطبق في قاعدة البيانات** وليس التصميم الأولي.
-> آخر تحديث: 14 يوليو 2026 — بعد إنجاز المراحل 1 إلى 6 كاملة.
+> آخر تحديث: 14 يوليو 2026 — بعد إنجاز المراحل 1 إلى 7 كاملة.
 > قاعدة البيانات: **SQL Server** | ORM: **EF Core 9** | Framework: **.NET 9**
 
 ---
@@ -20,9 +20,9 @@
 
 > [!NOTE]
 > **توضيح هام حول عدد الجداول:**
-> يحتوي المخطط (ERD) أدناه على **13 كياناً رئيسياً** فقط (أو 14 جدولاً مفصلاً في القسم التالي) لأننا نركز على الكيانات المخصصة التي يتم التعامل معها برمجياً في طبقة الـ Domain.
-> بينما تحتوي قاعدة البيانات الفعلية في SQL Server على **19 جدولاً** كالتالي:
-> 1. **11 جدولاً خاصاً بالتطبيق:** (`Customers`, `CustomerPhones`, `DeviceBrands`, `DeviceModels`, `CustomerDevices`, `Calls`, `Departments`, `Tickets`, `TicketHistories`, `InternalNotes`, `Attachments`).
+> يحتوي المخطط (ERD) أدناه على الكيانات المخصصة التي يتم التعامل معها برمجياً في طبقة الـ Domain.
+> بينما تحتوي قاعدة البيانات الفعلية في SQL Server على **24 جدولاً** كالتالي:
+> 1. **16 جدولاً خاصاً بالتطبيق:** (`Customers`, `CustomerPhones`, `DeviceBrands`, `DeviceModels`, `CustomerDevices`, `Calls`, `Departments`, `Tickets`, `TicketHistories`, `InternalNotes`, `Attachments`, `AuditLogs`, `CsatSurveys`, `NotificationLogs`, `ProcessedWebhookEvents`, `KnowledgeBaseArticles`).
 > 2. **8 جداول خاصة بنظام الهوية والتحقق:** منها جدول `RefreshTokens` المخصص + 7 جداول افتراضية تنشأ تلقائياً بواسطة ASP.NET Identity (مثل `AspNetUsers`, `AspNetRoles`, `AspNetUserRoles`, `AspNetUserClaims` وغيرها) والتي لا يتم رسم علاقاتها الافتراضية كاملة لتسهيل قراءة المخطط.
 
 ```mermaid
@@ -51,7 +51,28 @@ erDiagram
     Tickets ||--o{ InternalNotes : "has notes"
     Tickets ||--o{ Attachments : "has files"
     Tickets ||--o{ Calls : "linked calls"
+
+    Tickets ||--o| CsatSurveys : "closure survey"
+    Customers ||--o{ CsatSurveys : "rates service"
+    AspNetUsers ||--o{ AuditLogs : "performed by"
+
+    KnowledgeBaseArticles {
+        guid Id PK
+        int Category "TicketCategory - filtered unique when active"
+        string Title
+        string QuestionsToAsk "Markdown"
+        string DiagnosisSteps "Markdown"
+        string SuggestedAnswers "Markdown"
+        string EscalationConditions "Markdown"
+        string Keywords
+        bool IsActive
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
 ```
+
+> [!NOTE]
+> جدول `KnowledgeBaseArticles` (Phase 7) **مستقل بلا مفاتيح أجنبية** — يرتبط منطقياً بالتذاكر عبر قيمة `Category` (نفس الـ `TicketCategory` enum المستخدم في `Tickets.Category`) وليس عبر FK، مما يسمح بجلب الإرشاد المناسب لحظة اختيار التصنيف أثناء المكالمة حتى قبل إنشاء التذكرة.
 
 ---
 
@@ -288,6 +309,9 @@ CREATE UNIQUE INDEX ON CustomerDevices (SerialNumber) WHERE [SerialNumber] IS NO
 | 4 | `20260701093604_AddUniqueIndexesForBrandAndModel` | 2026-07-01 | Unique Index على Brand.Name + Composite Unique على (BrandId, Name) |
 | 5 | `20260702102445_AddPhase4TicketsWorkflowsAndSla` | 2026-07-02 | Departments + Tickets + TicketHistories + InternalNotes + Attachments |
 | 6 | `20260705110501_AddCustomerPreferredChannels` | 2026-07-05 | حقل PreferredChannels كـ JSON Column (EF Core 9 Primitive Collection) |
+| 7 | `20260705115426_AddCallTicketLinkAndUserDepartment` | 2026-07-05 | TicketId FK في Calls + DepartmentId FK في Users |
+| 8 | `20260714085023_AddPhase6Entities` | 2026-07-14 | AuditLogs + CsatSurveys + NotificationLogs + ProcessedWebhookEvents |
+| 9 | `20260714105921_AddPhase7KnowledgeBase` | 2026-07-14 | KnowledgeBaseArticles + فهرس فريد مُفلتر على Category + فهرس CreatedAt |
 
 ---
 
@@ -324,6 +348,12 @@ CREATE INDEX IX_Tickets_SlaDeadline ON Tickets (SlaDeadline);
 CREATE INDEX IX_Tickets_CreatedAt ON Tickets (CreatedAt);
 CREATE INDEX IX_Tickets_AssignedToId ON Tickets (AssignedToId);
 CREATE INDEX IX_Tickets_CustomerId ON Tickets (CustomerId);
+
+-- KnowledgeBaseArticles (Phase 7)
+-- فهرس فريد مُفلتر: مقال إرشادي نشط واحد فقط لكل تصنيف
+CREATE UNIQUE INDEX IX_KnowledgeBaseArticles_Category_Active
+    ON KnowledgeBaseArticles (Category) WHERE [IsActive] = 1;
+CREATE INDEX IX_KnowledgeBaseArticles_CreatedAt ON KnowledgeBaseArticles (CreatedAt);
 ```
 
 ---
@@ -458,3 +488,34 @@ InProgress → Escalated → Resolved → Closed
 | CsatSurvey → Ticket | **Cascade** | حذف التذكرة يحذف الاستبيان التابع لها تلقائياً |
 | CsatSurvey → Customer | **Cascade** | حذف العميل يحذف تقييماته التابعة له |
 
+---
+
+## 10. جدول المرحلة 7 — منفذ ✅ (Migration: `20260714105921_AddPhase7KnowledgeBase`)
+
+#### جدول `KnowledgeBaseArticles`
+مقالات قاعدة المعرفة وإرشاد المكالمات (Call Flow Guidance) — تُعرض للموظف أثناء المكالمة حسب تصنيف التذكرة المختار. حقول المحتوى تُخزَّن **Markdown** خاماً وتُعرض بمكوّن Markdown في الواجهة.
+
+| الحقل | النوع في SQL | القيود | الوصف |
+|---|---|---|---|
+| `Id` | `uniqueidentifier` | **PK** | معرف المقال |
+| `Category` | `int` | NOT NULL, **Filtered Unique Index** | تصنيف التذكرة (`TicketCategory` enum) — مقال نشط واحد فقط لكل تصنيف |
+| `Title` | `nvarchar(200)` | NOT NULL | عنوان المقال |
+| `QuestionsToAsk` | `nvarchar(max)` | NOT NULL | أسئلة الاستقبال — Markdown |
+| `DiagnosisSteps` | `nvarchar(max)` | NOT NULL | خطوات التشخيص المرتبة — Markdown |
+| `SuggestedAnswers` | `nvarchar(max)` | NOT NULL | إجابات جاهزة للعميل — Markdown |
+| `EscalationConditions` | `nvarchar(max)` | NOT NULL | شروط التصعيد والقسم المستهدف — Markdown |
+| `Keywords` | `nvarchar(500)` | NOT NULL, DEFAULT `''` | كلمات مفتاحية/مرادفات لتعزيز البحث النصي |
+| `IsActive` | `bit` | NOT NULL | هل المقال يُقدَّم للموظفين أثناء المكالمات |
+| `CreatedAt` | `datetime2` | NOT NULL, **INDEX** | تاريخ الإنشاء (UTC) |
+| `UpdatedAt` | `datetime2` | NULL | تاريخ آخر تعديل (UTC) |
+
+**الفهارس:**
+
+| الفهرس | النوع | الأعمدة | الشرط | الغرض |
+|---|---|---|---|---|
+| `IX_KnowledgeBaseArticles_Category_Active` | UNIQUE (Filtered) | `Category` | `[IsActive] = 1` | ضمان مقال إرشادي نشط واحد فقط لكل تصنيف مع السماح بأي عدد من المسودات/الأرشيف |
+| `IX_KnowledgeBaseArticles_CreatedAt` | Non-Unique | `CreatedAt` | — | تسريع القوائم الإدارية المرتبة بالأحدث |
+
+**العلاقات:** الجدول مستقل بلا مفاتيح أجنبية — الربط المنطقي بالتذاكر عبر قيمة `Category` المشتركة مع `Tickets.Category`، مما يتيح جلب الإرشاد فور اختيار التصنيف أثناء المكالمة (قبل إنشاء التذكرة).
+
+**نمط الوصول (Hot Path):** استعلام `Category + IsActive` يُنفَّذ مع كل مكالمة واردة، لذا يُخدَم عبر **EF Core 9 Compiled Query** (`EF.CompileAsyncQuery` + `AsNoTracking`) في `KnowledgeBaseReadService` — ترجمة شجرة التعبير مرة واحدة لكل عملية مع الاستفادة المباشرة من الفهرس الفريد المُفلتر.

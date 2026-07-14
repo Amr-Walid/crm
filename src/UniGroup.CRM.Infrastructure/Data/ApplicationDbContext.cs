@@ -102,6 +102,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<ProcessedWebhookEvent> ProcessedWebhookEvents => Set<ProcessedWebhookEvent>();
 
     /// <summary>
+    /// Gets or sets the database set for knowledge base guidance articles (Phase 7).
+    /// </summary>
+    public DbSet<KnowledgeBaseArticle> KnowledgeBaseArticles => Set<KnowledgeBaseArticle>();
+
+    /// <summary>
     /// Configures the model and table mappings.
     /// </summary>
     /// <param name="builder">The builder used to construct the database schema.</param>
@@ -447,6 +452,32 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.ToTable("ProcessedWebhookEvents");
             entity.HasKey(e => e.EventId);
             entity.Property(e => e.EventId).HasMaxLength(450);
+        });
+
+        // Configure KnowledgeBaseArticle entity mappings (Phase 7 - Call Flow Guidance)
+        builder.Entity<KnowledgeBaseArticle>(entity =>
+        {
+            entity.ToTable("KnowledgeBaseArticles");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
+            // Markdown content columns — stored as nvarchar(max) to allow rich formatting
+            entity.Property(e => e.QuestionsToAsk).IsRequired();
+            entity.Property(e => e.DiagnosisSteps).IsRequired();
+            entity.Property(e => e.SuggestedAnswers).IsRequired();
+            entity.Property(e => e.EscalationConditions).IsRequired();
+            // Optional comma-separated search keywords/synonyms (boost text search recall)
+            entity.Property(e => e.Keywords).HasMaxLength(500).IsRequired().HasDefaultValue(string.Empty);
+
+            // Business rule: at most ONE ACTIVE guidance article per ticket category.
+            // Enforced at the DB level via a filtered unique index (SQL Server + SQLite
+            // both accept the bracketed identifier syntax in the filter predicate).
+            entity.HasIndex(e => e.Category)
+                .IsUnique()
+                .HasFilter("[IsActive] = 1")
+                .HasDatabaseName("IX_KnowledgeBaseArticles_Category_Active");
+
+            // Non-unique helper index for admin listings ordered by recency
+            entity.HasIndex(e => e.CreatedAt);
         });
     }
 }

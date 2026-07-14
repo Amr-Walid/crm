@@ -1,9 +1,9 @@
 # تقرير تدقيق المشروع ومطابقة المتطلبات
-## UniGroup CRM Platform — نسخة التدقيق الشاملة بعد إنجاز 6 مراحل كاملة
+## UniGroup CRM Platform — نسخة التدقيق الشاملة بعد إنجاز 7 مراحل كاملة
 
 **تاريخ آخر تحديث:** 14 يوليو 2026
-**الحالة الإجمالية:** Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅ + Phase 4 ✅ + Phase 5 ✅ + Phase 6 ✅ — **مكتملة ومختبرة بالكامل (61/61 اختبار)**
-**آخر Commit:** فرع `genspark_ai_developer` — test(phase6): automated Phase 6 test suite - 12/12 passing
+**الحالة الإجمالية:** Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅ + Phase 4 ✅ + Phase 5 ✅ + Phase 6 ✅ + Phase 7 ✅ — **مكتملة ومختبرة بالكامل (69/69 اختبار)**
+**آخر Commit:** فرع `genspark_ai_developer` — test(phase7): automated Knowledge Base test suite - 8/8 passing
 
 ---
 
@@ -13,12 +13,11 @@
 
 - مطابقة المتطلبات الـ 19 مع ما تم تنفيذه فعلياً
 - تدقيق هيكل قاعدة البيانات ومقارنته بالتصميم الأصلي
-- نتائج الاختبارات: **49 اختبار إجمالياً** (16 للمرحلة 2 + 10 للمرحلة 3 + 15 للمرحلة 4 + 8 للمرحلة 5) — **100% ناجح**
+- نتائج الاختبارات: **69 اختبار إجمالياً** (16 للمرحلة 2 + 10 للمرحلة 3 + 15 للمرحلة 4 + 8 للمرحلة 5 + 12 للمرحلة 6 + 8 للمرحلة 7) — **100% ناجح**
 - التحسينات المطبقة من EF Core 9 و .NET 9
 - المشاكل المكتشفة والمحلولة
-- الخطوات القادمة للمرحلة 6
 
-**الخلاصة:** تم إنجاز 5 مراحل كاملة بنجاح مع تطبيق أحدث ميزات EF Core 9. المشروع جاهز للانتقال للمرحلة 6 (الإشعارات + Chatwoot + CSAT + Audit Trail).
+**الخلاصة:** تم إنجاز 7 مراحل كاملة بنجاح مع تطبيق أحدث ميزات EF Core 9 (Compiled Queries, Complex Types, Primitive Collections, HybridCache, ExecuteDeleteAsync).
 
 ---
 
@@ -47,8 +46,33 @@
 | `Attachments` | `Attachment` | Phase 4 | ✅ FK Cascade لـ Tickets — يخزن المرفقات محلياً |
 | `InternalNotes` | `InternalNote` | Phase 4 | ✅ FK Cascade لـ Tickets — مخصصة للموظفين فقط |
 | `TicketHistories` | `TicketHistory` | Phase 4 | ✅ FK Cascade لـ Tickets — يسجل كل انتقالات الحالة |
+| `AuditLogs` | `AuditLog` | Phase 6 | ✅ JSON قبل/بعد + Complex Type `ClientInfo` — فهارس على (EntityName, EntityId) و Timestamp |
+| `CsatSurveys` | `CsatSurvey` | Phase 6 | ✅ Unique Index على TicketId و SurveyToken — رمز مبهم 64 حرف صالح 7 أيام |
+| `NotificationLogs` | `NotificationLog` | Phase 6 | ✅ سجل كل إرسال عبر InApp/Email/WhatsApp — Index على SentAt |
+| `ProcessedWebhookEvents` | `ProcessedWebhookEvent` | Phase 6 | ✅ Idempotency inbox — PK على EventId (≤ 450) |
+| `KnowledgeBaseArticles` | `KnowledgeBaseArticle` | Phase 7 | ✅ مقالات إرشاد المكالمات — فهرس فريد مُفلتر على Category (`[IsActive] = 1`) + محتوى Markdown |
 
-**إجمالي الجداول:** 19 جدول ✅ (8 من Identity + 11 من التطبيق)
+**إجمالي الجداول:** 24 جدول ✅ (8 من Identity + 16 من التطبيق)
+
+### مخطط جدول `KnowledgeBaseArticles` (Phase 7):
+
+| العمود | النوع | القيد | الوصف |
+|---|---|---|---|
+| `Id` | `uniqueidentifier` | PK | معرف المقال |
+| `Category` | `int` | NOT NULL + **Filtered Unique Index** | تصنيف التذكرة (`TicketCategory` enum) |
+| `Title` | `nvarchar(200)` | NOT NULL | عنوان المقال |
+| `QuestionsToAsk` | `nvarchar(max)` | NOT NULL | أسئلة الاستقبال — **Markdown** |
+| `DiagnosisSteps` | `nvarchar(max)` | NOT NULL | خطوات التشخيص المرتبة — **Markdown** |
+| `SuggestedAnswers` | `nvarchar(max)` | NOT NULL | إجابات جاهزة للعميل — **Markdown** |
+| `EscalationConditions` | `nvarchar(max)` | NOT NULL | شروط التصعيد والقسم المستهدف — **Markdown** |
+| `Keywords` | `nvarchar(500)` | NOT NULL, DEFAULT `''` | كلمات مفتاحية/مرادفات لتعزيز البحث |
+| `IsActive` | `bit` | NOT NULL | هل المقال يُقدَّم للموظفين أثناء المكالمات |
+| `CreatedAt` | `datetime2` | NOT NULL + Index | تاريخ الإنشاء (UTC) |
+| `UpdatedAt` | `datetime2` | NULL | تاريخ آخر تعديل (UTC) |
+
+**الفهارس:**
+- `IX_KnowledgeBaseArticles_Category_Active` — فهرس **فريد مُفلتر** على `Category` بشرط `[IsActive] = 1`: يضمن مقالاً إرشادياً نشطاً واحداً فقط لكل تصنيف مع السماح بأي عدد من المسودات/الأرشيف غير النشط.
+- `IX_KnowledgeBaseArticles_CreatedAt` — فهرس مساعد للقوائم الإدارية المرتبة بالأحدث.
 
 ### الـ Migrations المطبقة بالترتيب:
 
@@ -61,6 +85,8 @@
 | 5 | `20260702102445_AddPhase4TicketsWorkflowsAndSla` | 2026-07-02 | Departments + Tickets + Attachments + InternalNotes + TicketHistories |
 | 6 | `20260705110501_AddCustomerPreferredChannels` | 2026-07-05 | حقل `PreferredChannels` كـ Primitive Collection JSON في جدول Customers |
 | 7 | `20260705115426_AddCallTicketLinkAndUserDepartment` | 2026-07-05 | إضافة `TicketId` FK في Calls + `DepartmentId` FK في Users + Indexes |
+| 8 | `20260714085023_AddPhase6Entities` | 2026-07-14 | AuditLogs + CsatSurveys + NotificationLogs + ProcessedWebhookEvents |
+| 9 | `20260714105921_AddPhase7KnowledgeBase` | 2026-07-14 | KnowledgeBaseArticles + فهرس فريد مُفلتر على Category + فهرس CreatedAt |
 
 ### القيود والفهارس المطبقة (Fluent API):
 
@@ -98,6 +124,12 @@ HasIndex(c => c.PhoneNumber)
 HasIndex(c => c.CustomerId)
 HasIndex(c => c.AgentId)
 HasIndex(c => c.TicketId)
+
+// Phase 7: One ACTIVE knowledge base article per category (filtered unique)
+HasIndex(e => e.Category).IsUnique()
+    .HasFilter("[IsActive] = 1")
+    .HasDatabaseName("IX_KnowledgeBaseArticles_Category_Active")
+HasIndex(e => e.CreatedAt) // admin listings ordered by recency
 ```
 
 ---
@@ -304,6 +336,18 @@ private static readonly Func<ApplicationDbContext, Guid, Task<Customer?>> GetCus
 
 **الفائدة:** تخفيض 20-30% من وقت ترجمة LINQ إلى SQL — مهم جداً لـ Caller ID الذي يُستدعى مئات المرات يومياً.
 
+```csharp
+// Phase 7 — في KnowledgeBaseReadService.cs (Infrastructure)
+// استعلام إرشاد المكالمة بالتصنيف — يُنفَّذ مع كل مكالمة واردة (hot path)
+private static readonly Func<ApplicationDbContext, TicketCategory, CancellationToken, Task<KnowledgeBaseArticle?>> GetActiveByCategoryCompiled =
+    EF.CompileAsyncQuery((ApplicationDbContext context, TicketCategory category, CancellationToken ct) =>
+        context.KnowledgeBaseArticles
+            .AsNoTracking()
+            .FirstOrDefault(a => a.Category == category && a.IsActive));
+```
+
+**نمط Phase 7:** الاستعلام المُجمَّع مُعرَّف كحقل `static readonly` فيترجم شجرة التعبير مرة واحدة لكل عملية (process) ثم يُعاد استخدامه في كل النداءات متجاوزاً Query Cache hashing وترجمة LINQ — مع `AsNoTracking` لأن المسار للقراءة فقط، ويُحقن عبر الواجهة `IKnowledgeBaseReadService` للحفاظ على فصل طبقة Application عن EF Core.
+
 ### ب) Primitive Collections (مجموعات أولية بدون جدول وسيط):
 
 ```csharp
@@ -404,7 +448,37 @@ return await _hybridCache.GetOrCreateAsync(
 | T7 | Export Agent Report CSV | GET /api/reports/agents/export | ✅ 200 CSV |
 | T8 | Dashboard without JWT | GET /api/dashboard/summary | ✅ 401 |
 
-**الإجمالي: 49/49 اختبار ناجح — 100% ✅**
+### Phase 6 — 12/12 ✅
+
+| # | الاختبار | Endpoint | النتيجة |
+|:-:|---|---|:-:|
+| T1 | Login Authenticated | POST /api/auth/login | ✅ 200 |
+| T2 | Webhook valid HMAC | POST /api/webhooks/chatwoot | ✅ 202 |
+| T3 | Webhook invalid HMAC | POST /api/webhooks/chatwoot | ✅ 401 |
+| T4 | Webhook missing signature | POST /api/webhooks/chatwoot | ✅ 400 |
+| T5 | Webhook idempotency | POST /api/webhooks/chatwoot | ✅ True |
+| T6 | CSAT auto-created on closure | PATCH /api/tickets/{id}/status | ✅ True |
+| T7 | CSAT valid token submit | POST /api/surveys/submit | ✅ 200 |
+| T8 | CSAT resubmission rejected | POST /api/surveys/submit | ✅ 400 |
+| T9 | CSAT expired token rejected | POST /api/surveys/submit | ✅ True |
+| T10 | Audit logs auto-created | GET /api/audit-logs | ✅ True |
+| T11 | Audit logs without JWT | GET /api/audit-logs | ✅ 401 |
+| T12 | Notification log CSAT dispatch | GET /api/notifications/logs | ✅ True |
+
+### Phase 7 — 8/8 ✅ (Knowledge Base & Call Flow Guidance)
+
+| # | الاختبار | Endpoint | النتيجة |
+|:-:|---|---|:-:|
+| T1 | Get Article by Category (compiled query) | GET /api/knowledge-base/category/0 | ✅ 200 |
+| T2 | Create Article (Admin role) | POST /api/knowledge-base | ✅ 201 |
+| T3 | Create Article without JWT | POST /api/knowledge-base | ✅ 401 |
+| T3b | Reject empty/malformed article (guard) | POST /api/knowledge-base | ✅ 400 |
+| T3c | Reject 2nd ACTIVE article same category | POST /api/knowledge-base | ✅ 400 |
+| T4 | List + case-insensitive search "BOOTLOOP" | GET /api/knowledge-base?search=BOOTLOOP | ✅ 200 (مطابقة ≥ 1) |
+| T4b | Update Article (Admin) | PUT /api/knowledge-base/{id} | ✅ 200 |
+| T5 | Delete Article (Admin) | DELETE /api/knowledge-base/{id} | ✅ 204 |
+
+**الإجمالي: 69/69 اختبار ناجح — 100% ✅**
 
 ---
 
@@ -450,7 +524,7 @@ WarrantyStatus = d.WarrantyExpiry > currentDate ? "Active" : "Expired"
 | **Audit Log Archiver** | `AuditLogArchiverService` — `ExecuteDeleteAsync` يومياً للسجلات الأقدم من 6 أشهر (قابل للضبط عبر `Audit:AuditLogRetentionMonths`) | ✅ |
 | **إشعارات Event-Driven** | أحداث MediatR (`TicketAssigned`/`TicketResolved`/`TicketClosed`/`SlaBreached`) تُنشر بعد SaveChanges → قنوات InApp/Email SMTP/Chatwoot WhatsApp مع تسجيل كل إرسال في `NotificationLogs` | ✅ |
 | **CSAT** | استبيان تلقائي عند إغلاق التذكرة برمز مبهم فريد (64 حرف) صالح 7 أيام ولمرة واحدة — `POST /api/surveys/submit` (anonymous) + تقرير مجمع `GET /api/surveys/report` | ✅ |
-| **قاعدة المعرفة** | خطوات توجيهية للموظف حسب تصنيف التذكرة — مؤجلة كتحسين مستقبلي | ⏳ |
+| **قاعدة المعرفة** | خطوات توجيهية للموظف حسب تصنيف التذكرة — **أُنجزت في المرحلة 7** | ✅ |
 
 
 ### Cache Tags جاهزة للـ Invalidation في المرحلة 6:
@@ -460,4 +534,46 @@ WarrantyStatus = d.WarrantyExpiry > currentDate ? "Active" : "Expired"
 // مثال: عند تعديل تذكرة → تطهير كاش لوحة التحكم فوراً
 await _hybridCache.RemoveByTagAsync("tickets");
 await _hybridCache.RemoveByTagAsync("dashboard");
+```
+
+---
+
+## 11. المرحلة 7 — مكتملة ✅ (Knowledge Base & Call Flow Guidance)
+
+**نتيجة الاختبار:** 8/8 ناجح (`run_phase7_tests.ps1`) + إعادة تشغيل المراحل 4 (15/15) و5 (8/8) و6 (12/12) بدون أي تراجع. البناء: 0 Errors / 0 Warnings.
+
+### مكونات المرحلة 7 المنفذة:
+
+| المكون | الوصف | الحالة |
+|---|---|:-:|
+| **الكيان والجدول** | `KnowledgeBaseArticle` → جدول `KnowledgeBaseArticles` (11 عمود) عبر Migration `20260714105921_AddPhase7KnowledgeBase` | ✅ |
+| **قيد التفرد المُفلتر** | `IX_KnowledgeBaseArticles_Category_Active` — فهرس فريد على `Category` بشرط `[IsActive] = 1`: مقال إرشادي نشط واحد فقط لكل تصنيف + فحص ودّي مسبق في الأوامر برسالة 400 واضحة قبل الوصول للفهرس | ✅ |
+| **Compiled Query (مسار ساخن)** | `KnowledgeBaseReadService` — `EF.CompileAsyncQuery` + `AsNoTracking` لاستعلام المقال النشط بالتصنيف الذي يُنفَّذ مع كل مكالمة واردة؛ مُسجَّل عبر واجهة `IKnowledgeBaseReadService` حفاظاً على فصل الطبقات | ✅ |
+| **دعم Markdown** | حقول المحتوى الأربعة (QuestionsToAsk, DiagnosisSteps, SuggestedAnswers, EscalationConditions) تُخزَّن Markdown خام والـ DTO يعيد `contentFormat: "markdown"` لإرشاد الواجهة | ✅ |
+| **حراسة المدخلات** | `KnowledgeBaseArticleGuard` — رفض المحتوى الفارغ/المسافات فقط + حدود أطوال (Title ≤ 200, محتوى ≤ 20,000, Keywords ≤ 500) برسالة ValidationException مُجمَّعة → 400 | ✅ |
+| **بحث نصي متقدم** | `GetArticlesQuery` — تقسيم عبارة البحث إلى Tokens (≤ 8) بدلالة AND، مطابقة غير حساسة لحالة الأحرف (`LOWER()`) ضد Title/DiagnosisSteps/QuestionsToAsk/Keywords + فلاتر Category وIsActive + ترقيم صفحات محصَّن (1–100) مع TotalPages | ✅ |
+| **الأمان (RBAC)** | `KnowledgeBaseController` تحت `[Authorize]` — القراءة لكل الأدوار الموثَّقة، والكتابة `[Authorize(Roles = "Admin")]` على POST/PUT/DELETE | ✅ |
+| **البذر** | مقالان افتراضيان بمحتوى Markdown غني (ScreenDamage وBatteryIssue) ضمن كتلة `--seed` عند خلوّ الجدول | ✅ |
+
+### ملفات المرحلة 7 الجديدة/المعدلة:
+
+```
+src/UniGroup.CRM.Domain/Entities/KnowledgeBaseArticle.cs                                       (جديد)
+src/UniGroup.CRM.Infrastructure/Data/ApplicationDbContext.cs                                   (معدل: DbSet + Fluent API)
+src/UniGroup.CRM.Infrastructure/Migrations/20260714105921_AddPhase7KnowledgeBase.cs            (جديد)
+src/UniGroup.CRM.Infrastructure/Services/KnowledgeBaseReadService.cs                           (جديد: Compiled Query)
+src/UniGroup.CRM.Infrastructure/DependencyInjection.cs                                         (معدل: تسجيل الخدمة)
+src/UniGroup.CRM.Application/Common/Interfaces/IApplicationDbContext.cs                        (معدل: DbSet)
+src/UniGroup.CRM.Application/Common/Interfaces/IKnowledgeBaseReadService.cs                    (جديد)
+src/UniGroup.CRM.Application/Features/KnowledgeBase/Common/KnowledgeBaseArticleDto.cs          (جديد)
+src/UniGroup.CRM.Application/Features/KnowledgeBase/Common/KnowledgeBaseArticleGuard.cs        (جديد)
+src/UniGroup.CRM.Application/Features/KnowledgeBase/Commands/CreateArticle/CreateArticleCommand.cs (جديد)
+src/UniGroup.CRM.Application/Features/KnowledgeBase/Commands/UpdateArticle/UpdateArticleCommand.cs (جديد)
+src/UniGroup.CRM.Application/Features/KnowledgeBase/Commands/DeleteArticle/DeleteArticleCommand.cs (جديد)
+src/UniGroup.CRM.Application/Features/KnowledgeBase/Queries/GetArticleByCategory/GetArticleByCategoryQuery.cs (جديد)
+src/UniGroup.CRM.Application/Features/KnowledgeBase/Queries/GetArticleById/GetArticleByIdQuery.cs  (جديد)
+src/UniGroup.CRM.Application/Features/KnowledgeBase/Queries/GetArticles/GetArticlesQuery.cs        (جديد)
+src/UniGroup.CRM.API/Controllers/KnowledgeBaseController.cs                                    (جديد)
+src/UniGroup.CRM.API/Program.cs                                                                (معدل: بذر المقالات)
+run_phase7_tests.ps1                                                                           (جديد: 8 اختبارات)
 ```

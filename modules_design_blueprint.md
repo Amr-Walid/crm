@@ -1,10 +1,10 @@
 # مخطط تصميم موديولات النظام (Modules Design Blueprint)
 
-**آخر تحديث:** 14 يوليو 2026 | **الحالة:** Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅ | Phase 4 ✅ | Phase 5 ✅ | Phase 6 ✅
-**إجمالي الاختبارات:** 61/61 ناجح (16 Phase2 + 10 Phase3 + 15 Phase4 + 8 Phase5 + 12 Phase6)
+**آخر تحديث:** 14 يوليو 2026 | **الحالة:** Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅ | Phase 4 ✅ | Phase 5 ✅ | Phase 6 ✅ | Phase 7 ✅
+**إجمالي الاختبارات:** 69/69 ناجح (16 Phase2 + 10 Phase3 + 15 Phase4 + 8 Phase5 + 12 Phase6 + 8 Phase7)
 **التقنيات:** .NET 9 + EF Core 9 + CQRS/MediatR + HybridCache + SQL Server
 
-يحتوي هذا المستند على التصميم التفصيلي لكل موديول (Module) من الموديولات الستة لنظام الـ CRM، موضحاً دور كل موديول، ما يحتويه في كل طبقة من طبقات الـ Clean Architecture (Domain, Application, Infrastructure, API)، وكيفية ترابطه مع قاعدة البيانات.
+يحتوي هذا المستند على التصميم التفصيلي لكل موديول (Module) من الموديولات السبعة لنظام الـ CRM، موضحاً دور كل موديول، ما يحتويه في كل طبقة من طبقات الـ Clean Architecture (Domain, Application, Infrastructure, API)، وكيفية ترابطه مع قاعدة البيانات.
 
 ---
 
@@ -968,6 +968,89 @@ public class ChatwootClientService : IChatwootClientService
 | GET | `/api/audit-logs` | البحث والفلترة في سجل التدقيق (الصندوق الأسود) | Admin فقط |
 | GET | `/api/audit-logs/{id}` | عرض تفاصيل عملية تدقيق معينة (القيم قبل وبعد) | Admin فقط |
 
+---
+
+## 7. موديول قاعدة المعرفة وإرشاد المكالمات (Knowledge Base & Call Flow Guidance) - [مكتمل ✅ — مختبر ✅ 8/8 اختبار]
+
+**الهدف:** تزويد موظف الكول سنتر أثناء المكالمة بإرشادات تفاعلية فورية حسب تصنيف التذكرة المختار: أسئلة يطرحها على العميل، خطوات تشخيص مرتبة، إجابات جاهزة يقرأها للعميل، وشروط التصعيد — مع إدارة كاملة للمقالات من قبل الأدمن فقط.
+
+### أ. طبقة الـ Domain:
+
+#### `KnowledgeBaseArticle` — مقال الإرشاد
+
+| الحقل | النوع | الوصف |
+|---|---|---|
+| `Id` | `Guid` | المفتاح الأساسي |
+| `Category` | `TicketCategory` | التصنيف المرتبط — مقال نشط واحد فقط لكل تصنيف (فهرس فريد مُفلتر) |
+| `Title` | `string(200)` | عنوان المقال |
+| `QuestionsToAsk` | `string` (max) | أسئلة الاستقبال — **Markdown** |
+| `DiagnosisSteps` | `string` (max) | خطوات التشخيص — **Markdown** |
+| `SuggestedAnswers` | `string` (max) | إجابات جاهزة — **Markdown** |
+| `EscalationConditions` | `string` (max) | شروط التصعيد — **Markdown** |
+| `Keywords` | `string(500)` | كلمات مفتاحية/مرادفات لتعزيز البحث |
+| `IsActive` | `bool` | هل يُقدَّم للموظفين أثناء المكالمات |
+| `CreatedAt` / `UpdatedAt` | `DateTime` / `DateTime?` | طوابع زمنية UTC |
+
+### ب. طبقة الـ Application (CQRS):
+
+**Commands (كتابة — Admin فقط):**
+
+| الملف | المدخلات | المخرج | المنطق |
+|---|---|---|---|
+| `CreateArticleCommand` | Category, Title, QuestionsToAsk, DiagnosisSteps, SuggestedAnswers, EscalationConditions, Keywords?, IsActive=true | `Guid` | حراسة المحتوى عبر `KnowledgeBaseArticleGuard` + فحص مسبق لقيد المقال النشط الوحيد لكل تصنيف (400 برسالة واضحة) |
+| `UpdateArticleCommand` | Id + نفس الحقول + IsActive | `bool` | حراسة المحتوى + عند إعادة التفعيل يتحقق من عدم وجود مقال نشط آخر لنفس التصنيف + ختم `UpdatedAt` |
+| `DeleteArticleCommand` | Id | `bool` | حذف نهائي — false → 404 |
+
+**Queries (قراءة — كل الموثَّقين):**
+
+| الملف | المدخلات | المخرج | المنطق |
+|---|---|---|---|
+| `GetArticleByCategoryQuery` | Category | `KnowledgeBaseArticleDto?` | **المسار الساخن** — يُنفَّذ مع كل مكالمة، محقون بـ `IKnowledgeBaseReadService` (EF Core 9 Compiled Query + AsNoTracking) |
+| `GetArticleByIdQuery` | Id | `KnowledgeBaseArticleDto?` | جلب مقال واحد بغض النظر عن حالته (شاشات الإدارة) |
+| `GetArticlesQuery` | Page, PageSize, SearchTerm?, Category?, IsActive? | `GetArticlesResult` | بحث مُقسَّم إلى Tokens (≤ 8، دلالة AND) غير حساس لحالة الأحرف على Title/DiagnosisSteps/QuestionsToAsk/Keywords + ترقيم محصَّن (1–100) + TotalPages |
+
+**DTOs والمشتركات:**
+
+| الملف | الوصف |
+|---|---|
+| `KnowledgeBaseArticleDto` | Read-model يشمل `CategoryName` (اسم الـ enum نصاً) و`ContentFormat: "markdown"` لإرشاد الواجهة للعارض المناسب |
+| `GetArticlesResult` | غلاف مصفح: Articles, TotalCount, Page, PageSize, TotalPages |
+| `KnowledgeBaseArticleGuard` | حارس مركزي: رفض الفارغ/المسافات + حدود أطوال (200/20,000/500) برسالة ValidationException مُجمَّعة |
+
+### ج. طبقة الـ Infrastructure:
+
+| المكون | الوصف |
+|---|---|
+| `KnowledgeBaseReadService` | تطبيق `IKnowledgeBaseReadService` بـ **EF Core 9 Compiled Query** (`EF.CompileAsyncQuery` في حقل `static readonly` — ترجمة واحدة لكل عملية) + `AsNoTracking` |
+| Fluent API | `HasIndex(Category).IsUnique().HasFilter("[IsActive] = 1")` + فهرس `CreatedAt` + قيود الأطوال |
+| Migration | `20260714105921_AddPhase7KnowledgeBase` |
+| DI | `services.AddScoped<IKnowledgeBaseReadService, KnowledgeBaseReadService>()` |
+| Seeding | مقالان افتراضيان (ScreenDamage, BatteryIssue) بمحتوى Markdown غني في كتلة `--seed` |
+
+### د. طبقة الـ API (`KnowledgeBaseController` — `api/knowledge-base`):
+
+| Method | Route | الوصف | نوع الوصول (Auth) |
+|---|---|---|---|
+| GET | `/api/knowledge-base/category/{category}` | المقال النشط للتصنيف (مسار المكالمة الساخن — Compiled Query) | كل الموثَّقين |
+| GET | `/api/knowledge-base/{id}` | تفاصيل مقال محدد | كل الموثَّقين |
+| GET | `/api/knowledge-base?page=&pageSize=&search=&category=&isActive=` | قائمة مصفحة + بحث نصي متقدم | كل الموثَّقين |
+| POST | `/api/knowledge-base` | إنشاء مقال (201 + Location) | **Admin فقط** |
+| PUT | `/api/knowledge-base/{id}` | تحديث مقال (مطابقة Id المسار/الجسم) | **Admin فقط** |
+| DELETE | `/api/knowledge-base/{id}` | حذف مقال (204) | **Admin فقط** |
+
+### هـ. نتائج اختبار Phase 7 (8/8 ✅):
+
+| # | الاختبار | النتيجة |
+|:-:|---|:-:|
+| T1 | جلب المقال بالتصنيف (Compiled Query) | ✅ 200 |
+| T2 | إنشاء مقال كأدمن | ✅ 201 |
+| T3 | إنشاء بدون JWT | ✅ 401 |
+| T3b | رفض محتوى فارغ (حارس المدخلات) | ✅ 400 |
+| T3c | رفض مقال نشط ثانٍ لنفس التصنيف | ✅ 400 |
+| T4 | بحث غير حساس لحالة الأحرف ("BOOTLOOP") | ✅ 200 |
+| T4b | تحديث مقال كأدمن | ✅ 200 |
+| T5 | حذف مقال كأدمن | ✅ 204 |
+
 
 ## ملخص المراحل القادمة
 
@@ -1000,9 +1083,10 @@ flowchart TD
 | Phase 4 — Tickets, SLA & Workflow | Ticket, Department, TicketHistory, InternalNote, Attachment + 3 Enums | 1 | 5 | 3 | 4 | ✅ مكتمل 15/15 |
 | Phase 5 — Dashboards & Reports | DTOs فقط + EF Core 9 Compiled Queries + HybridCache Tags | 1 (PreferredChannels) | 0 | 6 | 6 | ✅ مكتمل 8/8 |
 | Phase 6 — Notifications, CSAT & Audit | CsatSurvey, AuditLog, NotificationLog, ProcessedWebhookEvent | 1 | 2 | 4 | 7 | ✅ مكتمل 12/12 |
+| Phase 7 — Knowledge Base & Call Flow Guidance | KnowledgeBaseArticle | 1 | 3 | 3 | 6 | ✅ مكتمل 8/8 |
 
-### تحسينات EF Core 9 المطبقة (Phase 5):
-- **Compiled Queries:** `GetCallerProfileQuery` + `GetCustomerDetailsQuery` — تخفيض 20-30% من CPU usage
+### تحسينات EF Core 9 المطبقة (Phase 5 + Phase 7):
+- **Compiled Queries:** `GetCallerProfileQuery` + `GetCustomerDetailsQuery` (Phase 5) + `KnowledgeBaseReadService.GetActiveByCategoryCompiled` (Phase 7 — مسار المكالمة الساخن) — تخفيض 20-30% من CPU usage
 - **Primitive Collections:** `Customer.PreferredChannels` كـ JSON column بدون جدول وسيط
 - **HybridCache Tags:** وسوم (`"dashboard"`, `"tickets"`, `"calls"`, `"agents"`, `"devices"`) في كل استعلامات Phase 5 لتمكين Tag-Based Invalidation في Phase 6
 

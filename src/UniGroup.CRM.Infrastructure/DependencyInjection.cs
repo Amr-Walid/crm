@@ -73,6 +73,9 @@ public static class DependencyInjection
         services.AddScoped<ITicketNumberGenerator, TicketNumberGenerator>();
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
+        // Phase 7: Knowledge Base hot-path read service (EF Core 9 compiled query)
+        services.AddScoped<IKnowledgeBaseReadService, KnowledgeBaseReadService>();
+
         // Register SLA Background Monitor
         services.AddHostedService<SlaMonitorService>();
 

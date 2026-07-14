@@ -86,6 +86,11 @@ public interface IApplicationDbContext
     DbSet<ProcessedWebhookEvent> ProcessedWebhookEvents { get; }
 
     /// <summary>
+    /// Gets the database set for knowledge base guidance articles (Phase 7).
+    /// </summary>
+    DbSet<KnowledgeBaseArticle> KnowledgeBaseArticles { get; }
+
+    /// <summary>
     /// Gets the database set for application users (Identity).
     /// </summary>
     DbSet<ApplicationUser> Users { get; }

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using UniGroup.CRM.Application;
 using UniGroup.CRM.Infrastructure;
 
@@ -181,6 +182,67 @@ if (args.Contains("--seed"))
                 SentAt = closedAt,
                 ExpiresAt = closedAt.AddDays(7) // already in the past (closed 10 days ago)
             });
+        }
+
+        // 8. Phase 7: Seed default Knowledge Base call-flow guidance articles.
+        // Content is Markdown-formatted so the UI can render rich guidance during calls.
+        var hasArticles = await db.KnowledgeBaseArticles.AnyAsync();
+        if (!hasArticles)
+        {
+            db.KnowledgeBaseArticles.AddRange(
+                new UniGroup.CRM.Domain.Entities.KnowledgeBaseArticle
+                {
+                    Id = Guid.NewGuid(),
+                    Category = UniGroup.CRM.Domain.Enums.TicketCategory.ScreenDamage,
+                    Title = "Screen Damage Troubleshooting & Intake Guidelines",
+                    QuestionsToAsk =
+                        "- Is the screen **physically cracked** or shattered?\n" +
+                        "- Does the display show **lines, flickering, or black spots**?\n" +
+                        "- Is **touch responsiveness** affected in any area of the screen?\n" +
+                        "- Did the damage result from a **drop, pressure, or liquid contact**?",
+                    DiagnosisSteps =
+                        "1. Visually check for deep cracks or scratches on the glass.\n" +
+                        "2. Verify the display **backlight** functionality (shine a light on a dark screen).\n" +
+                        "3. Run the touch sensitivity calibration test in settings (`*#0*#` on Samsung).\n" +
+                        "4. Ask the customer to draw across the whole screen to detect **dead touch zones**.",
+                    SuggestedAnswers =
+                        "> Your screen repair is handled under **out-of-warranty rates** unless accidental damage protection is active.\n" +
+                        ">\n" +
+                        "> The repair typically takes **1–2 hours** once the part is available at the service center.",
+                    EscalationConditions =
+                        "- Escalate to the **Hardware Maintenance Team** immediately for parts allocation.\n" +
+                        "- If the device shows signs of **liquid damage**, escalate for a full board inspection.",
+                    Keywords = "screen, display, cracked, shattered, broken glass, touch, lcd, oled, lines, black spots",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                },
+                new UniGroup.CRM.Domain.Entities.KnowledgeBaseArticle
+                {
+                    Id = Guid.NewGuid(),
+                    Category = UniGroup.CRM.Domain.Enums.TicketCategory.BatteryIssue,
+                    Title = "Battery Drain & Power Intake Guidelines",
+                    QuestionsToAsk =
+                        "- Is the device using an **original charger** and cable?\n" +
+                        "- How quickly does the battery drain from **100% to 0%**?\n" +
+                        "- Does the device **overheat** during charging or normal use?\n" +
+                        "- Is there any **swelling** visible on the back cover or screen edges?",
+                    DiagnosisSteps =
+                        "1. Inspect the **charging port** for debris or corrosion.\n" +
+                        "2. Verify the **battery health percentage** in system settings.\n" +
+                        "3. Monitor discharge rates under a high-performance load for 5 minutes.\n" +
+                        "4. Check for background apps with abnormal battery consumption.",
+                    SuggestedAnswers =
+                        "> Battery replacement is covered **under warranty** if health is below **80%** within the first year.\n" +
+                        ">\n" +
+                        "> Otherwise, the replacement is chargeable at the standard out-of-warranty rate.",
+                    EscalationConditions =
+                        "- Escalate to the **Battery & Charging department** for a safety assessment if the battery is **swollen**.\n" +
+                        "- **Never** advise the customer to charge a swollen device — treat it as a safety hazard.",
+                    Keywords = "battery, drain, power, charging, overheat, swollen, health, percentage, charger",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                }
+            );
         }
 
         await db.SaveChangesAsync();
