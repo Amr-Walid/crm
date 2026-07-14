@@ -77,6 +77,9 @@ public static class DependencyInjection
         services.AddSingleton<Channels.ChatwootWebhookChannel>();
         services.AddSingleton<Channels.AuditLogChannel>();
 
+        // Phase 6: Webhook ingestion background consumer (idempotent, Polly retries)
+        services.AddHostedService<BackgroundServices.ChatwootWebhookProcessor>();
+
         // Register HybridCache
 #pragma warning disable EXTEXP0018
         services.AddHybridCache(options =>
