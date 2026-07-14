@@ -32,7 +32,7 @@ public static class DependencyInjection
         // "Sqlite" enables a lightweight cross-platform provider for local/sandbox integration testing
         // where SQL Server is unavailable. Clean Architecture is preserved: only Infrastructure knows the provider.
         var databaseProvider = configuration.GetValue<string>("Database:Provider") ?? "SqlServer";
-        services.AddDbContext<ApplicationDbContext>(options =>
+        services.AddDbContext<ApplicationDbContext>((serviceProvider, options) =>
         {
             if (string.Equals(databaseProvider, "Sqlite", StringComparison.OrdinalIgnoreCase))
             {
@@ -46,6 +46,9 @@ public static class DependencyInjection
                     configuration.GetConnectionString("DefaultConnection"),
                     b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName));
             }
+
+            // Phase 6: async audit trail — captures all changes into a bounded channel.
+            options.AddInterceptors(serviceProvider.GetRequiredService<Interceptors.AuditSaveChangesInterceptor>());
         });
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
@@ -79,6 +82,13 @@ public static class DependencyInjection
 
         // Phase 6: Webhook ingestion background consumer (idempotent, Polly retries)
         services.AddHostedService<BackgroundServices.ChatwootWebhookProcessor>();
+
+        // Phase 6: Async audit trail pipeline
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<Interceptors.AuditSaveChangesInterceptor>();
+        services.AddHostedService<BackgroundServices.AuditLogProcessor>();
+        services.AddHostedService<BackgroundServices.AuditLogArchiverService>();
 
         // Register HybridCache
 #pragma warning disable EXTEXP0018
