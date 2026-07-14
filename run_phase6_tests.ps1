@@ -68,7 +68,11 @@ $stderrLog = Join-Path $WorkingDir "api_stderr.log"
 if (Test-Path $stdoutLog) { Remove-Item $stdoutLog -Force }
 if (Test-Path $stderrLog) { Remove-Item $stderrLog -Force }
 
-$apiProcess = Start-Process dotnet -ArgumentList "run --project `"$ApiDir`" --launch-profile http -- --seed" `
+Write-Host "Seeding database..." -ForegroundColor Yellow
+$seedProcess = Start-Process dotnet -ArgumentList "run --project `"$ApiDir`" --launch-profile http -- --seed" -Wait -NoNewWindow -PassThru
+Write-Host "Seeding completed." -ForegroundColor Green
+
+$apiProcess = Start-Process dotnet -ArgumentList "run --project `"$ApiDir`" --launch-profile http" `
     -PassThru -WorkingDirectory $WorkingDir `
     -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
 
