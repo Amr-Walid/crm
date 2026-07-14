@@ -73,6 +73,10 @@ public static class DependencyInjection
         // Register SLA Background Monitor
         services.AddHostedService<SlaMonitorService>();
 
+        // ===== Phase 6: Bounded Channels (Inbox/Outbox patterns) =====
+        services.AddSingleton<Channels.ChatwootWebhookChannel>();
+        services.AddSingleton<Channels.AuditLogChannel>();
+
         // Register HybridCache
 #pragma warning disable EXTEXP0018
         services.AddHybridCache(options =>
