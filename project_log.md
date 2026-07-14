@@ -26,11 +26,27 @@
 | 3 | الكول سنتر والبحث المتقدم (Call Center & Search) | ✅ مكتمل ومختبر | 2026-07-01 | ✅ 10/10 اختبار ناجح |
 | 4 | التذاكر ومسارات العمل (Tickets & Workflows & SLA) | ✅ مكتمل ومختبر | 2026-07-02 | ✅ اجتاز الاختبار |
 | 5 | لوحات التحكم والتقارير (Dashboards & Reports) | ✅ مكتمل ومختبر | 2026-07-05 | ✅ اجتاز الاختبار |
-| 6 | الإشعارات والتدقيق والرضا (Notifications, Audit & CSAT) | ⏳ قيد التخطيط والتصميم (مع دمج Chatwoot) | — | — |
+| 6 | الإشعارات والتدقيق والرضا (Notifications, Audit & CSAT + Chatwoot) | ✅ مكتمل ومختبر | 2026-07-14 | ✅ 12/12 اختبار ناجح |
 
 ---
 
 ## 3. سجل العمليات والإنجازات (Activity Log)
+
+---
+
+### [2026-07-14] — إنجاز المرحلة السادسة: الإشعارات والتدقيق و CSAT ودمج Chatwoot (Phase 6 Completed) ✅
+
+* **الحدث:** اكتمال تنفيذ واختبار المرحلة السادسة كاملة على فرع `genspark_ai_developer`.
+* **ما تم تنفيذه:**
+  1. **الكيانات والهجرة:** 4 كيانات جديدة (`AuditLog` مع ClientInfo كـ EF Core 9 Complex Type, `CsatSurvey`, `NotificationLog`, `ProcessedWebhookEvent`) + Migration `20260714085023_AddPhase6Entities` مع الفهارس الفريدة (TicketId, SurveyToken) وفهارس التواريخ.
+  2. **نظام التدقيق (Audit Trail):** `AuditSaveChangesInterceptor` يلتقط كل عمليات الإضافة/التعديل/الحذف تلقائياً (مع تجاوز كيانات التدقيق نفسها لمنع الحلقة اللانهائية)، ويدفعها إلى Bounded Channel (سعة 5000) حيث يتولى `AuditLogProcessor` الحفظ الدفعي (100/دفعة) مع Polly retries، و`AuditLogArchiverService` ينظف السجلات الأقدم من 6 أشهر يومياً عبر `ExecuteDeleteAsync`.
+  3. **تكامل Chatwoot:** endpoint عام `POST /api/webhooks/chatwoot` يتحقق من توقيع HMAC-SHA256 بمقارنة زمنية ثابتة (`FixedTimeEquals`) ثم يضع الحمولة في Bounded Channel (سعة 10000) ويرد 202 فوراً. المعالج الخلفي `ChatwootWebhookProcessor` يطبق Idempotency عبر جدول `ProcessedWebhookEvents` (نفس معاملة الحفظ)، ينشئ/يطابق العملاء بالهاتف، ينشئ تذاكر جديدة أو يضيف ملاحظات داخلية للتذاكر النشطة المرتبطة بنفس `ChatwootConversationId`.
+  4. **محرك الإشعارات:** أحداث MediatR (`TicketAssigned`, `TicketResolved`, `TicketClosed`, `SlaBreached`) تُنشر بعد `SaveChanges` من أوامر التذاكر، ومعالجاتها ترسل عبر القنوات (InApp / Email SMTP / WhatsApp عبر Chatwoot API) مع تسجيل كل إرسال في `NotificationLogs`.
+  5. **حلقة CSAT:** عند إغلاق التذكرة يُنشأ استبيان برمز فريد مبهم (64 حرف) صالح 7 أيام ويُرسل رابطه للعميل؛ `POST /api/surveys/submit` (anonymous) يرفض الرموز المنتهية/المكررة/غير الصالحة؛ تقارير عبر `GET /api/surveys/report`.
+  6. **واجهات إدارية:** `GET /api/audit-logs` (مصفح + مفلتر) و `GET /api/audit-logs/{id}` و `GET /api/notifications/logs` (Admin فقط).
+  7. **التشغيل:** `.docker/chatwoot/docker-compose.yml` (Chatwoot v3.10 + Postgres 12 + Redis 6) وإعدادات `Chatwoot`/`Smtp`/`Audit` في appsettings.
+* **إصلاح مصاحب:** `CreateTicketCommand` أصبح يعيد المحاولة برقم تذكرة جديد عند تعارض المفتاح الفريد (سباق مع معالج الـ webhook).
+* **نتيجة الاختبار:** Phase 6: **12/12 ✅** (HMAC صحيح/خاطئ/مفقود، Idempotency، إنشاء CSAT تلقائياً عند الإغلاق، إرسال/إعادة إرسال/رمز منتهي، سجل التدقيق التلقائي، 401 بدون JWT، سجل الإشعارات) — بدون أي تراجع: Phase 4: **15/15 ✅** + Phase 5: **8/8 ✅**.
 
 ---
 
@@ -370,11 +386,11 @@
 
 | العنصر | التفاصيل |
 |---|---|
-| **الفرع** | `master` |
+| **الفرع** | `genspark_ai_developer` (PR → `master`) |
 | **حالة البناء** | ✅ Build Succeeded — 0 Errors, 0 Warnings |
-| **Migrations المطبقة** | `InitialCreate`, `AddPhase2Entities`, `AddPhase3Calls`, `AddUniqueIndexesForBrandAndModel`, `AddPhase4TicketsWorkflowsAndSla` |
-| **عدد الجداول في DB** | 19 جدول (9 Identity + Customers + CustomerPhones + DeviceBrands + DeviceModels + CustomerDevices + Calls + Departments + Tickets + Attachments + InternalNotes + TicketHistories) |
-| **إجمالي الاختبارات** | ✅ 26 اختبار ناجح للمراحل 2 و 3، واجتياز اختبار موديول التذاكر للمرحلة 4 وموديول لوحات التحكم للمرحلة 5 |
+| **Migrations المطبقة** | `InitialCreate`, `AddPhase2Entities`, `AddPhase3Calls`, `AddUniqueIndexesForBrandAndModel`, `AddPhase4TicketsWorkflowsAndSla`, `AddCallTicketLinkAndUserDepartment`, `AddPhase6Entities` |
+| **عدد الجداول في DB** | 23 جدول (19 سابقة + AuditLogs + CsatSurveys + NotificationLogs + ProcessedWebhookEvents) |
+| **إجمالي الاختبارات** | ✅ 61 اختبار ناجح (المراحل 2–3: 26، المرحلة 4: 15، المرحلة 5: 8، المرحلة 6: 12) |
 
 ### الـ Endpoints الكاملة الجاهزة:
 
@@ -408,25 +424,20 @@
 | Dashboard | GET | `/api/dashboard/call-volume` | توزيع المكالمات اليومي |
 | Dashboard | GET | `/api/dashboard/tickets-by-status` | توزيع التذاكر بالحالة |
 | Reports | GET | `/api/reports/agents/export` | تصدير تقرير أداء الموظفين (CSV) |
+| Webhooks | POST | `/api/webhooks/chatwoot` | استقبال Chatwoot Webhook (HMAC — Anonymous) |
+| Surveys | POST | `/api/surveys/submit` | إرسال تقييم CSAT برمز فريد (Anonymous) |
+| Surveys | GET | `/api/surveys/report` | تقرير CSAT مجمع (Admin/Team Leader) |
+| Surveys | GET | `/api/surveys/ticket/{ticketId}` | استبيان تذكرة محددة (Admin) |
+| Audit | GET | `/api/audit-logs` | سجل التدقيق مصفح ومفلتر (Admin) |
+| Audit | GET | `/api/audit-logs/{id}` | تفاصيل قيد تدقيق مع Before/After (Admin) |
+| Notifications | GET | `/api/notifications/logs` | سجل الإشعارات المُرسلة (Admin) |
 
 ---
 
 ## 5. الخطوات القادمة (Next Actions)
 
-**المرحلة السادسة: الإشعارات والتدقيق واستبيانات الرضا (Notifications, Audit & CSAT)**
+**جميع المراحل الست الأساسية مكتملة ✅** — المرشحون للمراحل التالية:
 
-ما سيتم بناؤه وتطويره بالتفصيل:
-- **نظام التدقيق (Audit Trail):**
-  - بناء كيان `AuditLog` وجدولها في قاعدة البيانات مع استخدام ميزة الـ Complex Types في EF Core 9 لحفظ بيانات العميل (`ClientInfo_IpAddress`, `ClientInfo_UserAgent`).
-  - إعداد الـ `AuditSaveChangesInterceptor` لالتقاط العمليات تلقائياً (إضافة، تعديل، حذف) وحفظ التغييرات بصيغة JSON.
-  - إعداد خدمة خلفية `AuditLogArchiverService` تعمل يومياً لتنظيف وأرشفة السجلات القديمة التي مر عليها أكثر من 6 أشهر لتفادي تضخم قاعدة البيانات (Data Bloat).
-- **التكامل مع Chatwoot:**
-  - كتابة الـ `ChatwootWebhookFilter` للتحقق من HMAC-SHA256 باستخدام الهيدرز `X-Chatwoot-Signature` و `X-Chatwoot-Timestamp`.
-  - استقبال webhook حدث `message_created` لإنشاء العملاء وتوليد تذاكر دعم فني تلقائياً (General Inquiry).
-  - تحقيق مبدأ الـ Idempotency عن طريق حفظ الـ `ChatwootConversationId` لربط الرسائل اللاحقة بنفس التذكرة المفتوحة دون تكرار.
-- **نظام استبيان CSAT:**
-  - بناء كيان `CsatSurvey` وجدولها مع توليد رموز وصول فريدة (Opaque unique tokens) صالحة لمدة 7 أيام.
-  - إرسال الاستبيان للعملاء تلقائياً عبر Chatwoot عند إغلاق التذاكر.
-- **نظام الإشعارات:**
-  - التقاط أحداث الـ Domain (مثل `TicketCreated`, `TicketAssigned`, `SlaBreached`, `TicketResolved`) وإرسال تنبيهات In-App أو رسائل بريد إلكتروني أو رسائل Chatwoot.
-- **التشغيل:** إعداد ملف `docker-compose.yml` لتشغيل Chatwoot محلياً.
+- **النشر (Deployment):** تجهيز بيئة إنتاج (SQL Server + Chatwoot عبر `.docker/chatwoot/docker-compose.yml`)، وضبط أسرار الإنتاج (`Chatwoot:WebhookSecret`, `Smtp`, `Jwt:Secret`) عبر متغيرات بيئة/Key Vault بدلاً من appsettings.
+- **تفعيل تكامل Chatwoot فعلياً:** إنشاء حساب Bot وربط `Chatwoot:ApiUrl/AccountId/BotToken`، وتسجيل الـ webhook على `POST /api/webhooks/chatwoot`.
+- **تحسينات مقترحة:** Tag-based cache invalidation عند تغيّر التذاكر (الوسوم جاهزة من المرحلة 5)، صفحة ويب بسيطة لاستبيان CSAT تستهلك `POST /api/surveys/submit`، وSignalR لإشعارات In-App لحظية.

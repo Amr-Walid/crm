@@ -1,9 +1,9 @@
 # تقرير تدقيق المشروع ومطابقة المتطلبات
-## UniGroup CRM Platform — نسخة التدقيق الشاملة بعد إنجاز 5 مراحل كاملة
+## UniGroup CRM Platform — نسخة التدقيق الشاملة بعد إنجاز 6 مراحل كاملة
 
-**تاريخ آخر تحديث:** 5 يوليو 2026
-**الحالة الإجمالية:** Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅ + Phase 4 ✅ + Phase 5 ✅ — **مكتملة ومختبرة بالكامل**
-**آخر Commit:** `bbfe577` — feat: add Call-Ticket link and User-Department relationship
+**تاريخ آخر تحديث:** 14 يوليو 2026
+**الحالة الإجمالية:** Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅ + Phase 4 ✅ + Phase 5 ✅ + Phase 6 ✅ — **مكتملة ومختبرة بالكامل (61/61 اختبار)**
+**آخر Commit:** فرع `genspark_ai_developer` — test(phase6): automated Phase 6 test suite - 12/12 passing
 
 ---
 
@@ -110,7 +110,7 @@ flowchart TD
     P2 --> P3[Phase 3: Call Center ✅]
     P3 --> P4[Phase 4: Tickets & SLA ✅]
     P4 --> P5[Phase 5: Dashboards & Reports ✅]
-    P5 --> P6[Phase 6: Notifications, Chatwoot, CSAT, Audit ⏳]
+    P5 --> P6[Phase 6: Notifications, Chatwoot, CSAT, Audit ✅]
 ```
 
 ### جدول مطابقة المتطلبات التفصيلي:
@@ -132,12 +132,12 @@ flowchart TD
 | 13 | **نظام البحث المتقدم** | ✅ | `Customers`, `CustomerPhones`, `CustomerDevices` | بحث بالاسم + هاتف + IMEI + Serial |
 | 14 | **لوحة التحكم والإحصائيات** | ✅ | `Tickets`, `Calls` | 5 استعلامات إحصائية + HybridCache + Cache Tags |
 | 15 | **التقارير والتحليلات** | ✅ | `Tickets`, `Calls` | تقارير أداء الموظفين + أعطال الأجهزة + تصدير CSV |
-| 16 | **الإشعارات والتنبيهات** | ⏳ | — | مخطط للمرحلة 6 (Chatwoot + Email) |
-| 17 | **قياس رضا العملاء (CSAT)** | ⏳ | `CsatSurveys` (مخطط) | مخطط للمرحلة 6 |
+| 16 | **الإشعارات والتنبيهات** | ✅ | `NotificationLogs` | أحداث MediatR (Assigned/Resolved/Closed/SlaBreached) → InApp + Email + Chatwoot WhatsApp مع تسجيل كل إرسال |
+| 17 | **قياس رضا العملاء (CSAT)** | ✅ | `CsatSurveys` | استبيان تلقائي عند الإغلاق برمز فريد صالح 7 أيام ولمرة واحدة + تقرير مجمع |
 | 18 | **الصلاحيات والأدوار** | ✅ | `Users`, `Roles` | JWT + Roles: Agent, Team Leader, Admin |
-| 19 | **سجل التدقيق (Audit Trail)** | ⏳ | `AuditLogs` (مخطط) | مخطط للمرحلة 6 — سيستخدم EF Core 9 Complex Types |
+| 19 | **سجل التدقيق (Audit Trail)** | ✅ | `AuditLogs` | `AuditSaveChangesInterceptor` + Bounded Channel + حفظ دفعي + أرشفة يومية — EF Core 9 Complex Types (ClientInfo) |
 
-**ملخص:** 15 متطلب مكتمل ✅ — 4 متطلبات في خطة المرحلة 6 ⏳
+**ملخص:** 18 متطلب مكتمل ✅ — متبقٍ متطلب واحد (قاعدة المعرفة) كتحسين مستقبلي ⏳
 
 ---
 
@@ -435,20 +435,22 @@ WarrantyStatus = d.WarrantyExpiry > currentDate ? "Active" : "Expired"
 
 ---
 
-## 10. الخطوات القادمة — المرحلة 6 (قيد التنفيذ ⏳)
+## 10. المرحلة 6 — مكتملة ✅ (Notifications, Chatwoot, CSAT & Audit Trail)
 
-### مكونات المرحلة 6 (Notifications, Chatwoot, CSAT & Audit Trail):
+**نتيجة الاختبار:** 12/12 ناجح (`run_phase6_tests.ps1`) + إعادة تشغيل المرحلة 4 (15/15) والمرحلة 5 (8/8) بدون أي تراجع.
+
+### مكونات المرحلة 6 المنفذة:
 
 | المكون | الوصف | الأولوية |
 |---|---|:-:|
-| **Chatwoot Self-Hosted** | استضافة Chatwoot محلياً عبر Docker Compose (مجاناً + خصوصية كاملة) | 🔴 عالية |
-| **Secure Webhook Ingest** | استقبال Webhooks من Chatwoot بأمان تام والتحقق من التوقيع الرقمي (HMAC-SHA256) عبر الهيدرز `X-Chatwoot-Signature` و `X-Chatwoot-Timestamp` لمنع الاختراقات وتفادي كتابة التوكنز في السجلات. | 🔴 عالية |
-| **Idempotent Ticket Link** | تحويل المحادثات لتذاكر تلقائياً (General Inquiry) مع ربط الـ `ChatwootConversationId` لضمان عدم تكرار التذاكر لنفس المحادثة. | 🔴 عالية |
-| **Audit Trail (EF Core 9)** | `AuditSaveChangesInterceptor` لحفظ العمليات (أضف/عدل/احذف) تلقائياً بصيغة JSON مع Complex Types (`ClientInfo_IpAddress`, `ClientInfo_UserAgent`) لتخزين بيانات الموظف المجرى للعملية. | 🟡 متوسطة |
-| **Audit Log Archiver** | خدمة خلفية `AuditLogArchiverService` لقص وأرشفة السجلات الأقدم من 6 أشهر يومياً لتفادي تضخم قاعدة البيانات (Data Bloat). | 🟡 متوسطة |
-| **إشعارات Event-Driven** | تحديثات حالة التذكرة وإنذارات خرق SLA وتكليفات الموظفين عبر البريد الإلكتروني وتنبيهات In-App ورسائل Chatwoot آلياً. | 🟡 متوسطة |
-| **CSAT** | روابط تقييم آمنة تحتوي على Guid فريد يرسل تلقائياً للعميل عند إغلاق التذكرة، بصلاحية 7 أيام ولمرة واحدة فقط. | 🟢 منخفضة |
-| **قاعدة المعرفة** | خطوات توجيهية للموظف حسب تصنيف التذكرة لتسهيل التشخيص السريع. | 🟢 منخفضة |
+| **Chatwoot Self-Hosted** | `.docker/chatwoot/docker-compose.yml` — Chatwoot v3.10 + Postgres 12 + Redis 6 مع healthchecks | ✅ |
+| **Secure Webhook Ingest** | `POST /api/webhooks/chatwoot` — تحقق HMAC-SHA256 من هيدر `X-Chatwoot-Signature` بمقارنة زمنية ثابتة + Bounded Channel (سعة 10000) + رد 202 فوري | ✅ |
+| **Idempotent Ticket Link** | `ChatwootWebhookProcessor` — جدول `ProcessedWebhookEvents` (نفس معاملة الحفظ) + ربط `ChatwootConversationId` بالتذاكر النشطة + إنشاء عملاء بالهاتف تلقائياً | ✅ |
+| **Audit Trail (EF Core 9)** | `AuditSaveChangesInterceptor` يحفظ JSON قبل/بعد مع Complex Types (`ClientInfo_IpAddress`, `ClientInfo_UserAgent`) + `AuditLogProcessor` حفظ دفعي (100/دفعة) عبر Bounded Channel + Polly retries | ✅ |
+| **Audit Log Archiver** | `AuditLogArchiverService` — `ExecuteDeleteAsync` يومياً للسجلات الأقدم من 6 أشهر (قابل للضبط عبر `Audit:AuditLogRetentionMonths`) | ✅ |
+| **إشعارات Event-Driven** | أحداث MediatR (`TicketAssigned`/`TicketResolved`/`TicketClosed`/`SlaBreached`) تُنشر بعد SaveChanges → قنوات InApp/Email SMTP/Chatwoot WhatsApp مع تسجيل كل إرسال في `NotificationLogs` | ✅ |
+| **CSAT** | استبيان تلقائي عند إغلاق التذكرة برمز مبهم فريد (64 حرف) صالح 7 أيام ولمرة واحدة — `POST /api/surveys/submit` (anonymous) + تقرير مجمع `GET /api/surveys/report` | ✅ |
+| **قاعدة المعرفة** | خطوات توجيهية للموظف حسب تصنيف التذكرة — مؤجلة كتحسين مستقبلي | ⏳ |
 
 
 ### Cache Tags جاهزة للـ Invalidation في المرحلة 6:

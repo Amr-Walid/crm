@@ -2,7 +2,7 @@
 
 > [!IMPORTANT]
 > هذا الملف يعكس **الهيكل الفعلي المنفذ والمطبق في قاعدة البيانات** وليس التصميم الأولي.
-> آخر تحديث: 5 يوليو 2026 — بعد إنجاز المراحل 1 إلى 5 كاملة.
+> آخر تحديث: 14 يوليو 2026 — بعد إنجاز المراحل 1 إلى 6 كاملة.
 > قاعدة البيانات: **SQL Server** | ORM: **EF Core 9** | Framework: **.NET 9**
 
 ---
@@ -383,9 +383,9 @@ InProgress → Escalated → Resolved → Closed
 
 ---
 
-## 8. الجداول المخططة للمرحلة 6 (قيد التنفيذ ⏳)
+## 8. جداول المرحلة 6 — منفذة ✅ (Migration: `20260714085023_AddPhase6Entities`)
 
-في هذه المرحلة، ستتم إضافة الجداول التالية لتغطية متطلبات التدقيق ورضا العملاء والإشعارات:
+الجداول الأربعة التالية أُضيفت وطُبقت لتغطية متطلبات التدقيق ورضا العملاء والإشعارات وضمان عدم تكرار معالجة الـ Webhooks:
 
 #### جدول `AuditLogs`
 يسجل كل عمليات الكتابة والتعديل والحذف تلقائياً. يستخدم ميزة الـ **Complex Type** لـ EF Core 9 لدمج حقول العميل تحت فئة `ClientInfo`.
@@ -419,6 +419,7 @@ InProgress → Escalated → Resolved → Closed
 | `Feedback` | `nvarchar(1000)` | NULL | ملاحظات نصية إضافية |
 | `SurveyToken` | `nvarchar(450)` | NOT NULL, **UNIQUE INDEX** | توكن وصول آمن مشفر فريد (Guid) لمنع التلاعب |
 | `SentAt` | `datetime2` | NOT NULL | وقت إرسال رابط التقييم |
+| `ExpiresAt` | `datetime2` | NOT NULL | تاريخ انتهاء صلاحية التوكن (SentAt + 7 أيام) |
 | `SubmittedAt` | `datetime2` | NULL | وقت تقديم العميل للتقييم فعلياً |
 
 * **فهرس فريد على التذكرة:** `CREATE UNIQUE INDEX IX_CsatSurveys_TicketId ON CsatSurveys (TicketId);` — يضمن إرسال استبيان واحد فقط لكل تذكرة.
@@ -437,7 +438,15 @@ InProgress → Escalated → Resolved → Closed
 | `Status` | `nvarchar(100)` | NOT NULL | حالة الإرسال (Sent, Failed) |
 | `MessageContent` | `nvarchar(max)` | NULL | نص الرسالة النهائي |
 | `ErrorMessage` | `nvarchar(max)` | NULL | تفاصيل خطأ الإرسال في حال الفشل |
-| `SentAt` | `datetime2` | NOT NULL | وقت الإرسال |
+| `SentAt` | `datetime2` | NOT NULL, **INDEX** | وقت الإرسال |
+
+#### جدول `ProcessedWebhookEvents`
+جدول Idempotency لمنع المعالجة المكررة لأحداث Chatwoot (يُدرج في نفس معاملة الحفظ الخاصة بالبيانات).
+
+| الحقل | النوع في SQL | القيود | الوصف |
+|---|---|---|---|
+| `EventId` | `nvarchar(450)` | **PK** | المعرف الفريد للحدث الوارد من Chatwoot |
+| `ProcessedAt` | `datetime2` | NOT NULL | وقت معالجة الحدث |
 
 ---
 
