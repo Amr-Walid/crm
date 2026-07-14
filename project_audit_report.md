@@ -143,6 +143,7 @@ flowchart TD
     P3 --> P4[Phase 4: Tickets & SLA ✅]
     P4 --> P5[Phase 5: Dashboards & Reports ✅]
     P5 --> P6[Phase 6: Notifications, Chatwoot, CSAT, Audit ✅]
+    P6 --> P7[Phase 7: Knowledge Base ✅]
 ```
 
 ### جدول مطابقة المتطلبات التفصيلي:
@@ -155,7 +156,7 @@ flowchart TD
 | 4 | **الملف التعريفي للعميل 360°** | ✅ | `Customers`, `CustomerPhones`, `CustomerDevices` | يجلب الهواتف + الأجهزة + حالة الضمان + PreferredChannels |
 | 5 | **رؤية العميل الموحدة (Caller ID)** | ✅ | `Customers`, `CustomerPhones`, `Calls` | Compiled Query — تعريف العميل فورياً عند الاتصال |
 | 6 | **تصنيفات الاتصال والحالات** | ✅ | `Tickets` | `TicketCategory` enum + أولوية + موعد SLA تلقائي |
-| 7 | **قاعدة المعرفة والتشخيص** | ⏳ | `KnowledgeBase` (مخطط) | مخطط للمرحلة 6 |
+| 7 | **قاعدة المعرفة والتشخيص** | ✅ | `KnowledgeBaseArticles` | إرشادات تفاعلية هاتفية (أسئلة، خطوات تشخيص، حلول مقترحة) + دعم Markdown + بحث نصي متقدم + Compiled Query |
 | 8 | **دورة حياة التذكرة (State Machine)** | ✅ | `Tickets`, `TicketHistories` | 8 حالات + محرك انتقال صارم + تسجيل أوقات البقاء |
 | 9 | **توجيه الحالات بين الإدارات** | ✅ | `Tickets`, `Departments`, `TicketHistories` | توجيه لقسم أو موظف + تسجيل التحويلات |
 | 10 | **التصعيد التلقائي** | ✅ | `Tickets`, `TicketHistories` | SlaMonitorService يعمل في الخلفية كـ BackgroundService |
@@ -169,7 +170,7 @@ flowchart TD
 | 18 | **الصلاحيات والأدوار** | ✅ | `Users`, `Roles` | JWT + Roles: Agent, Team Leader, Admin |
 | 19 | **سجل التدقيق (Audit Trail)** | ✅ | `AuditLogs` | `AuditSaveChangesInterceptor` + Bounded Channel + حفظ دفعي + أرشفة يومية — EF Core 9 Complex Types (ClientInfo) |
 
-**ملخص:** 18 متطلب مكتمل ✅ — متبقٍ متطلب واحد (قاعدة المعرفة) كتحسين مستقبلي ⏳
+**ملخص:** 19 متطلب مكتمل ✅ — تم إنجاز جميع متطلبات النظام بالكامل وتغطيتها بالكامل بالاختبارات
 
 ---
 
@@ -178,7 +179,7 @@ flowchart TD
 ```
 src/
 ├── UniGroup.CRM.Domain/
-│   ├── Entities/                         (14 ملف)
+│   ├── Entities/                         (19 كياناً)
 │   │   ├── ApplicationUser.cs            ← Phase 1 | IdentityUser<Guid> + FirstName, LastName, IsActive, CreatedAt + DepartmentId? (FK → Departments)
 │   │   ├── ApplicationRole.cs            ← Phase 1 | IdentityRole<Guid> + Description
 │   │   ├── RefreshToken.cs               ← Phase 1 | Token + ExpiresAt + IpAddress + IsRevoked
@@ -192,7 +193,12 @@ src/
 │   │   ├── Ticket.cs                     ← Phase 4 | ID: T-YYYY-NNNNN + Category + Status + Priority + SLA fields + ChatwootConversationId
 │   │   ├── TicketHistory.cs              ← Phase 4 | FromStatus, ToStatus, ChangedAt, TimeSpentInState
 │   │   ├── InternalNote.cs               ← Phase 4 | Content + CreatedAt + FK Ticket + FK Agent
-│   │   └── Attachment.cs                 ← Phase 4 | FileName, FileType, StorageUrl + FK Ticket + FK UploadedBy
+│   │   ├── Attachment.cs                 ← Phase 4 | FileName, FileType, StorageUrl + FK Ticket + FK UploadedBy
+│   │   ├── AuditLog.cs                   ← Phase 6 | Action, TableName, RecordId, BeforeValue, AfterValue, IP, UserAgent
+│   │   ├── CsatSurvey.cs                 ← Phase 6 | TicketId, CustomerId, Rating, Feedback, SurveyToken, Expiry
+│   │   ├── NotificationLog.cs            ← Phase 6 | RecipientType, RecipientId, Channel, TemplateType, Status, Message
+│   │   ├── ProcessedWebhookEvent.cs      ← Phase 6 | EventId, ProcessedAt (Idempotency)
+│   │   └── KnowledgeBaseArticle.cs       ← Phase 7 | Category, Title, QuestionsToAsk, DiagnosisSteps, SuggestedAnswers, EscalationConditions
 │   └── Enums/                            (4 ملفات)
 │       ├── CallDirection.cs              ← Inbound, Outbound
 │       ├── TicketCategory.cs             ← 8 تصنيفات (Hardware, Software, Network, ...)
@@ -200,12 +206,16 @@ src/
 │       └── TicketPriority.cs             ← Low, Medium, High, Critical
 │
 ├── UniGroup.CRM.Application/
-│   ├── Common/Interfaces/               (4 ملفات)
+│   ├── Common/Interfaces/               (8 ملفات)
 │   │   ├── IApplicationDbContext.cs     ← DbSets لكل الكيانات + SaveChangesAsync
 │   │   ├── IJwtProvider.cs              ← GenerateToken(user, roles)
 │   │   ├── ITicketNumberGenerator.cs    ← GenerateNextAsync()
-│   │   └── IFileStorageService.cs       ← SaveFileAsync + DeleteFileAsync
-│   └── Features/                        (8 موديولات)
+│   │   ├── IFileStorageService.cs       ← SaveFileAsync + DeleteFileAsync
+│   │   ├── IChatwootClientService.cs    ← Phase 6 | إرسال رسائل وتحديث سمات جهات اتصال Chatwoot
+│   │   ├── ICurrentUserService.cs       ← Phase 6 | جلب الـ UserId و الـ ClientInfo (IP/UA) الحالي
+│   │   ├── IEmailService.cs             ← Phase 6 | إرسال البريد الإلكتروني (SMTP)
+│   │   └── IKnowledgeBaseReadService.cs ← Phase 7 | جلب الإرشاد النشط بـ Compiled Query
+│   └── Features/                        (11 موديولاً)
 │       ├── Auth/
 │       │   ├── Commands/Login/LoginCommand.cs                    ← Phase 1
 │       │   ├── Commands/Register/RegisterCommand.cs              ← Phase 1
@@ -254,29 +264,64 @@ src/
 │       │       ├── GetDeviceFailureReport/GetDeviceFailureReportQuery.cs ← HybridCache + Tags
 │       │       ├── GetHourlyCallVolume/GetHourlyCallVolumeQuery.cs     ← HybridCache + Tags
 │       │       └── GetTicketsByStatus/GetTicketsByStatusQuery.cs       ← HybridCache + Tags
-│       └── Reports/                                              ← Phase 5
-│           └── Queries/ExportAgentReport/ExportAgentReportQuery.cs ← CSV Export Stream
+│       ├── Reports/                                              ← Phase 5
+│       │   └── Queries/ExportAgentReport/ExportAgentReportQuery.cs ← CSV Export Stream
+│       ├── AuditLogs/                                            ← Phase 6
+│       │   └── Queries/
+│       │       ├── GetAuditLogs/GetAuditLogsQuery.cs             ← استعلام سجل التدقيق المصفح والمفلتر
+│       │       └── GetAuditLogDetails/GetAuditLogDetailsQuery.cs ← تفاصيل عملية تدقيق معينة
+│       ├── Csat/                                                 ← Phase 6
+│       │   ├── Commands/SubmitCsatSurvey/SubmitCsatSurveyCommand.cs ← تقديم العميل لاستبيان CSAT
+│       │   └── Queries/
+│       │       ├── GetCsatReport/GetCsatReportQuery.cs           ← تقرير مجمع لرضا العملاء
+│       │       └── GetSurveyByTicket/GetSurveyByTicketQuery.cs   ← استعلام استبيان تذكرة محددة
+│       ├── Notifications/                                        ← Phase 6
+│       │   ├── Commands/SendNotification/SendNotificationCommand.cs ← إرسال إشعار يدوي
+│       │   └── Queries/GetNotificationLogs/GetNotificationLogsQuery.cs ← استعلام سجل الإرسال
+│       └── KnowledgeBase/                                        ← Phase 7
+│           ├── Commands/
+│           │   ├── CreateArticle/CreateArticleCommand.cs          ← إنشاء مقال (Admin)
+│           │   ├── UpdateArticle/UpdateArticleCommand.cs          ← تحديث مقال (Admin)
+│           │   └── DeleteArticle/DeleteArticleCommand.cs          ← حذف مقال (Admin)
+│           └── Queries/
+│               ├── GetArticleByCategory/GetArticleByCategoryQuery.cs ← المقال النشط حسب التصنيف (Compiled Query)
+│               ├── GetArticleById/GetArticleByIdQuery.cs          ← جلب مقال بالمعرف
+│               └── GetArticles/GetArticlesQuery.cs                ← بحث نصي متقدم مصفح
 │
 ├── UniGroup.CRM.Infrastructure/
-│   ├── Data/ApplicationDbContext.cs      ← DbContext + Fluent API لكل الكيانات + PrimitiveCollection Config
-│   ├── Services/                         (5 ملفات)
+│   ├── Data/ApplicationDbContext.cs      ← DbContext + Fluent API لكل الكيانات + Config الفهارس الفريدة والمجموعات الأولية
+│   ├── Interceptors/                     (مجلد جديد — Phase 6)
+│   │   └── AuditSaveChangesInterceptor.cs ← interceptor لالتقاط التغييرات آلياً قبل الحفظ في قاعدة البيانات
+│   ├── Channels/                         (مجلد جديد — Phase 6)
+│   │   └── BoundedChannels.cs            ← قنوات الذاكرة المحددة (Bounded Channels) لـ Webhooks وسجلات التدقيق
+│   ├── BackgroundServices/               (مجلد جديد — Phase 6)
+│   │   ├── AuditLogProcessor.cs          ← معالجة وحفظ دفعي لسجل التدقيق غير متزامن
+│   │   ├── AuditLogArchiverService.cs    ← تنظيف وأرشفة يومية تلقائية للسجلات القديمة
+│   │   └── ChatwootWebhookProcessor.cs   ← معالجة خلفية لـ Chatwoot Webhooks بـ Polly
+│   ├── Services/                         (9 ملفات)
 │   │   ├── JwtOptions.cs                ← POCO لإعدادات JWT
 │   │   ├── JwtProvider.cs               ← توليد JWT + Refresh Token
-│   │   ├── TicketNumberGenerator.cs     ← توليد T-YYYY-NNNNN بـ DB Lock
+│   │   ├── TicketNumberGenerator.cs     ← توليد T-YYYY-NNNNN بـ DB Lock / Semaphore
 │   │   ├── LocalFileStorageService.cs   ← حفظ الملفات في wwwroot/uploads
-│   │   └── SlaMonitorService.cs         ← BackgroundService يراقب SLA كل دقيقة
-│   ├── DependencyInjection.cs           ← تسجيل كل الخدمات + HybridCache + JWT
-│   └── Migrations/                      (7 migrations — 15 ملف)
+│   │   ├── SlaMonitorService.cs         ← BackgroundService يراقب SLA كل دقيقة
+│   │   ├── ChatwootClientService.cs     ← Phase 6 | إرسال رسائل وتحديث Attributes
+│   │   ├── CurrentUserService.cs        ← Phase 6 | جلب الـ Claims والـ IP/UserAgent الحالي
+│   │   ├── EmailService.cs              ← Phase 6 | إرسال الإيميلات بالـ SMTP
+│   │   └── KnowledgeBaseReadService.cs  ← Phase 7 | جلب الإرشادات بـ Compiled Query
+│   ├── DependencyInjection.cs           ← تسجيل كل الخدمات + HybridCache + JWT + SQLite option
+│   └── Migrations/                      (9 migrations — 19 ملف)
 │       ├── 20260701080141_InitialCreate
 │       ├── 20260701085518_AddPhase2Entities
 │       ├── 20260701092950_AddPhase3Calls
 │       ├── 20260701093604_AddUniqueIndexesForBrandAndModel
 │       ├── 20260702102445_AddPhase4TicketsWorkflowsAndSla
 │       ├── 20260705110501_AddCustomerPreferredChannels
-│       └── 20260705115426_AddCallTicketLinkAndUserDepartment
+│       ├── 20260705115426_AddCallTicketLinkAndUserDepartment
+│       ├── 20260714085023_AddPhase6Entities
+│       └── 20260714105921_AddPhase7KnowledgeBase
 │
 └── UniGroup.CRM.API/
-    ├── Controllers/                     (9 controllers)
+    ├── Controllers/                     (14 controllers)
     │   ├── AuthController.cs            ← Phase 1 | /api/auth/login + /api/auth/register
     │   ├── CustomersController.cs       ← Phase 2 | /api/customers (CRUD + Search)
     │   ├── DevicesController.cs         ← Phase 2 | /api/devices (Brands + Models + Assign)
@@ -285,8 +330,13 @@ src/
     │   ├── TicketsController.cs         ← Phase 4 | /api/tickets (Full CRUD + Status + Notes + Attachments)
     │   ├── DepartmentsController.cs     ← Phase 4 | /api/departments
     │   ├── DashboardsController.cs      ← Phase 5 | /api/dashboard/* (5 endpoints)
-    │   └── ReportsController.cs         ← Phase 5 | /api/reports/agents/export (CSV)
-    ├── Program.cs                       ← Minimal API setup
+    │   ├── ReportsController.cs         ← Phase 5 | /api/reports/agents/export (CSV)
+    │   ├── AuditLogsController.cs       ← Phase 6 | /api/audit-logs/* (2 endpoints)
+    │   ├── ChatwootWebhookController.cs ← Phase 6 | /api/webhooks/chatwoot (HMAC - Anonymous)
+    │   ├── CsatController.cs            ← Phase 6 | /api/surveys/* (3 endpoints)
+    │   ├── NotificationsController.cs   ← Phase 6 | /api/notifications/logs
+    │   └── KnowledgeBaseController.cs   ← Phase 7 | /api/knowledge-base/* (6 endpoints)
+    ├── Program.cs                       ← Minimal API setup + DB Seeding logic
     ├── appsettings.json                 ← ConnectionString + JWT settings
     └── UniGroup.CRM.API.http            ← HTTP test file (manual testing)
 ```
@@ -294,11 +344,11 @@ src/
 **إحصائيات الكود:**
 | المشروع | عدد الملفات |
 |---|:-:|
-| Domain (Entities + Enums) | 18 ملف |
-| Application (Commands + Queries + DTOs + Interfaces) | ~40 ملف |
-| Infrastructure (DbContext + Services + Migrations) | ~20 ملف |
-| API (Controllers + Config) | ~14 ملف |
-| **الإجمالي** | **~92 ملف** |
+| Domain (Entities + Enums) | 23 ملفاً |
+| Application (Commands + Queries + DTOs + Interfaces) | ~70 ملفاً |
+| Infrastructure (DbContext + Services + Migrations) | ~40 ملفاً |
+| API (Controllers + Config) | ~22 ملفاً |
+| **الإجمالي** | **~155 ملفاً** |
 
 ---
 
