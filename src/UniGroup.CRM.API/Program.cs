@@ -13,6 +13,16 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+// When running on the SQLite test provider (no SQL Server available, e.g. Linux sandbox),
+// create the schema directly from the EF model since the migrations are SQL Server-specific.
+var configuredProvider = builder.Configuration.GetValue<string>("Database:Provider") ?? "SqlServer";
+if (string.Equals(configuredProvider, "Sqlite", StringComparison.OrdinalIgnoreCase))
+{
+    using var startupScope = app.Services.CreateScope();
+    var startupDb = startupScope.ServiceProvider.GetRequiredService<UniGroup.CRM.Infrastructure.Data.ApplicationDbContext>();
+    startupDb.Database.EnsureCreated();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

@@ -6,7 +6,39 @@ $ErrorActionPreference = "Stop"
 # Configurations
 $BaseUrl = "http://localhost:5112"
 $WorkingDir = $PSScriptRoot
-$ApiDir = "$WorkingDir\src\UniGroup.CRM.API"
+$ApiDir = Join-Path $WorkingDir "src/UniGroup.CRM.API"
+
+# Cross-platform helpers (Windows PowerShell 5.1 / pwsh 7 on Linux & macOS)
+$script:OnWindows = ($PSVersionTable.PSVersion.Major -lt 6) -or $IsWindows
+
+function Stop-PortProcesses($port) {
+    if ($script:OnWindows) {
+        $conns = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
+        foreach ($conn in $conns) {
+            if ($conn.OwningProcess) {
+                Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue
+            }
+        }
+        return [bool]$conns
+    } else {
+        $procIds = & lsof -t -i ":$port" 2>$null
+        foreach ($procId in $procIds) {
+            if ($procId) { Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue }
+        }
+        return [bool]$procIds
+    }
+}
+
+function Stop-ApiProcessTree($process) {
+    if (-not $process) { return }
+    if ($script:OnWindows) {
+        taskkill /F /T /PID $process.Id > $null 2>&1
+    } else {
+        # 'dotnet run' spawns the actual API as a child process: kill children first, then the parent
+        & pkill -9 -P $process.Id 2>$null
+        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+    }
+}
 
 Write-Host "=========================================================" -ForegroundColor Cyan
 Write-Host "   Starting UniGroup CRM API Phase 5 Automated Tests     " -ForegroundColor Cyan
@@ -14,21 +46,15 @@ Write-Host "=========================================================" -Foregrou
 
 # Step 0: Ensure no process is already listening on port 5112
 Write-Host "Checking for existing processes on port 5112..." -ForegroundColor Yellow
-$existingConn = Get-NetTCPConnection -LocalPort 5112 -ErrorAction SilentlyContinue
-if ($existingConn) {
-    Write-Host "Found existing process on port 5112. Terminating..." -ForegroundColor Yellow
-    foreach ($conn in $existingConn) {
-        if ($conn.OwningProcess) {
-            Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue
-        }
-    }
+if (Stop-PortProcesses 5112) {
+    Write-Host "Found existing process on port 5112. Terminated." -ForegroundColor Yellow
     Start-Sleep -Seconds 2
 }
 
 # Step 1: Start the API server in Development environment
 Write-Host "Starting API server in background..." -ForegroundColor Yellow
-$stdoutLog = "$WorkingDir\api_stdout.log"
-$stderrLog = "$WorkingDir\api_stderr.log"
+$stdoutLog = Join-Path $WorkingDir "api_stdout.log"
+$stderrLog = Join-Path $WorkingDir "api_stderr.log"
 
 # Clean previous logs
 if (Test-Path $stdoutLog) { Remove-Item $stdoutLog -Force }
@@ -63,9 +89,8 @@ if (-not $ready) {
     if (Test-Path $stderrLog) { Get-Content $stderrLog -Tail 20 | Write-Host -ForegroundColor Red }
     
     # Clean up
-    if ($apiProcess) {
-        taskkill /F /T /PID $apiProcess.Id > $null 2>&1
-    }
+    Stop-ApiProcessTree $apiProcess
+    Stop-PortProcesses 5112 | Out-Null
     exit 1
 }
 
@@ -116,9 +141,15 @@ function Send-Request($method, $route, $body = $null, $headers = @{}, $contentTy
     } catch {
         if ($_.Exception.Response) {
             $statusCode = [int]$_.Exception.Response.StatusCode
-            $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-            $content = $reader.ReadToEnd()
-            $reader.Close()
+            if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+                # pwsh 7+: response body is exposed via ErrorDetails
+                $content = $_.ErrorDetails.Message
+            } elseif ($_.Exception.Response.PSObject.Methods['GetResponseStream']) {
+                # Windows PowerShell 5.1: HttpWebResponse stream
+                $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+                $content = $reader.ReadToEnd()
+                $reader.Close()
+            }
         } else {
             $statusCode = 500
             $content = $_.Exception.Message
@@ -186,19 +217,12 @@ Add-TestResult -name "T8: Get Dashboard Summary without JWT" -expected 401 -actu
 # Step 4: Cleanup
 Write-Host "Cleaning up API server process..." -ForegroundColor Yellow
 if ($apiProcess) {
-    taskkill /F /T /PID $apiProcess.Id > $null 2>&1
+    Stop-ApiProcessTree $apiProcess
     Write-Host "API server process PID $($apiProcess.Id) terminated." -ForegroundColor Green
 }
 
 # Double check port 5112 is free
-$remainingConn = Get-NetTCPConnection -LocalPort 5112 -ErrorAction SilentlyContinue
-if ($remainingConn) {
-    foreach ($conn in $remainingConn) {
-        if ($conn.OwningProcess) {
-            Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue
-        }
-    }
-}
+Stop-PortProcesses 5112 | Out-Null
 
 # Write summary
 Write-Host "=========================================================" -ForegroundColor Cyan
@@ -220,4 +244,4 @@ $results | Format-Table -AutoSize
 
 # Export results to file
 $resultsJson = $results | ConvertTo-Json
-Set-Content -Path "$WorkingDir\phase5_test_results.json" -Value $resultsJson
+Set-Content -Path (Join-Path $WorkingDir "phase5_test_results.json") -Value $resultsJson

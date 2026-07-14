@@ -27,11 +27,26 @@ public static class DependencyInjection
         // Bind JwtOptions
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
 
-        // Register Database Context
+        // Register Database Context.
+        // Provider selection: defaults to SQL Server (production). Setting "Database:Provider" to
+        // "Sqlite" enables a lightweight cross-platform provider for local/sandbox integration testing
+        // where SQL Server is unavailable. Clean Architecture is preserved: only Infrastructure knows the provider.
+        var databaseProvider = configuration.GetValue<string>("Database:Provider") ?? "SqlServer";
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection"),
-                b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+        {
+            if (string.Equals(databaseProvider, "Sqlite", StringComparison.OrdinalIgnoreCase))
+            {
+                options.UseSqlite(
+                    configuration.GetConnectionString("SqliteConnection") ?? "Data Source=unigroup_crm_test.db",
+                    b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName));
+            }
+            else
+            {
+                options.UseSqlServer(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName));
+            }
+        });
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 

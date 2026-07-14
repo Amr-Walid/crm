@@ -308,12 +308,12 @@ private static readonly Func<ApplicationDbContext, Guid, Task<Customer?>> GetCus
 
 ```csharp
 // في Customer.cs
-public List<string> PreferredChannels { get; set; } = [];
+public List<string> PreferredChannels { get; set; } = new List<string>();
 
-// في ApplicationDbContext.cs (Fluent API)
-builder.Property(c => c.PreferredChannels)
-    .HasColumnType("nvarchar(max)")
-    .HasDefaultValueSql("N'[]'");
+// لا يوجد تكوين Fluent API صريح — EF Core 9 يتعرف عليها تلقائياً (by convention)
+// كـ Primitive Collection ويخزنها JSON في عمود nvarchar(max).
+// القيمة الافتراضية '[]' معرّفة في الـ Migration فقط:
+// (20260705110501_AddCustomerPreferredChannels → defaultValue: "[]")
 ```
 
 **الفائدة:** تخزين `["WhatsApp", "Email"]` مباشرة كـ JSON دون جدول وسيط — يقلل الـ Joins ويبسط الاستعلامات.
