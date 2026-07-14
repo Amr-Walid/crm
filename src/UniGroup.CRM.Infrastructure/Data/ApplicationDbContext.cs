@@ -82,6 +82,26 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<Attachment> Attachments => Set<Attachment>();
 
     /// <summary>
+    /// Gets or sets the database set for audit trail entries (Phase 6).
+    /// </summary>
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
+    /// <summary>
+    /// Gets or sets the database set for CSAT surveys (Phase 6).
+    /// </summary>
+    public DbSet<CsatSurvey> CsatSurveys => Set<CsatSurvey>();
+
+    /// <summary>
+    /// Gets or sets the database set for notification delivery logs (Phase 6).
+    /// </summary>
+    public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
+
+    /// <summary>
+    /// Gets or sets the database set for processed webhook events (Phase 6 idempotency).
+    /// </summary>
+    public DbSet<ProcessedWebhookEvent> ProcessedWebhookEvents => Set<ProcessedWebhookEvent>();
+
+    /// <summary>
     /// Configures the model and table mappings.
     /// </summary>
     /// <param name="builder">The builder used to construct the database schema.</param>
@@ -353,6 +373,80 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
                 .WithMany()
                 .HasForeignKey(a => a.UploadedById)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ===== Phase 6 Entities =====
+
+        // Configure AuditLog entity mappings (Complex Type for ClientInfo)
+        builder.Entity<AuditLog>(entity =>
+        {
+            entity.ToTable("AuditLogs");
+            entity.HasKey(a => a.Id);
+            entity.Property(a => a.Action).HasMaxLength(100).IsRequired();
+            entity.Property(a => a.TableName).HasMaxLength(100).IsRequired();
+            entity.Property(a => a.RecordId).HasMaxLength(100).IsRequired();
+
+            // EF Core 9 Complex Type → columns ClientInfo_IpAddress / ClientInfo_UserAgent
+            entity.ComplexProperty(a => a.ClientInfo, ci =>
+            {
+                ci.Property(c => c.IpAddress).HasMaxLength(100).HasColumnName("ClientInfo_IpAddress");
+                ci.Property(c => c.UserAgent).HasColumnName("ClientInfo_UserAgent");
+            });
+
+            entity.HasIndex(a => a.CreatedAt);
+
+            // Keep audit records when the user is removed
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Configure CsatSurvey entity mappings
+        builder.Entity<CsatSurvey>(entity =>
+        {
+            entity.ToTable("CsatSurveys");
+            entity.HasKey(s => s.Id);
+            entity.Property(s => s.TicketId).HasMaxLength(20).IsRequired();
+            entity.Property(s => s.Feedback).HasMaxLength(1000);
+            entity.Property(s => s.SurveyToken).HasMaxLength(450).IsRequired();
+
+            // One survey per ticket + fast token lookup
+            entity.HasIndex(s => s.TicketId).IsUnique();
+            entity.HasIndex(s => s.SurveyToken).IsUnique();
+
+            entity.HasOne(s => s.Ticket)
+                .WithMany()
+                .HasForeignKey(s => s.TicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Cascade per database_design.md — no multiple cascade paths since Ticket→Customer is Restrict
+            entity.HasOne(s => s.Customer)
+                .WithMany()
+                .HasForeignKey(s => s.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure NotificationLog entity mappings
+        builder.Entity<NotificationLog>(entity =>
+        {
+            entity.ToTable("NotificationLogs");
+            entity.HasKey(n => n.Id);
+            entity.Property(n => n.RecipientType).HasMaxLength(100).IsRequired();
+            entity.Property(n => n.RecipientId).HasMaxLength(100).IsRequired();
+            entity.Property(n => n.Channel).HasMaxLength(100).IsRequired();
+            entity.Property(n => n.TemplateType).HasMaxLength(100).IsRequired();
+            entity.Property(n => n.Status).HasMaxLength(100).IsRequired();
+
+            entity.HasIndex(n => n.SentAt);
+        });
+
+        // Configure ProcessedWebhookEvent entity mappings (idempotency inbox)
+        builder.Entity<ProcessedWebhookEvent>(entity =>
+        {
+            entity.ToTable("ProcessedWebhookEvents");
+            entity.HasKey(e => e.EventId);
+            entity.Property(e => e.EventId).HasMaxLength(450);
         });
     }
 }

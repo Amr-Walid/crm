@@ -66,6 +66,26 @@ public interface IApplicationDbContext
     DbSet<Attachment> Attachments { get; }
 
     /// <summary>
+    /// Gets the database set for audit trail entries (Phase 6).
+    /// </summary>
+    DbSet<AuditLog> AuditLogs { get; }
+
+    /// <summary>
+    /// Gets the database set for CSAT surveys (Phase 6).
+    /// </summary>
+    DbSet<CsatSurvey> CsatSurveys { get; }
+
+    /// <summary>
+    /// Gets the database set for notification delivery logs (Phase 6).
+    /// </summary>
+    DbSet<NotificationLog> NotificationLogs { get; }
+
+    /// <summary>
+    /// Gets the database set for processed webhook events (Phase 6 idempotency).
+    /// </summary>
+    DbSet<ProcessedWebhookEvent> ProcessedWebhookEvents { get; }
+
+    /// <summary>
     /// Saves all changes made in this context to the database.
     /// </summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
