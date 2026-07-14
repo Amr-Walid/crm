@@ -1,0 +1,62 @@
+# Chatwoot Self-Hosted Omnichannel Platform — UniGroup CRM Phase 6
+# Usage: docker compose -f .docker/chatwoot/docker-compose.yml --env-file .docker/chatwoot/.env.chatwoot up -d
+# First run only (prepare the database):
+#   docker compose -f .docker/chatwoot/docker-compose.yml run --rm web bundle exec rails db:chatwoot_prepare
+version: '3'
+
+services:
+  postgres:
+    image: postgres:12-alpine
+    restart: unless-stopped
+    env_file: .env.chatwoot
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:6.0-alpine
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    image: chatwoot/chatwoot:v3.10.0
+    restart: unless-stopped
+    env_file: .env.chatwoot
+    ports:
+      - '3000:3000'
+    depends_on:
+      - postgres
+      - redis
+    command: bundle exec rails s -p 3000 -b '0.0.0.0'
+    volumes:
+      - storage:/app/storage
+
+  sidekiq:
+    image: chatwoot/chatwoot:v3.10.0
+    restart: unless-stopped
+    env_file: .env.chatwoot
+    depends_on:
+      - postgres
+      - redis
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    volumes:
+      - storage:/app/storage
+
+volumes:
+  pgdata:
+  redisdata:
+  storage:
