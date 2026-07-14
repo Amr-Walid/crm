@@ -75,7 +75,7 @@ $apiProcess = Start-Process dotnet -ArgumentList "run --project `"$ApiDir`" --la
 Write-Host "API server process started with PID: $($apiProcess.Id)" -ForegroundColor Green
 
 # Wait for server to start up and listen
-$maxRetries = 20
+$maxRetries = 45
 $ready = $false
 Write-Host "Waiting for API to become ready..." -ForegroundColor Yellow
 for ($i = 1; $i -le $maxRetries; $i++) {
