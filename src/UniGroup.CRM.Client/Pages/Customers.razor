@@ -1,0 +1,216 @@
+@page "/customers"
+@attribute [Authorize]
+@inject CrmApiClient Api
+@inject NavigationManager Nav
+@inject ToastService Toasts
+
+<PageTitle>Customers — UniGroup CRM</PageTitle>
+
+<div class="page-pad anim-fade-up">
+    <div class="spread" style="margin-bottom:20px">
+        <div>
+            <h1 style="font-size:22px">Customers</h1>
+            <p class="muted" style="margin:4px 0 0">Search the directory by name, phone, IMEI or serial number</p>
+        </div>
+        <button class="btn btn-primary" @onclick="() => _showCreate = true">➕ New Customer</button>
+    </div>
+
+    <div class="card filter-bar" style="margin-bottom:16px">
+        <div style="position:relative;flex:1;min-width:220px">
+            <input class="input" placeholder="🔎 Type at least 2 characters to search…"
+                   value="@_term" @oninput="OnInput" @onkeydown="OnKeyDown" />
+        </div>
+        <button class="btn btn-secondary" @onclick="SearchAsync" disabled="@_loading">Search</button>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+            @for (var i = 0; i < 6; i++)
+            {
+                <div class="card" style="padding:18px">
+                    <div class="row"><Skeleton Circle Width="40px" Height="40px" /><div style="flex:1"><Skeleton Width="60%" Height="14px" Style="margin-bottom:8px" /><Skeleton Width="40%" Height="11px" /></div></div>
+                </div>
+            }
+        </div>
+    }
+    else if (_results is null)
+    {
+        <div class="card empty-state">
+            <div class="icon">👥</div>
+            <h3>Find a customer</h3>
+            <p>Search by <b>name</b>, <b>phone number</b>, <b>IMEI</b> or <b>serial number</b> to open the 360° profile.</p>
+        </div>
+    }
+    else if (_results.Count == 0)
+    {
+        <div class="card empty-state">
+            <div class="icon">🔍</div>
+            <h3>No customers found</h3>
+            <p>No records match “@_lastTerm”. You can create a new customer.</p>
+            <button class="btn btn-primary" @onclick="() => _showCreate = true">➕ Create Customer</button>
+        </div>
+    }
+    else
+    {
+        <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
+            @foreach (var c in _results)
+            {
+                <div class="card hoverable" style="padding:18px;cursor:pointer" @onclick="() => GoTo(c.Id)">
+                    <div class="row" style="margin-bottom:12px">
+                        <div class="avatar">@UiHelpers.Initials(c.Name)</div>
+                        <div style="min-width:0;flex:1">
+                            <div style="font-weight:700;font-size:14.5px">@c.Name</div>
+                            <div class="subtle">@(c.Email ?? "no e-mail")</div>
+                        </div>
+                    </div>
+                    <div class="row wrap" style="gap:6px">
+                        @if (c.Phones.FirstOrDefault(p => p.IsPrimary) is { } primary)
+                        {
+                            <span class="badge badge-indigo mono">📱 @primary.Phone</span>
+                        }
+                        <span class="badge badge-slate">@c.Devices.Count device(s)</span>
+                        @if (c.Devices.Any(d => d.WarrantyStatus == "Active"))
+                        {
+                            <span class="badge badge-green"><span class="dot"></span> Warranty</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(c.City))
+                        {
+                            <span class="badge badge-slate">📍 @c.City</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<Modal @bind-Visible="_showCreate" Title="➕ New Customer">
+    <EditForm Model="_create" OnValidSubmit="CreateAsync">
+        <DataAnnotationsValidator />
+        <div class="field">
+            <label>Full name *</label>
+            <InputText class="input" @bind-Value="_create.Name" placeholder="Customer full name" />
+            <ValidationMessage For="() => _create.Name" />
+        </div>
+        <div class="field">
+            <label>Primary phone *</label>
+            <InputText class="input mono" @bind-Value="_create.Phone" placeholder="01012345678" />
+            <ValidationMessage For="() => _create.Phone" />
+        </div>
+        <div class="field">
+            <label>Email</label>
+            <InputText class="input" @bind-Value="_create.Email" placeholder="customer@email.com" />
+        </div>
+        <div class="row" style="align-items:flex-start">
+            <div class="field" style="flex:1">
+                <label>Province</label>
+                <InputText class="input" @bind-Value="_create.Province" placeholder="Cairo" />
+            </div>
+            <div class="field" style="flex:1">
+                <label>City</label>
+                <InputText class="input" @bind-Value="_create.City" placeholder="Maadi" />
+            </div>
+        </div>
+        <div class="field">
+            <label>Address details</label>
+            <InputText class="input" @bind-Value="_create.AddressDetails" placeholder="Street, building…" />
+        </div>
+        <button class="btn btn-primary" style="width:100%" type="submit" disabled="@_creating">
+            @(_creating ? "Creating…" : "Create customer")
+        </button>
+    </EditForm>
+</Modal>
+
+@code {
+    private sealed class CreateModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Name is required")]
+        public string Name { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Phone is required")]
+        public string Phone { get; set; } = string.Empty;
+
+        public string? Email { get; set; }
+        public string? Province { get; set; }
+        public string? City { get; set; }
+        public string? AddressDetails { get; set; }
+    }
+
+    private string _term = string.Empty;
+    private string _lastTerm = string.Empty;
+    private bool _loading;
+    private List<CustomerDetailsDto>? _results;
+    private bool _showCreate;
+    private bool _creating;
+    private CreateModel _create = new();
+
+    private void GoTo(Guid id) => Nav.NavigateTo($"/customers/{id}");
+
+    private void OnInput(ChangeEventArgs e) => _term = e.Value?.ToString() ?? string.Empty;
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchAsync();
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        var term = _term.Trim();
+        if (term.Length < 2)
+        {
+            Toasts.Info("Enter at least 2 characters to search.");
+            return;
+        }
+
+        _loading = true;
+        _lastTerm = term;
+        try
+        {
+            _results = await Api.SearchCustomersAsync(term);
+        }
+        catch (ApiException ex)
+        {
+            Toasts.Error(ex.Message);
+            _results = [];
+        }
+        catch (HttpRequestException)
+        {
+            Toasts.Error("Cannot reach the API server.");
+            _results = [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        _creating = true;
+        try
+        {
+            var id = await Api.CreateCustomerAsync(new CreateCustomerRequest(
+                _create.Name.Trim(),
+                string.IsNullOrWhiteSpace(_create.Email) ? null : _create.Email.Trim(),
+                _create.Province, _create.City, _create.AddressDetails,
+                _create.Phone.Trim()));
+
+            Toasts.Success("Customer created.");
+            _showCreate = false;
+            _create = new CreateModel();
+            Nav.NavigateTo($"/customers/{id}");
+        }
+        catch (ApiException ex)
+        {
+            Toasts.Error(ex.Message);
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+}

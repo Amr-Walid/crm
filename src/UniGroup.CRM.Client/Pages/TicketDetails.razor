@@ -1,0 +1,498 @@
+@page "/tickets/{TicketId}"
+@attribute [Authorize]
+@inject CrmApiClient Api
+@inject NavigationManager Nav
+@inject ToastService Toasts
+@inject JwtAuthenticationStateProvider Auth
+@inject IJSRuntime JS
+
+<PageTitle>@(_ticket?.Id ?? "Ticket") — UniGroup CRM</PageTitle>
+
+<div class="page-pad anim-fade-up">
+    @if (_loading)
+    {
+        <Skeleton Height="90px" Style="margin-bottom:16px" />
+        <div class="grid" style="grid-template-columns:2fr 1fr;gap:16px">
+            <Skeleton Height="300px" />
+            <Skeleton Height="300px" />
+        </div>
+    }
+    else if (_ticket is null)
+    {
+        <div class="card empty-state">
+            <div class="icon">🎫</div>
+            <h3>Ticket not found</h3>
+            <p>The ticket “@TicketId” does not exist or you don't have access.</p>
+            <button class="btn btn-primary" @onclick="GoToList">← Back to tickets</button>
+        </div>
+    }
+    else
+    {
+        <!-- ══════════ HEADER ══════════ -->
+        <div class="card glass" style="padding:22px 24px;margin-bottom:16px">
+            <div class="spread wrap" style="gap:14px">
+                <div style="min-width:0">
+                    <div class="row wrap" style="gap:8px;margin-bottom:6px">
+                        <span class="mono muted" style="font-size:12.5px">@_ticket.Id</span>
+                        <span class="badge @UiHelpers.StatusBadge(_ticket.Status)">@UiHelpers.StatusLabel(_ticket.Status)</span>
+                        <span class="badge @UiHelpers.PriorityBadge(_ticket.Priority)">@_ticket.Priority</span>
+                        <span class="badge badge-slate">@CategoryDisplay</span>
+                    </div>
+                    <h1 style="font-size:20px;margin:0">@_ticket.Title</h1>
+                    <div class="subtle" style="margin-top:6px">
+                        Created @UiHelpers.TimeAgo(_ticket.CreatedAt) · Updated @UiHelpers.TimeAgo(_ticket.UpdatedAt)
+                        @if (_ticket.ClosedAt is { } closed)
+                        {
+                            <text> · Closed @UiHelpers.TimeAgo(closed)</text>
+                        }
+                    </div>
+                </div>
+                <div style="text-align:right">
+                    <div class="subtle" style="margin-bottom:4px">SLA Countdown</div>
+                    <div style="font-size:18px">
+                        <SlaTimer Deadline="@_ticket.SlaDeadline" Breached="@_ticket.SlaBreached"
+                                  Status="@_ticket.Status" TotalHours="@SlaTotalHours" />
+                    </div>
+                    @if (UiHelpers.IsSlaPaused(_ticket.Status))
+                    {
+                        <div class="subtle" style="margin-top:4px">⏸ paused — waiting state</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:start">
+            <!-- ══════════ LEFT: description / notes / attachments / history ══════════ -->
+            <div class="grid" style="gap:16px">
+
+                <!-- Description -->
+                <div class="card" style="padding:20px">
+                    <div class="section-title" style="margin-bottom:10px">📝 Description</div>
+                    <p style="white-space:pre-wrap;margin:0;font-size:13.5px;line-height:1.65">@_ticket.Description</p>
+                    @if (!string.IsNullOrWhiteSpace(_ticket.ResolutionNote))
+                    {
+                        <div class="card" style="margin-top:14px;padding:14px;border-left:4px solid var(--success)">
+                            <div style="font-weight:700;font-size:12.5px;margin-bottom:6px">✅ Resolution</div>
+                            <p style="white-space:pre-wrap;margin:0;font-size:13px">@_ticket.ResolutionNote</p>
+                        </div>
+                    }
+                </div>
+
+                <!-- Tabs: Notes / Attachments / History -->
+                <div class="card" style="padding:0;overflow:hidden">
+                    <div class="tabs" style="padding:0 16px;border-bottom:1px solid var(--border)">
+                        <button class="tab @(_tab == "notes" ? "active" : "")" @onclick="ShowNotes">💬 Notes (@_ticket.InternalNotes.Count)</button>
+                        <button class="tab @(_tab == "files" ? "active" : "")" @onclick="ShowFiles">📎 Attachments (@_ticket.Attachments.Count)</button>
+                        <button class="tab @(_tab == "history" ? "active" : "")" @onclick="ShowHistory">🕓 History (@_ticket.Histories.Count)</button>
+                    </div>
+
+                    <div style="padding:18px 20px">
+                        @if (_tab == "notes")
+                        {
+                            @if (_ticket.InternalNotes.Count == 0)
+                            {
+                                <p class="subtle" style="margin:0 0 14px">No internal notes yet — start the thread below.</p>
+                            }
+                            else
+                            {
+                                <div class="grid" style="gap:12px;margin-bottom:16px" id="notes-thread">
+                                    @foreach (var note in _ticket.InternalNotes.OrderBy(n => n.CreatedAt))
+                                    {
+                                        <div class="row" style="align-items:flex-start;gap:10px">
+                                            <div class="avatar" style="flex-shrink:0">@UiHelpers.Initials(note.AuthorName)</div>
+                                            <div class="card" style="flex:1;padding:12px 14px">
+                                                <div class="spread" style="margin-bottom:5px">
+                                                    <span style="font-weight:700;font-size:12.5px">@note.AuthorName</span>
+                                                    <span class="subtle">@UiHelpers.TimeAgo(note.CreatedAt)@(note.IsEdited ? " · edited" : "")</span>
+                                                </div>
+                                                <p style="white-space:pre-wrap;margin:0;font-size:13px;line-height:1.55">@note.Content</p>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            <div class="field" style="margin-bottom:8px">
+                                <textarea class="textarea" rows="3" placeholder="Write an internal note… (visible to staff only)"
+                                          @bind="_newNote" @bind:event="oninput"></textarea>
+                            </div>
+                            <div class="row" style="justify-content:flex-end">
+                                <button class="btn btn-primary btn-sm" @onclick="AddNoteAsync"
+                                        disabled="@(string.IsNullOrWhiteSpace(_newNote) || _savingNote)">
+                                    @(_savingNote ? "Posting…" : "Post Note")
+                                </button>
+                            </div>
+                        }
+                        else if (_tab == "files")
+                        {
+                            @if (_ticket.Attachments.Count == 0)
+                            {
+                                <p class="subtle" style="margin:0 0 14px">No attachments uploaded.</p>
+                            }
+                            else
+                            {
+                                <div class="grid" style="gap:8px;margin-bottom:16px">
+                                    @foreach (var file in _ticket.Attachments.OrderByDescending(a => a.CreatedAt))
+                                    {
+                                        <div class="card row spread" style="padding:10px 14px">
+                                            <div class="row" style="min-width:0">
+                                                <span style="font-size:18px">@FileIcon(file.ContentType)</span>
+                                                <div style="min-width:0">
+                                                    <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@file.FileName</div>
+                                                    <div class="subtle">@UiHelpers.FormatBytes(file.FileSizeBytes) · by @file.UploadedByName · @UiHelpers.TimeAgo(file.CreatedAt)</div>
+                                                </div>
+                                            </div>
+                                            <a class="btn btn-ghost btn-sm" href="@FileHref(file)" target="_blank" rel="noopener">Open</a>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            <label class="btn btn-secondary btn-sm" style="position:relative;overflow:hidden;cursor:pointer">
+                                @(_uploading ? "Uploading…" : "📎 Upload file (max 10 MB)")
+                                <InputFile OnChange="UploadAsync" disabled="@_uploading"
+                                           style="position:absolute;inset:0;opacity:0;cursor:pointer" />
+                            </label>
+                        }
+                        else
+                        {
+                            @if (_ticket.Histories.Count == 0)
+                            {
+                                <p class="subtle" style="margin:0">No history entries.</p>
+                            }
+                            else
+                            {
+                                <div class="timeline">
+                                    @foreach (var h in _ticket.Histories.OrderByDescending(x => x.CreatedAt))
+                                    {
+                                        <div class="timeline-item">
+                                            <div class="row wrap" style="gap:8px;margin-bottom:3px">
+                                                @if (h.FromStatus is not null)
+                                                {
+                                                    <span class="badge @UiHelpers.StatusBadge(h.FromStatus)">@UiHelpers.StatusLabel(h.FromStatus)</span>
+                                                    <span class="muted">→</span>
+                                                }
+                                                <span class="badge @UiHelpers.StatusBadge(h.ToStatus)">@UiHelpers.StatusLabel(h.ToStatus)</span>
+                                            </div>
+                                            <div class="subtle">
+                                                by @h.ChangedByName · @UiHelpers.TimeAgo(h.CreatedAt)
+                                                @if (h.TimeInStatus is { } secs and > 0)
+                                                {
+                                                    <text> · @UiHelpers.FormatDuration((int)secs) in previous status</text>
+                                                }
+                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(h.Note))
+                                            {
+                                                <div style="font-size:12.5px;margin-top:4px">“@h.Note”</div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════ RIGHT: customer / device / assignment / transitions ══════════ -->
+            <div class="grid" style="gap:16px">
+
+                <!-- Customer card -->
+                <div class="card hoverable" style="padding:16px;cursor:pointer" @onclick="GoToCustomer">
+                    <div class="section-title" style="margin-bottom:10px">👤 Customer</div>
+                    <div class="row">
+                        <div class="avatar">@UiHelpers.Initials(_ticket.CustomerName)</div>
+                        <div style="min-width:0">
+                            <div style="font-weight:700;font-size:13.5px">@_ticket.CustomerName</div>
+                            <div class="subtle mono">@(_ticket.CustomerPhone ?? "—")</div>
+                            @if (!string.IsNullOrEmpty(_ticket.CustomerEmail))
+                            {
+                                <div class="subtle">@_ticket.CustomerEmail</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Device card -->
+                @if (_ticket.CustomerDeviceId is not null)
+                {
+                    <div class="card" style="padding:16px">
+                        <div class="section-title" style="margin-bottom:10px">📱 Device</div>
+                        <div style="font-weight:700;font-size:13.5px">@_ticket.CustomerDeviceBrandName @_ticket.CustomerDeviceModelName</div>
+                        @if (!string.IsNullOrEmpty(_ticket.CustomerDeviceIMEI))
+                        {
+                            <div class="subtle mono">IMEI @_ticket.CustomerDeviceIMEI</div>
+                        }
+                        @if (!string.IsNullOrEmpty(_ticket.CustomerDeviceSerialNumber))
+                        {
+                            <div class="subtle mono">S/N @_ticket.CustomerDeviceSerialNumber</div>
+                        }
+                    </div>
+                }
+
+                <!-- Assignment -->
+                <div class="card" style="padding:16px">
+                    <div class="section-title" style="margin-bottom:10px">🧭 Assignment</div>
+                    <div class="field">
+                        <label>Assigned Agent</label>
+                        <div style="font-size:13px;font-weight:600">@(_ticket.AssignedToName ?? "Unassigned")</div>
+                    </div>
+                    <div class="field">
+                        <label>Department</label>
+                        <select class="select" @onchange="OnDeptSelected" disabled="@(_assigning || IsTicketTerminal)">
+                            <option value="" selected="@(_ticket.DepartmentId is null)">— None —</option>
+                            @foreach (var d in _departments)
+                            {
+                                <option value="@d.Id" selected="@(_ticket.DepartmentId == d.Id)">@d.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="row wrap" style="gap:8px">
+                        <button class="btn btn-secondary btn-sm" @onclick="AssignToMeAsync"
+                                disabled="@(_assigning || IsTicketTerminal || IsAssignedToMe)">
+                            @(IsAssignedToMe ? "✓ Assigned to you" : "🙋 Assign to me")
+                        </button>
+                        <button class="btn btn-primary btn-sm" @onclick="SaveAssignmentAsync"
+                                disabled="@(_assigning || IsTicketTerminal || !_deptDirty)">
+                            @(_assigning ? "Saving…" : "Save Department")
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status transition -->
+                <div class="card" style="padding:16px">
+                    <div class="section-title" style="margin-bottom:10px">🔄 Change Status</div>
+                    @if (NextOptions.Count == 0)
+                    {
+                        <p class="subtle" style="margin:0">This ticket is in a terminal state — no transitions available.</p>
+                    }
+                    else
+                    {
+                        <div class="field">
+                            <label>New Status</label>
+                            <select class="select" @onchange="OnStatusSelected" disabled="@_transitioning">
+                                <option value="">— Choose —</option>
+                                @foreach (var s in NextOptions)
+                                {
+                                    <option value="@((int)s)" selected="@(_targetStatus == s)">@UiHelpers.StatusLabel(s.ToString())</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>Note @(RequiresNote ? "* (required)" : "(optional)")</label>
+                            <textarea class="textarea" rows="2"
+                                      placeholder="@(RequiresNote ? "A resolution/cancellation note is required…" : "Why are you changing the status?")"
+                                      @bind="_transitionNote" @bind:event="oninput"></textarea>
+                        </div>
+                        <button class="btn btn-primary" style="width:100%"
+                                @onclick="TransitionAsync"
+                                disabled="@(_transitioning || _targetStatus is null || (RequiresNote && string.IsNullOrWhiteSpace(_transitionNote)))">
+                            @(_transitioning ? "Applying…" : "Apply Transition")
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string TicketId { get; set; } = string.Empty;
+
+    private TicketDetailsDto? _ticket;
+    private List<DepartmentDto> _departments = [];
+    private bool _loading = true;
+
+    private string _tab = "notes";
+
+    private string _newNote = string.Empty;
+    private bool _savingNote;
+
+    private bool _uploading;
+
+    private Guid? _selectedDeptId;
+    private bool _deptDirty;
+    private bool _assigning;
+
+    private TicketStatus? _targetStatus;
+    private string _transitionNote = string.Empty;
+    private bool _transitioning;
+
+    private bool IsTicketTerminal => _ticket is not null && UiHelpers.IsTerminal(_ticket.Status);
+
+    private List<TicketStatus> NextOptions =>
+        _ticket is null ? [] : UiHelpers.NextStatuses(_ticket.Status).ToList();
+
+    private bool RequiresNote =>
+        _targetStatus is TicketStatus.Resolved or TicketStatus.Cancelled;
+
+    private bool IsAssignedToMe =>
+        _ticket?.AssignedToId is { } id && string.Equals(id.ToString(), Auth.Session?.UserId, StringComparison.OrdinalIgnoreCase);
+
+    private string CategoryDisplay
+    {
+        get
+        {
+            if (_ticket is null) return string.Empty;
+            return Enum.TryParse<TicketCategory>(_ticket.Category, out var cat)
+                ? $"{UiHelpers.CategoryIcon(cat)} {UiHelpers.CategoryLabel(cat)}"
+                : _ticket.Category;
+        }
+    }
+
+    private double SlaTotalHours =>
+        _ticket is not null && Enum.TryParse<TicketPriority>(_ticket.Priority, out var pr)
+            ? UiHelpers.SlaHours[pr]
+            : 24;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            var ticketTask = Api.GetTicketAsync(TicketId);
+            if (_departments.Count == 0)
+            {
+                try { _departments = await Api.GetDepartmentsAsync(); } catch { /* non-fatal */ }
+            }
+            _ticket = await ticketTask;
+            _selectedDeptId = _ticket.DepartmentId;
+            _deptDirty = false;
+            _targetStatus = null;
+            _transitionNote = string.Empty;
+        }
+        catch (ApiException)
+        {
+            _ticket = null;
+        }
+        finally { _loading = false; }
+    }
+
+    // ───── tabs ─────
+    private void ShowNotes() => _tab = "notes";
+    private void ShowFiles() => _tab = "files";
+    private void ShowHistory() => _tab = "history";
+
+    // ───── notes ─────
+    private async Task AddNoteAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newNote) || _ticket is null) return;
+        _savingNote = true;
+        try
+        {
+            await Api.AddInternalNoteAsync(_ticket.Id, new AddInternalNoteRequest(_newNote.Trim()));
+            _newNote = string.Empty;
+            Toasts.Success("Note added");
+            await LoadAsync();
+        }
+        catch (ApiException ex) { Toasts.Error(ex.Message); }
+        finally { _savingNote = false; }
+    }
+
+    // ───── attachments ─────
+    private async Task UploadAsync(InputFileChangeEventArgs e)
+    {
+        if (_ticket is null) return;
+        var file = e.File;
+        const long maxBytes = 10 * 1024 * 1024;
+        if (file.Size > maxBytes)
+        {
+            Toasts.Error($"File too large ({UiHelpers.FormatBytes(file.Size)}) — limit is 10 MB.");
+            return;
+        }
+        _uploading = true;
+        try
+        {
+            await using var stream = file.OpenReadStream(maxBytes);
+            await Api.UploadAttachmentAsync(_ticket.Id, stream, file.Name,
+                string.IsNullOrEmpty(file.ContentType) ? "application/octet-stream" : file.ContentType);
+            Toasts.Success($"“{file.Name}” uploaded");
+            await LoadAsync();
+        }
+        catch (ApiException ex) { Toasts.Error(ex.Message); }
+        finally { _uploading = false; }
+    }
+
+    private static string FileIcon(string contentType) => contentType switch
+    {
+        var t when t.StartsWith("image/") => "🖼",
+        var t when t.StartsWith("video/") => "🎞",
+        var t when t.StartsWith("audio/") => "🎧",
+        "application/pdf" => "📕",
+        _ => "📄",
+    };
+
+    private string FileHref(AttachmentDto file) =>
+        file.StorageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+            ? file.StorageUrl
+            : $"{Api.BaseUrl.TrimEnd('/')}/{file.StorageUrl.TrimStart('/')}";
+
+    // ───── assignment ─────
+    private void OnDeptSelected(ChangeEventArgs e)
+    {
+        _selectedDeptId = Guid.TryParse(e.Value?.ToString(), out var g) ? g : null;
+        _deptDirty = _selectedDeptId != _ticket?.DepartmentId;
+    }
+
+    private async Task SaveAssignmentAsync()
+    {
+        if (_ticket is null) return;
+        _assigning = true;
+        try
+        {
+            await Api.AssignTicketAsync(_ticket.Id,
+                new AssignTicketRequest(_ticket.AssignedToId, _selectedDeptId, "Department updated"));
+            Toasts.Success("Department updated");
+            await LoadAsync();
+        }
+        catch (ApiException ex) { Toasts.Error(ex.Message); }
+        finally { _assigning = false; }
+    }
+
+    private async Task AssignToMeAsync()
+    {
+        if (_ticket is null || Auth.Session is not { } session) return;
+        if (!Guid.TryParse(session.UserId, out var myId))
+        {
+            Toasts.Error("Could not resolve your user id from the session.");
+            return;
+        }
+        _assigning = true;
+        try
+        {
+            await Api.AssignTicketAsync(_ticket.Id,
+                new AssignTicketRequest(myId, _ticket.DepartmentId, "Self-assigned"));
+            Toasts.Success("Ticket assigned to you");
+            await LoadAsync();
+        }
+        catch (ApiException ex) { Toasts.Error(ex.Message); }
+        finally { _assigning = false; }
+    }
+
+    // ───── status transition ─────
+    private void OnStatusSelected(ChangeEventArgs e) =>
+        _targetStatus = int.TryParse(e.Value?.ToString(), out var v) ? (TicketStatus)v : null;
+
+    private async Task TransitionAsync()
+    {
+        if (_ticket is null || _targetStatus is not { } target) return;
+        if (RequiresNote && string.IsNullOrWhiteSpace(_transitionNote)) return;
+        _transitioning = true;
+        try
+        {
+            await Api.TransitionTicketStatusAsync(_ticket.Id,
+                new TransitionStatusRequest(target, string.IsNullOrWhiteSpace(_transitionNote) ? null : _transitionNote.Trim()));
+            Toasts.Success($"Status → {UiHelpers.StatusLabel(target.ToString())}");
+            await LoadAsync();
+        }
+        catch (ApiException ex) { Toasts.Error(ex.Message); }
+        finally { _transitioning = false; }
+    }
+
+    // ───── navigation ─────
+    private void GoToList() => Nav.NavigateTo("/tickets");
+    private void GoToCustomer()
+    {
+        if (_ticket is not null) Nav.NavigateTo($"/customers/{_ticket.CustomerId}");
+    }
+}

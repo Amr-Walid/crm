@@ -1,0 +1,103 @@
+@page "/my-tickets"
+@attribute [Authorize]
+@inject CrmApiClient Api
+@inject NavigationManager Nav
+@inject ToastService Toasts
+
+<PageTitle>My Tickets — UniGroup CRM</PageTitle>
+
+<div class="page-pad anim-fade-up">
+    <div class="spread" style="margin-bottom:20px">
+        <div>
+            <h1 style="font-size:22px">My Tickets</h1>
+            <p class="muted" style="margin:4px 0 0">Cases assigned to you</p>
+        </div>
+        <select class="select" style="width:auto" value="@_statusFilter" @onchange="OnStatusChanged">
+            <option value="">All statuses</option>
+            @foreach (var s in Enum.GetValues<TicketStatus>())
+            {
+                <option value="@((int)s)">@UiHelpers.StatusLabel(s.ToString())</option>
+            }
+        </select>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">
+            @for (var i = 0; i < 4; i++)
+            {
+                <div class="card" style="padding:18px"><Skeleton Height="90px" /></div>
+            }
+        </div>
+    }
+    else if (_tickets.Count == 0)
+    {
+        <div class="card empty-state">
+            <div class="icon">🎉</div>
+            <h3>Nothing assigned to you</h3>
+            <p>You're all caught up. New assignments will appear here.</p>
+        </div>
+    }
+    else
+    {
+        <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(330px,1fr))">
+            @foreach (var t in _tickets)
+            {
+                <div class="card hoverable" style="padding:18px;cursor:pointer" @onclick="() => Open(t.Id)">
+                    <div class="spread" style="margin-bottom:8px">
+                        <span class="mono subtle">@t.Id</span>
+                        <SlaTimer Deadline="t.SlaDeadline" Breached="t.SlaBreached" Status="@t.Status" TotalHours="GetSlaHours(t.Priority)" />
+                    </div>
+                    <div style="font-weight:700;font-size:14px;margin-bottom:8px">@t.Title</div>
+                    <div class="row wrap" style="gap:6px;margin-bottom:8px">
+                        <span class="badge @UiHelpers.StatusBadge(t.Status)">@UiHelpers.StatusLabel(t.Status)</span>
+                        <span class="badge @UiHelpers.PriorityBadge(t.Priority)">@t.Priority</span>
+                        <span class="badge badge-slate">@t.Category</span>
+                    </div>
+                    <div class="subtle">👤 @t.CustomerName · @UiHelpers.TimeAgo(t.CreatedAt)</div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<TicketSummaryDto> _tickets = [];
+    private bool _loading = true;
+    private string _statusFilter = string.Empty;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task OnStatusChanged(ChangeEventArgs e)
+    {
+        _statusFilter = e.Value?.ToString() ?? string.Empty;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            TicketStatus? status = int.TryParse(_statusFilter, out var v) ? (TicketStatus)v : null;
+            _tickets = await Api.GetMyTicketsAsync(status);
+        }
+        catch (ApiException ex)
+        {
+            Toasts.Error(ex.Message);
+        }
+        catch (HttpRequestException)
+        {
+            Toasts.Error("Cannot reach the API server.");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static double GetSlaHours(string priority) =>
+        Enum.TryParse<TicketPriority>(priority, out var p) ? UiHelpers.SlaHours[p] : 24;
+
+    private void Open(string id) => Nav.NavigateTo($"/tickets/{id}");
+}

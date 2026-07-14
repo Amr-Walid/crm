@@ -1,0 +1,65 @@
+@implements IDisposable
+
+@if (Deadline is null)
+{
+    <span class="sla-timer sla-done">— no SLA —</span>
+}
+else if (IsTerminal)
+{
+    <span class="sla-timer @(Breached ? "sla-breached" : "sla-done")">@(Breached ? "✗ SLA BREACHED" : "✓ SLA MET")</span>
+}
+else if (Paused)
+{
+    <span class="sla-timer sla-paused">⏸ PAUSED · @UiHelpers.FormatCountdown(Remaining)</span>
+}
+else if (Breached || Remaining <= TimeSpan.Zero)
+{
+    <span class="sla-timer sla-breached">⏰ BREACHED +@UiHelpers.FormatCountdown(Remaining)</span>
+}
+else
+{
+    <span class="sla-timer @ColorClass">⏱ @UiHelpers.FormatCountdown(Remaining)</span>
+}
+
+@code {
+    /// <summary>SLA deadline (UTC), null when no SLA applies.</summary>
+    [Parameter] public DateTime? Deadline { get; set; }
+
+    /// <summary>Whether the backend already flagged the SLA as breached.</summary>
+    [Parameter] public bool Breached { get; set; }
+
+    /// <summary>Current ticket status string (drives paused/terminal display).</summary>
+    [Parameter] public string Status { get; set; } = string.Empty;
+
+    /// <summary>Total SLA window in hours (for warning thresholds). Defaults to 24.</summary>
+    [Parameter] public double TotalHours { get; set; } = 24;
+
+    private Timer? _timer;
+
+    private bool Paused => UiHelpers.IsSlaPaused(Status);
+    private bool IsTerminal => UiHelpers.IsTerminal(Status);
+
+    private TimeSpan Remaining => Deadline is null
+        ? TimeSpan.Zero
+        : DateTime.SpecifyKind(Deadline.Value, DateTimeKind.Utc) - DateTime.UtcNow;
+
+    private string ColorClass
+    {
+        get
+        {
+            var fraction = Remaining.TotalHours / Math.Max(TotalHours, 0.001);
+            return fraction <= 0.10 ? "sla-danger" : fraction <= 0.25 ? "sla-warn" : "sla-ok";
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        // 1-second live tick; skip when nothing to count down.
+        if (Deadline is not null && !IsTerminal && !Paused)
+        {
+            _timer = new Timer(_ => InvokeAsync(StateHasChanged), null, 1000, 1000);
+        }
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}

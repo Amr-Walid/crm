@@ -1,0 +1,81 @@
+@page "/reports"
+@attribute [Authorize(Roles = "Admin")]
+@inject CrmApiClient Api
+@inject ToastService Toasts
+@inject IJSRuntime JS
+
+<PageTitle>Reports — UniGroup CRM</PageTitle>
+
+<div class="page-pad anim-fade-up">
+    <div style="margin-bottom:20px">
+        <h1 style="font-size:22px">Reports & Exports</h1>
+        <p class="muted" style="margin:4px 0 0">Download operational reports as CSV files</p>
+    </div>
+
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">
+        <div class="card glass" style="padding:22px">
+            <div class="row" style="margin-bottom:12px">
+                <div class="stat-icon" style="position:static;background:rgba(99,102,241,.15)">📤</div>
+                <div>
+                    <div style="font-weight:800;font-size:15px">Agent Performance Report</div>
+                    <div class="subtle">Tickets handled, resolution times, SLA compliance & CSAT per agent</div>
+                </div>
+            </div>
+
+            <div class="row" style="gap:10px;margin-bottom:14px">
+                <div class="field" style="flex:1;margin-bottom:0">
+                    <label>From</label>
+                    <input type="date" class="input" value="@_from.ToString("yyyy-MM-dd")" @onchange="OnFromChanged" />
+                </div>
+                <div class="field" style="flex:1;margin-bottom:0">
+                    <label>To</label>
+                    <input type="date" class="input" value="@_to.ToString("yyyy-MM-dd")" @onchange="OnToChanged" />
+                </div>
+            </div>
+
+            <button class="btn btn-primary" style="width:100%" @onclick="ExportAsync" disabled="@_exporting">
+                @(_exporting ? "Generating…" : "⬇ Export CSV")
+            </button>
+            @if (_lastFile is not null)
+            {
+                <div class="subtle" style="margin-top:10px;text-align:center">✓ Downloaded “@_lastFile”</div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private DateTime _from = DateTime.UtcNow.Date.AddDays(-30);
+    private DateTime _to = DateTime.UtcNow.Date;
+    private bool _exporting;
+    private string? _lastFile;
+
+    private void OnFromChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d)) _from = d.Date;
+    }
+
+    private void OnToChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d)) _to = d.Date;
+    }
+
+    private async Task ExportAsync()
+    {
+        if (_from > _to)
+        {
+            Toasts.Error("“From” date must be before “To” date.");
+            return;
+        }
+        _exporting = true;
+        try
+        {
+            var (content, fileName) = await Api.ExportAgentReportAsync(_from, _to);
+            await JS.InvokeVoidAsync("unigroup.downloadFile", fileName, "text/csv", Convert.ToBase64String(content));
+            _lastFile = fileName;
+            Toasts.Success($"Report exported ({UiHelpers.FormatBytes(content.Length)})");
+        }
+        catch (ApiException ex) { Toasts.Error(ex.Message); }
+        finally { _exporting = false; }
+    }
+}

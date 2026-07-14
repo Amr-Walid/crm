@@ -1,0 +1,14 @@
+@page "/"
+@attribute [Authorize]
+@inject NavigationManager Nav
+
+<PageTitle>UniGroup CRM</PageTitle>
+
+<AuthorizeView Roles="Admin,Team Leader,TeamLeader">
+    <Authorized>
+        <DashboardContent />
+    </Authorized>
+    <NotAuthorized>
+        @{ Nav.NavigateTo("/tickets"); }
+    </NotAuthorized>
+</AuthorizeView>

@@ -1,0 +1,209 @@
+@page "/tickets"
+@attribute [Authorize]
+@inject CrmApiClient Api
+@inject NavigationManager Nav
+@inject ToastService Toasts
+
+<PageTitle>Tickets — UniGroup CRM</PageTitle>
+
+<div class="page-pad anim-fade-up">
+    <div class="spread" style="margin-bottom:20px">
+        <div>
+            <h1 style="font-size:22px">Tickets</h1>
+            <p class="muted" style="margin:4px 0 0">Track every support case with live SLA monitoring</p>
+        </div>
+        <a class="btn btn-primary" href="/tickets/new">➕ New Ticket</a>
+    </div>
+
+    <div class="card filter-bar" style="margin-bottom:16px">
+        <select class="select" value="@_statusFilter" @onchange="e => { _statusFilter = e.Value?.ToString() ?? string.Empty; _ = ApplyAsync(); }">
+            <option value="">All statuses</option>
+            @foreach (var s in Enum.GetValues<TicketStatus>())
+            {
+                <option value="@((int)s)">@UiHelpers.StatusLabel(s.ToString())</option>
+            }
+        </select>
+        <select class="select" value="@_priorityFilter" @onchange="e => { _priorityFilter = e.Value?.ToString() ?? string.Empty; _ = ApplyAsync(); }">
+            <option value="">All priorities</option>
+            @foreach (var p in Enum.GetValues<TicketPriority>())
+            {
+                <option value="@((int)p)">@p</option>
+            }
+        </select>
+        <select class="select" value="@_departmentFilter" @onchange="e => { _departmentFilter = e.Value?.ToString() ?? string.Empty; _ = ApplyAsync(); }">
+            <option value="">All departments</option>
+            @foreach (var d in _departments)
+            {
+                <option value="@d.Id">@d.Name</option>
+            }
+        </select>
+        <input class="input" type="date" value="@_dateFrom" @onchange="e => { _dateFrom = e.Value?.ToString() ?? string.Empty; _ = ApplyAsync(); }" />
+        <input class="input" type="date" value="@_dateTo" @onchange="e => { _dateTo = e.Value?.ToString() ?? string.Empty; _ = ApplyAsync(); }" />
+        <button class="btn btn-ghost btn-sm" @onclick="ClearFiltersAsync">✕ Clear</button>
+    </div>
+
+    <div class="card table-wrap">
+        @if (_loading)
+        {
+            <div style="padding:20px">
+                @for (var i = 0; i < 6; i++)
+                {
+                    <Skeleton Height="42px" Style="margin-bottom:10px" />
+                }
+            </div>
+        }
+        else if (_page is null || _page.Items.Count == 0)
+        {
+            <div class="empty-state">
+                <div class="icon">🎫</div>
+                <h3>No tickets found</h3>
+                <p>Adjust the filters or create a new ticket.</p>
+            </div>
+        }
+        else
+        {
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Ticket</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>SLA</th>
+                        <th>Assigned</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in _page.Items)
+                    {
+                        <tr class="clickable" @onclick="() => Open(t.Id)">
+                            <td>
+                                <div style="font-weight:600">@t.Id</div>
+                                <div class="subtle" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@t.Title</div>
+                            </td>
+                            <td>@t.CustomerName</td>
+                            <td><span class="badge @UiHelpers.StatusBadge(t.Status)">@UiHelpers.StatusLabel(t.Status)</span></td>
+                            <td><span class="badge @UiHelpers.PriorityBadge(t.Priority)">@t.Priority</span></td>
+                            <td>
+                                <SlaTimer Deadline="t.SlaDeadline" Breached="t.SlaBreached" Status="@t.Status"
+                                          TotalHours="GetSlaHours(t.Priority)" />
+                            </td>
+                            <td>@(t.AssignedToName ?? "—")<div class="subtle">@t.DepartmentName</div></td>
+                            <td class="subtle">@UiHelpers.TimeAgo(t.CreatedAt)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="pagination">
+                <span class="subtle" style="margin-right:auto;padding-left:4px">
+                    @_page.TotalCount ticket(s) · page @_page.Page of @TotalPages
+                </span>
+                <button disabled="@(_pageNum <= 1)" @onclick="() => GoPage(_pageNum - 1)">‹</button>
+                @foreach (var p in PageWindow())
+                {
+                    <button class="@(p == _pageNum ? "active" : "")" @onclick="() => GoPage(p)">@p</button>
+                }
+                <button disabled="@(_pageNum >= TotalPages)" @onclick="() => GoPage(_pageNum + 1)">›</button>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private PagedResult<TicketSummaryDto>? _page;
+    private List<DepartmentDto> _departments = [];
+    private bool _loading = true;
+    private int _pageNum = 1;
+    private const int PageSize = 12;
+
+    private string _statusFilter = string.Empty;
+    private string _priorityFilter = string.Empty;
+    private string _departmentFilter = string.Empty;
+    private string _dateFrom = string.Empty;
+    private string _dateTo = string.Empty;
+
+    private int TotalPages => _page is null ? 1 : Math.Max(1, (int)Math.Ceiling(_page.TotalCount / (double)PageSize));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _ = LoadDepartmentsAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadDepartmentsAsync()
+    {
+        try
+        {
+            _departments = await Api.GetDepartmentsAsync();
+            StateHasChanged();
+        }
+        catch { /* filters degrade gracefully */ }
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _page = await Api.GetTicketsAsync(
+                status: ParseEnum<TicketStatus>(_statusFilter),
+                priority: ParseEnum<TicketPriority>(_priorityFilter),
+                departmentId: Guid.TryParse(_departmentFilter, out var d) ? d : null,
+                dateFrom: DateTime.TryParse(_dateFrom, out var df) ? df : null,
+                dateTo: DateTime.TryParse(_dateTo, out var dt) ? dt : null,
+                page: _pageNum,
+                pageSize: PageSize);
+        }
+        catch (ApiException ex)
+        {
+            Toasts.Error(ex.Message);
+        }
+        catch (HttpRequestException)
+        {
+            Toasts.Error("Cannot reach the API server.");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static T? ParseEnum<T>(string raw) where T : struct, Enum =>
+        int.TryParse(raw, out var v) ? (T)Enum.ToObject(typeof(T), v) : null;
+
+    private async Task ApplyAsync()
+    {
+        _pageNum = 1;
+        await LoadAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _statusFilter = _priorityFilter = _departmentFilter = _dateFrom = _dateTo = string.Empty;
+        await ApplyAsync();
+    }
+
+    private async void GoPage(int p)
+    {
+        _pageNum = Math.Clamp(p, 1, TotalPages);
+        await LoadAsync();
+        StateHasChanged();
+    }
+
+    private IEnumerable<int> PageWindow()
+    {
+        var start = Math.Max(1, _pageNum - 2);
+        var end = Math.Min(TotalPages, start + 4);
+        for (var i = start; i <= end; i++)
+        {
+            yield return i;
+        }
+    }
+
+    private static double GetSlaHours(string priority) =>
+        Enum.TryParse<TicketPriority>(priority, out var p) ? UiHelpers.SlaHours[p] : 24;
+
+    private void Open(string id) => Nav.NavigateTo($"/tickets/{id}");
+}

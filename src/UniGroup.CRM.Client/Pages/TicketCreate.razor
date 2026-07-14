@@ -1,0 +1,330 @@
+@page "/tickets/new"
+@attribute [Authorize]
+@inject CrmApiClient Api
+@inject NavigationManager Nav
+@inject ToastService Toasts
+
+<PageTitle>New Ticket — UniGroup CRM</PageTitle>
+
+<div class="page-pad anim-fade-up">
+    <div class="spread" style="margin-bottom:20px">
+        <div>
+            <h1 style="font-size:22px">Create Ticket</h1>
+            <p class="muted" style="margin:4px 0 0">Open a new support ticket — agent guidance loads live per category</p>
+        </div>
+        <button class="btn btn-ghost" @onclick="GoBack">← Back to tickets</button>
+    </div>
+
+    <div class="grid" style="grid-template-columns:minmax(0,1.15fr) minmax(0,0.85fr);align-items:start;gap:20px">
+
+        <!-- ══════════════ FORM COLUMN ══════════════ -->
+        <div class="card glass" style="padding:24px">
+
+            <!-- Customer picker -->
+            <div class="field">
+                <label>Customer *</label>
+                @if (_customer is null)
+                {
+                    <input class="input" placeholder="🔎 Search by name, phone, IMEI or serial… (min 2 chars)"
+                           value="@_customerSearch" @oninput="OnCustomerSearchInput" />
+                    @if (_searching)
+                    {
+                        <div class="card" style="padding:12px 14px;margin-top:6px"><span class="subtle">Searching…</span></div>
+                    }
+                    else if (_customerResults is { Count: > 0 })
+                    {
+                        <div class="card" style="padding:6px;margin-top:6px;max-height:260px;overflow:auto">
+                            @foreach (var c in _customerResults)
+                            {
+                                var cust = c;
+                                <button type="button" class="search-result-item" style="width:100%;text-align:left"
+                                        @onclick="() => SelectCustomer(cust)">
+                                    <div class="row">
+                                        <div class="avatar">@UiHelpers.Initials(cust.Name)</div>
+                                        <div style="min-width:0;flex:1">
+                                            <div style="font-weight:700;font-size:13.5px">@cust.Name</div>
+                                            <div class="subtle">@(PrimaryPhone(cust) ?? "—") · @(cust.Email ?? "no e-mail")</div>
+                                        </div>
+                                    </div>
+                                </button>
+                            }
+                        </div>
+                    }
+                    else if (_searchedOnce && _customerSearch.Trim().Length >= 2)
+                    {
+                        <div class="card" style="padding:12px 14px;margin-top:6px"><span class="subtle">No customers found for “@_customerSearch”.</span></div>
+                    }
+                }
+                else
+                {
+                    <div class="card" style="padding:12px 14px">
+                        <div class="row spread">
+                            <div class="row">
+                                <div class="avatar">@UiHelpers.Initials(_customer.Name)</div>
+                                <div>
+                                    <div style="font-weight:700;font-size:13.5px">@_customer.Name</div>
+                                    <div class="subtle mono">@(PrimaryPhone(_customer) ?? "—")</div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-ghost btn-sm" @onclick="ClearCustomer">Change</button>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Device picker -->
+            <div class="field">
+                <label>Device (optional)</label>
+                @if (_customer is null)
+                {
+                    <div class="subtle">Select a customer first to list their devices.</div>
+                }
+                else if (_customer.Devices.Count == 0)
+                {
+                    <div class="subtle">This customer has no registered devices.</div>
+                }
+                else
+                {
+                    <select class="select" @onchange="OnDeviceChanged">
+                        <option value="">— No specific device —</option>
+                        @foreach (var d in _customer.Devices)
+                        {
+                            <option value="@d.Id" selected="@(_deviceId == d.Id)">@d.BrandName @d.ModelName@(string.IsNullOrEmpty(d.IMEI) ? "" : $" · IMEI {d.IMEI}")</option>
+                        }
+                    </select>
+                    @if (SelectedDevice is { } dev)
+                    {
+                        <div class="row" style="gap:8px;margin-top:4px">
+                            <span class="badge @UiHelpers.WarrantyBadge(dev.WarrantyStatus)">🛡 @dev.WarrantyStatus warranty</span>
+                            <span class="subtle">expires @dev.WarrantyExpiry.ToString("dd MMM yyyy")</span>
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- Category + Priority -->
+            <div class="row" style="gap:14px;align-items:flex-start">
+                <div class="field" style="flex:1">
+                    <label>Category *</label>
+                    <select class="select" @onchange="OnCategoryChanged">
+                        @foreach (var cat in Enum.GetValues<TicketCategory>())
+                        {
+                            <option value="@((int)cat)" selected="@(_category == cat)">@UiHelpers.CategoryIcon(cat) @UiHelpers.CategoryLabel(cat)</option>
+                        }
+                    </select>
+                </div>
+                <div class="field" style="flex:1">
+                    <label>Priority *</label>
+                    <select class="select" @onchange="OnPriorityChanged">
+                        @foreach (var pr in Enum.GetValues<TicketPriority>())
+                        {
+                            <option value="@((int)pr)" selected="@(_priority == pr)">@pr — SLA @(UiHelpers.SlaHours[pr])h</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Title *</label>
+                <input class="input" maxlength="200" placeholder="Short summary of the issue"
+                       @bind="_title" @bind:event="oninput" />
+            </div>
+
+            <div class="field">
+                <label>Description *</label>
+                <textarea class="textarea" rows="6" placeholder="Detailed description — symptoms, when it started, what was tried…"
+                          @bind="_description" @bind:event="oninput"></textarea>
+            </div>
+
+            @if (_error is not null)
+            {
+                <div class="badge badge-red" style="display:block;padding:10px 14px;margin-bottom:14px;white-space:normal">⚠ @_error</div>
+            }
+
+            <div class="row" style="justify-content:flex-end;gap:10px">
+                <button class="btn btn-ghost" @onclick="GoBack" disabled="@_submitting">Cancel</button>
+                <button class="btn btn-primary" @onclick="SubmitAsync" disabled="@(!CanSubmit || _submitting)">
+                    @(_submitting ? "Creating…" : "🎫 Create Ticket")
+                </button>
+            </div>
+        </div>
+
+        <!-- ══════════════ KB GUIDANCE COLUMN ══════════════ -->
+        <div style="position:sticky;top:16px">
+            <div class="section-title" style="margin-bottom:10px">📘 Agent Guidance — @UiHelpers.CategoryLabel(_category)</div>
+            @if (_loadingArticle)
+            {
+                <div class="grid" style="gap:12px">
+                    <Skeleton Height="90px" /><Skeleton Height="90px" /><Skeleton Height="90px" />
+                </div>
+            }
+            else if (_article is null)
+            {
+                <div class="card empty-state" style="padding:28px">
+                    <div class="icon">📄</div>
+                    <h3>No guidance yet</h3>
+                    <p>No knowledge base article exists for <b>@UiHelpers.CategoryLabel(_category)</b>.</p>
+                </div>
+            }
+            else
+            {
+                <div class="grid" style="gap:12px">
+                    <div style="font-weight:800;font-size:15px">@_article.Title</div>
+                    <div class="card kb-section-card questions">
+                        <div style="font-weight:700;font-size:13px;margin-bottom:8px">❓ Questions to Ask</div>
+                        <MarkdownView Content="@_article.QuestionsToAsk" />
+                    </div>
+                    <div class="card kb-section-card diagnosis">
+                        <div style="font-weight:700;font-size:13px;margin-bottom:8px">🔍 Diagnosis Steps</div>
+                        <MarkdownView Content="@_article.DiagnosisSteps" />
+                    </div>
+                    <div class="card kb-section-card answers">
+                        <div style="font-weight:700;font-size:13px;margin-bottom:8px">💬 Suggested Answers</div>
+                        <MarkdownView Content="@_article.SuggestedAnswers" />
+                    </div>
+                    <div class="card kb-section-card escalation">
+                        <div style="font-weight:700;font-size:13px;margin-bottom:8px">🚨 Escalate When</div>
+                        <MarkdownView Content="@_article.EscalationConditions" />
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    /// <summary>Optional pre-selected customer, e.g. /tickets/new?customerId=…</summary>
+    [SupplyParameterFromQuery(Name = "customerId")]
+    public Guid? CustomerId { get; set; }
+
+    private string _customerSearch = string.Empty;
+    private List<CustomerDetailsDto>? _customerResults;
+    private CustomerDetailsDto? _customer;
+    private bool _searching;
+    private bool _searchedOnce;
+    private System.Threading.Timer? _debounce;
+
+    private Guid? _deviceId;
+    private TicketCategory _category = TicketCategory.GeneralInquiry;
+    private TicketPriority _priority = TicketPriority.Medium;
+    private string _title = string.Empty;
+    private string _description = string.Empty;
+
+    private KnowledgeBaseArticleDto? _article;
+    private bool _loadingArticle;
+
+    private bool _submitting;
+    private string? _error;
+
+    private CustomerDeviceDto? SelectedDevice => _customer?.Devices.FirstOrDefault(d => d.Id == _deviceId);
+
+    private bool CanSubmit =>
+        _customer is not null &&
+        !string.IsNullOrWhiteSpace(_title) &&
+        !string.IsNullOrWhiteSpace(_description);
+
+    private static string? PrimaryPhone(CustomerDetailsDto c) =>
+        c.Phones.FirstOrDefault(p => p.IsPrimary)?.Phone ?? c.Phones.FirstOrDefault()?.Phone;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CustomerId is Guid cid)
+        {
+            try { _customer = await Api.GetCustomerAsync(cid); }
+            catch { /* ignore bad query param */ }
+        }
+        await LoadArticleAsync();
+    }
+
+    // ───── customer search (350 ms debounce) ─────
+    private void OnCustomerSearchInput(ChangeEventArgs e)
+    {
+        _customerSearch = e.Value?.ToString() ?? string.Empty;
+        _debounce?.Dispose();
+        if (_customerSearch.Trim().Length < 2)
+        {
+            _customerResults = null;
+            _searchedOnce = false;
+            return;
+        }
+        _debounce = new System.Threading.Timer(_ => InvokeAsync(RunSearchAsync), null, 350, Timeout.Infinite);
+    }
+
+    private async Task RunSearchAsync()
+    {
+        var term = _customerSearch.Trim();
+        if (term.Length < 2) return;
+        _searching = true;
+        StateHasChanged();
+        try
+        {
+            _customerResults = await Api.SearchCustomersAsync(term);
+            _searchedOnce = true;
+        }
+        catch (ApiException ex) { Toasts.Error(ex.Message); }
+        finally { _searching = false; StateHasChanged(); }
+    }
+
+    private void SelectCustomer(CustomerDetailsDto c)
+    {
+        _customer = c;
+        _customerResults = null;
+        _customerSearch = string.Empty;
+        _deviceId = null;
+    }
+
+    private void ClearCustomer()
+    {
+        _customer = null;
+        _deviceId = null;
+    }
+
+    private void OnDeviceChanged(ChangeEventArgs e) =>
+        _deviceId = Guid.TryParse(e.Value?.ToString(), out var g) ? g : null;
+
+    // ───── category → live KB guidance ─────
+    private async Task OnCategoryChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var v))
+        {
+            _category = (TicketCategory)v;
+            await LoadArticleAsync();
+        }
+    }
+
+    private void OnPriorityChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var v))
+            _priority = (TicketPriority)v;
+    }
+
+    private async Task LoadArticleAsync()
+    {
+        _loadingArticle = true;
+        try { _article = await Api.GetArticleByCategoryAsync(_category); }
+        catch { _article = null; }
+        finally { _loadingArticle = false; }
+    }
+
+    // ───── submit ─────
+    private async Task SubmitAsync()
+    {
+        if (!CanSubmit || _customer is null) return;
+        _submitting = true;
+        _error = null;
+        try
+        {
+            var ticketId = await Api.CreateTicketAsync(new CreateTicketRequest(
+                _customer.Id, _deviceId, _title.Trim(), _description.Trim(), _category, _priority));
+            Toasts.Success($"Ticket {ticketId} created");
+            Nav.NavigateTo($"/tickets/{ticketId}");
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally { _submitting = false; }
+    }
+
+    private void GoBack() => Nav.NavigateTo("/tickets");
+}

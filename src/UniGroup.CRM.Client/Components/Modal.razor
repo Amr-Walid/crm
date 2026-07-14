@@ -1,0 +1,46 @@
+@if (Visible)
+{
+    <div class="modal-backdrop" @onclick="HandleBackdrop">
+        <div class="glass modal @(Large ? "modal-lg" : "")" style="padding:26px" @onclick:stopPropagation="true">
+            <div class="spread" style="margin-bottom:18px">
+                <h3 style="font-size:17px">@Title</h3>
+                <button class="btn btn-ghost btn-sm" @onclick="CloseAsync">✕</button>
+            </div>
+            @ChildContent
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>Whether the modal is shown.</summary>
+    [Parameter] public bool Visible { get; set; }
+
+    /// <summary>Two-way binding callback.</summary>
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+
+    /// <summary>Modal header title.</summary>
+    [Parameter] public string Title { get; set; } = string.Empty;
+
+    /// <summary>Use the wide variant.</summary>
+    [Parameter] public bool Large { get; set; }
+
+    /// <summary>Whether clicking the backdrop closes the modal (default true).</summary>
+    [Parameter] public bool CloseOnBackdrop { get; set; } = true;
+
+    /// <summary>Modal body.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private async Task CloseAsync()
+    {
+        Visible = false;
+        await VisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task HandleBackdrop()
+    {
+        if (CloseOnBackdrop)
+        {
+            await CloseAsync();
+        }
+    }
+}

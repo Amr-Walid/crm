@@ -1,0 +1,18 @@
+<div class="skeleton" style="@ComputedStyle"></div>
+
+@code {
+    /// <summary>CSS width (default 100%).</summary>
+    [Parameter] public string Width { get; set; } = "100%";
+
+    /// <summary>CSS height (default 16px).</summary>
+    [Parameter] public string Height { get; set; } = "16px";
+
+    /// <summary>Render as a circle (avatars).</summary>
+    [Parameter] public bool Circle { get; set; }
+
+    /// <summary>Extra inline styles.</summary>
+    [Parameter] public string Style { get; set; } = string.Empty;
+
+    private string ComputedStyle =>
+        $"width:{Width};height:{Height};{(Circle ? "border-radius:50%;" : string.Empty)}{Style}";
+}

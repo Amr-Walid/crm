@@ -1,0 +1,120 @@
+@page "/csat-report"
+@attribute [Authorize(Roles = "Admin,Team Leader,TeamLeader")]
+@inject CrmApiClient Api
+@inject ToastService Toasts
+
+<PageTitle>CSAT Report — UniGroup CRM</PageTitle>
+
+<div class="page-pad anim-fade-up">
+    <div class="spread wrap" style="margin-bottom:20px;gap:12px">
+        <div>
+            <h1 style="font-size:22px">Customer Satisfaction</h1>
+            <p class="muted" style="margin:4px 0 0">Survey response rates and rating distribution</p>
+        </div>
+        <div class="row" style="gap:8px">
+            <input type="date" class="input" style="width:160px" value="@_from.ToString("yyyy-MM-dd")" @onchange="OnFromChanged" />
+            <input type="date" class="input" style="width:160px" value="@_to.ToString("yyyy-MM-dd")" @onchange="OnToChanged" />
+            <button class="btn btn-secondary" @onclick="LoadAsync" disabled="@_loading">@(_loading ? "…" : "Apply")</button>
+        </div>
+    </div>
+
+    @if (_loading && _report is null)
+    {
+        <div class="stat-grid" style="margin-bottom:16px">
+            @for (var i = 0; i < 4; i++) { <Skeleton Height="92px" /> }
+        </div>
+        <Skeleton Height="220px" />
+    }
+    else if (_report is null)
+    {
+        <div class="card empty-state">
+            <div class="icon">⭐</div>
+            <h3>No CSAT data</h3>
+            <p>Could not load the CSAT report for the selected range.</p>
+            <button class="btn btn-primary" @onclick="LoadAsync">Retry</button>
+        </div>
+    }
+    else
+    {
+        <div class="stat-grid" style="margin-bottom:16px">
+            <div class="card stat-card">
+                <div class="stat-label">Surveys Sent</div>
+                <div class="stat-value">@_report.TotalSent</div>
+                <div class="stat-icon" style="background:rgba(99,102,241,.15)">📨</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-label">Responses</div>
+                <div class="stat-value">@_report.TotalSubmitted</div>
+                <div class="stat-icon" style="background:rgba(59,130,246,.15)">📥</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-label">Response Rate</div>
+                <div class="stat-value">@(_report.ResponseRate.ToString("0.#"))%</div>
+                <div class="stat-icon" style="background:rgba(16,185,129,.15)">📈</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-label">Average Rating</div>
+                <div class="stat-value">⭐ @(_report.AverageRating.ToString("0.00"))</div>
+                <div class="stat-sub">out of 5</div>
+                <div class="stat-icon" style="background:rgba(245,158,11,.15)">🏆</div>
+            </div>
+        </div>
+
+        <div class="card" style="padding:22px;max-width:640px">
+            <div class="section-title" style="margin-bottom:14px">Rating Distribution</div>
+            @if (_report.TotalSubmitted == 0)
+            {
+                <p class="subtle" style="margin:0">No survey responses in the selected range.</p>
+            }
+            else
+            {
+                var max = Math.Max(_report.RatingDistribution.Values.DefaultIfEmpty(0).Max(), 1);
+                @for (var stars = 5; stars >= 1; stars--)
+                {
+                    var count = _report.RatingDistribution.TryGetValue(stars, out var c) ? c : 0;
+                    <div class="rating-dist-row">
+                        <span class="rt">@stars ★</span>
+                        <div class="track">
+                            <div class="fill" style="width:@((count * 100.0 / max).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                        </div>
+                        <span class="mono" style="width:40px;text-align:right">@count</span>
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private CsatReportDto? _report;
+    private DateTime _from = DateTime.UtcNow.Date.AddDays(-30);
+    private DateTime _to = DateTime.UtcNow.Date;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private void OnFromChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d)) _from = d.Date;
+    }
+
+    private void OnToChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d)) _to = d.Date;
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _report = await Api.GetCsatReportAsync(_from, _to.AddDays(1).AddSeconds(-1));
+        }
+        catch (ApiException ex)
+        {
+            _report = null;
+            Toasts.Error(ex.Message);
+        }
+        finally { _loading = false; }
+    }
+}

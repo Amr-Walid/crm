@@ -1,0 +1,35 @@
+@implements IDisposable
+@inject ToastService Toasts
+
+@if (Toasts.Toasts.Count > 0)
+{
+    <div class="toast-stack">
+        @foreach (var t in Toasts.Toasts)
+        {
+            <div class="toast @LevelClass(t.Level)" @onclick="() => Toasts.Dismiss(t.Id)">
+                <span>@LevelIcon(t.Level)</span>
+                <span>@t.Text</span>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    protected override void OnInitialized() => Toasts.OnChange += StateHasChanged;
+
+    private static string LevelClass(ToastLevel level) => level switch
+    {
+        ToastLevel.Success => "success",
+        ToastLevel.Error => "error",
+        _ => "info",
+    };
+
+    private static string LevelIcon(ToastLevel level) => level switch
+    {
+        ToastLevel.Success => "✅",
+        ToastLevel.Error => "⚠️",
+        _ => "ℹ️",
+    };
+
+    public void Dispose() => Toasts.OnChange -= StateHasChanged;
+}

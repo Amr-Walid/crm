@@ -1,0 +1,216 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject JwtAuthenticationStateProvider Auth
+@inject ThemeService Theme
+@inject NavigationManager Nav
+@inject CrmApiClient Api
+
+<div class="app-shell">
+    <AuthorizeView>
+        <Authorized>
+            <aside class="sidebar @(_sidebarOpen ? "open" : "")">
+                <div class="sidebar-logo">
+                    <div class="mark">U</div>
+                    <div>
+                        <div class="name">UniGroup <span>CRM</span></div>
+                        <div class="tag">Service Excellence</div>
+                    </div>
+                </div>
+
+                <nav class="nav-group">
+                    <div class="nav-group-label">Workspace</div>
+                    <AuthorizeView Roles="Admin,Team Leader,TeamLeader" Context="dash">
+                        <NavLink class="nav-item" href="/" Match="NavLinkMatch.All"><span class="ico">📊</span> Dashboard</NavLink>
+                    </AuthorizeView>
+                    <NavLink class="nav-item" href="/customers"><span class="ico">👥</span> Customers</NavLink>
+                    <NavLink class="nav-item" href="/tickets"><span class="ico">🎫</span> Tickets</NavLink>
+                    <NavLink class="nav-item" href="/my-tickets"><span class="ico">📋</span> My Tickets</NavLink>
+                    <NavLink class="nav-item" href="/knowledge-base"><span class="ico">📚</span> Knowledge Base</NavLink>
+                </nav>
+
+                <AuthorizeView Roles="Admin,Team Leader,TeamLeader" Context="mgmt">
+                    <nav class="nav-group">
+                        <div class="nav-group-label">Management</div>
+                        <NavLink class="nav-item" href="/csat-report"><span class="ico">⭐</span> CSAT Report</NavLink>
+                        <AuthorizeView Roles="Admin" Context="adminOnly">
+                            <NavLink class="nav-item" href="/reports"><span class="ico">📤</span> Reports</NavLink>
+                        </AuthorizeView>
+                    </nav>
+                </AuthorizeView>
+
+                <div class="sidebar-footer">
+                    <div class="row" style="margin-bottom:10px">
+                        <div class="avatar">@UiHelpers.Initials(Auth.Session?.FullName)</div>
+                        <div style="min-width:0">
+                            <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@Auth.Session?.FullName</div>
+                            <div class="subtle" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@RoleLabel</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" style="width:100%" @onclick="SignOutAsync">
+                        <span>↩</span> Sign out
+                    </button>
+                </div>
+            </aside>
+
+            @if (_sidebarOpen)
+            {
+                <div style="position:fixed;inset:0;z-index:99;background:rgba(5,8,20,0.4)" @onclick="() => _sidebarOpen = false"></div>
+            }
+
+            <div class="main-area">
+                <header class="topbar">
+                    <button class="menu-btn" @onclick="() => _sidebarOpen = !_sidebarOpen">☰</button>
+
+                    <div class="search-box">
+                        <span class="ico">🔎</span>
+                        <input class="input" placeholder="Search customers, phones, IMEI, serial…"
+                               value="@_searchTerm"
+                               @oninput="OnSearchInput"
+                               @onfocusout="CloseSearchSoon" />
+                        @if (_searchOpen)
+                        {
+                            <div class="glass search-results anim-fade-up">
+                                @if (_searching)
+                                {
+                                    <div style="padding:14px" class="row"><span class="spinner dark"></span><span class="muted">Searching…</span></div>
+                                }
+                                else if (_searchResults.Count == 0)
+                                {
+                                    <div class="empty-state" style="padding:22px"><div>No matches found</div></div>
+                                }
+                                else
+                                {
+                                    @foreach (var c in _searchResults)
+                                    {
+                                        <div class="search-result-item" @onmousedown="() => GoToCustomer(c.Id)">
+                                            <div class="avatar">@UiHelpers.Initials(c.Name)</div>
+                                            <div style="min-width:0">
+                                                <div style="font-weight:600;font-size:13px">@c.Name</div>
+                                                <div class="subtle">@(c.Phones.FirstOrDefault(p => p.IsPrimary)?.Phone ?? c.Phones.FirstOrDefault()?.Phone) · @(c.Devices.Count) device(s)</div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div style="flex:1"></div>
+
+                    <button class="theme-toggle" title="Toggle theme" @onclick="ToggleThemeAsync">
+                        @(Theme.Current == "dark" ? "🌙" : "☀️")
+                    </button>
+                </header>
+
+                <main style="flex:1">
+                    @Body
+                </main>
+            </div>
+
+            <CallerIdWidget />
+        </Authorized>
+        <NotAuthorized>
+            <div style="flex:1">@Body</div>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
+
+<ToastHost />
+
+@code {
+    private bool _sidebarOpen;
+    private string _searchTerm = string.Empty;
+    private bool _searchOpen;
+    private bool _searching;
+    private List<CustomerDetailsDto> _searchResults = [];
+    private CancellationTokenSource? _searchCts;
+
+    private string RoleLabel => Auth.Session is { Roles.Count: > 0 } s ? string.Join(" · ", s.Roles) : "User";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Theme.InitializeAsync();
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        Theme.OnChange += StateHasChanged;
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        _sidebarOpen = false;
+        _searchOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task ToggleThemeAsync() => await Theme.ToggleAsync();
+
+    private async Task SignOutAsync()
+    {
+        await Auth.SignOutAsync();
+        Nav.NavigateTo("/login");
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _searchTerm = e.Value?.ToString() ?? string.Empty;
+        _searchCts?.Cancel();
+
+        if (_searchTerm.Trim().Length < 2)
+        {
+            _searchOpen = false;
+            return;
+        }
+
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        _searchOpen = true;
+        _searching = true;
+
+        try
+        {
+            await Task.Delay(350, token); // debounce
+            var results = await Api.SystemSearchAsync(_searchTerm.Trim());
+            if (!token.IsCancellationRequested)
+            {
+                _searchResults = results.Take(8).ToList();
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch { _searchResults = []; }
+        finally
+        {
+            if (!token.IsCancellationRequested)
+            {
+                _searching = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task CloseSearchSoon()
+    {
+        await Task.Delay(180);
+        _searchOpen = false;
+    }
+
+    private void GoToCustomer(Guid id)
+    {
+        _searchOpen = false;
+        _searchTerm = string.Empty;
+        Nav.NavigateTo($"/customers/{id}");
+    }
+
+    public void Dispose()
+    {
+        Theme.OnChange -= StateHasChanged;
+        Nav.LocationChanged -= OnLocationChanged;
+        _searchCts?.Cancel();
+    }
+}

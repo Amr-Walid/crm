@@ -1,0 +1,249 @@
+@inject CrmApiClient Api
+@inject NavigationManager Nav
+@inject ToastService Toasts
+
+<div class="page-pad anim-fade-up">
+    <div class="spread wrap" style="margin-bottom:20px;gap:12px">
+        <div>
+            <h1 style="font-size:22px">Operations Dashboard</h1>
+            <p class="muted" style="margin:4px 0 0">Live overview of tickets, calls and team performance</p>
+        </div>
+        <div class="row" style="gap:8px">
+            <input type="date" class="input" style="width:170px" value="@_date.ToString("yyyy-MM-dd")" @onchange="OnDateChanged" />
+            <button class="btn btn-secondary" @onclick="RefreshAsync" disabled="@_loading">@(_loading ? "Loading…" : "↻ Refresh")</button>
+        </div>
+    </div>
+
+    @if (_loading && _summary is null)
+    {
+        <div class="stat-grid" style="margin-bottom:16px">
+            @for (var i = 0; i < 4; i++) { <Skeleton Height="92px" /> }
+        </div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:16px">
+            <Skeleton Height="240px" /><Skeleton Height="240px" />
+        </div>
+    }
+    else if (_summary is null)
+    {
+        <div class="card empty-state">
+            <div class="icon">📊</div>
+            <h3>Dashboard unavailable</h3>
+            <p>@(_error ?? "Could not load dashboard data.")</p>
+            <button class="btn btn-primary" @onclick="RefreshAsync">Retry</button>
+        </div>
+    }
+    else
+    {
+        <!-- ═══════ METRIC CARDS ═══════ -->
+        <div class="stat-grid" style="margin-bottom:16px">
+            <div class="card stat-card">
+                <div class="stat-label">New Tickets Today</div>
+                <div class="stat-value">@_summary.TodayNewTickets</div>
+                <div class="stat-sub">top issue: @(_summary.TopIssueCategory ?? "—")</div>
+                <div class="stat-icon" style="background:rgba(99,102,241,.15)">🎫</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-label">Open Tickets</div>
+                <div class="stat-value">@_summary.OpenTicketsTotal</div>
+                <div class="stat-sub">across all departments</div>
+                <div class="stat-icon" style="background:rgba(59,130,246,.15)">📂</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-label">SLA Breached</div>
+                <div class="stat-value" style="color:@(_summary.BreachedSlaCount > 0 ? "var(--danger)" : "inherit")">@_summary.BreachedSlaCount</div>
+                <div class="stat-sub">compliance @(_summary.SlaComplianceRate.ToString("0.#"))%</div>
+                <div class="stat-icon" style="background:rgba(239,68,68,.15)">⏰</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-label">Avg Resolution (today)</div>
+                <div class="stat-value">@(_summary.AvgResolutionTimeToday.ToString("0.#"))h</div>
+                <div class="stat-sub">@_summary.CallsLoggedToday calls logged today</div>
+                <div class="stat-icon" style="background:rgba(16,185,129,.15)">⚡</div>
+            </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-bottom:16px">
+            <!-- ═══════ TICKETS BY STATUS ═══════ -->
+            <div class="card" style="padding:20px">
+                <div class="section-title" style="margin-bottom:12px">🗂 Tickets by Status</div>
+                @if (_byStatus.Count == 0)
+                {
+                    <p class="subtle" style="margin:0">No ticket data.</p>
+                }
+                else
+                {
+                    var max = Math.Max(_byStatus.Values.Max(), 1);
+                    @foreach (var kv in _byStatus.OrderByDescending(k => k.Value))
+                    {
+                        <div class="bar-row">
+                            <div class="bar-label">@UiHelpers.StatusLabel(kv.Key)</div>
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width:@(Math.Max(kv.Value * 100.0 / max, 6).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%">@kv.Value</div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- ═══════ HOURLY CALL VOLUME ═══════ -->
+            <div class="card" style="padding:20px">
+                <div class="section-title" style="margin-bottom:12px">📞 Hourly Call Volume — @_date.ToString("dd MMM")</div>
+                @if (_calls.Count == 0 || _calls.All(c => c.CallCount == 0))
+                {
+                    <p class="subtle" style="margin:0">No calls logged for this date.</p>
+                }
+                else
+                {
+                    var maxCalls = Math.Max(_calls.Max(c => c.CallCount), 1);
+                    <div class="spark-cols">
+                        @foreach (var h in _calls.OrderBy(c => c.Hour))
+                        {
+                            <div class="spark-col" style="height:@(Math.Max(h.CallCount * 100.0 / maxCalls, 2).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%">
+                                <span class="tip">@h.Hour:00 · @h.CallCount calls · avg @UiHelpers.FormatDuration((int)h.AvgDurationSeconds)</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="spark-x">
+                        @foreach (var h in _calls.OrderBy(c => c.Hour))
+                        {
+                            <span>@(h.Hour % 4 == 0 ? h.Hour.ToString("00") : "")</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- ═══════ AGENT PERFORMANCE GRID ═══════ -->
+        <div class="card" style="padding:20px;margin-bottom:16px">
+            <div class="spread" style="margin-bottom:12px">
+                <div class="section-title">🧑‍💼 Agent Performance (last 30 days)</div>
+            </div>
+            @if (_agents.Count == 0)
+            {
+                <p class="subtle" style="margin:0">No agent activity in the selected period.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Agent</th>
+                                <th style="text-align:right">Handled</th>
+                                <th style="text-align:right">Open</th>
+                                <th style="text-align:right">Avg Resolution</th>
+                                <th style="text-align:right">SLA Compliance</th>
+                                <th style="text-align:right">CSAT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in _agents.OrderByDescending(x => x.TotalTicketsHandled))
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="row">
+                                            <div class="avatar" style="width:30px;height:30px;font-size:11px">@UiHelpers.Initials(a.AgentName)</div>
+                                            <span style="font-weight:600">@a.AgentName</span>
+                                        </div>
+                                    </td>
+                                    <td style="text-align:right" class="mono">@a.TotalTicketsHandled</td>
+                                    <td style="text-align:right" class="mono">@a.OpenTicketsCount</td>
+                                    <td style="text-align:right" class="mono">@(a.AvgResolutionTimeHours.ToString("0.#"))h</td>
+                                    <td style="text-align:right">
+                                        <span class="badge @SlaBadge(a.SlaComplianceRate)">@(a.SlaComplianceRate.ToString("0.#"))%</span>
+                                    </td>
+                                    <td style="text-align:right">@(a.CsatAvgScore is { } cs ? $"⭐ {cs:0.0}" : "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <!-- ═══════ DEVICE FAILURE BREAKDOWN ═══════ -->
+        <div class="card" style="padding:20px">
+            <div class="section-title" style="margin-bottom:12px">📉 Device Failure Breakdown (last 30 days)</div>
+            @if (_failures.Count == 0)
+            {
+                <p class="subtle" style="margin:0">No device failures recorded in the selected period.</p>
+            }
+            else
+            {
+                var maxF = Math.Max(_failures.Max(f => f.FailureCount), 1);
+                @foreach (var f in _failures.OrderByDescending(x => x.FailureCount).Take(10))
+                {
+                    <div class="bar-row">
+                        <div class="bar-label" title="@f.BrandName @f.ModelName">@f.BrandName @f.ModelName</div>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width:@(Math.Max(f.FailureCount * 100.0 / maxF, 6).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%;background:linear-gradient(90deg,#ef4444,#f97316)">@f.FailureCount</div>
+                        </div>
+                        <div class="subtle" style="width:180px;flex-shrink:0">
+                            @(f.MostCommonCategory ?? "—") · @f.RepeatCustomersCount repeat
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private DashboardSummaryDto? _summary;
+    private Dictionary<string, int> _byStatus = [];
+    private List<HourlyCallVolumeDto> _calls = [];
+    private List<AgentPerformanceDto> _agents = [];
+    private List<DeviceFailureReportDto> _failures = [];
+
+    private DateTime _date = DateTime.UtcNow.Date;
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync() => await RefreshAsync();
+
+    private async Task OnDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+        {
+            _date = d.Date;
+            await RefreshAsync();
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+        try
+        {
+            var from = DateTime.UtcNow.Date.AddDays(-30);
+
+            // Sequential-friendly: fire all, then await (WASM is single-threaded but requests overlap).
+            var summaryTask = Api.GetDashboardSummaryAsync(_date);
+            var statusTask = Api.GetTicketsByStatusAsync();
+            var callsTask = Api.GetCallVolumeAsync(_date);
+            var agentsTask = Api.GetAgentPerformanceAsync(from, DateTime.UtcNow);
+            var failuresTask = Api.GetDeviceFailuresAsync(from, DateTime.UtcNow);
+
+            _summary = await summaryTask;
+            _byStatus = await statusTask;
+            _calls = await callsTask;
+            _agents = await agentsTask;
+            _failures = await failuresTask;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            if (_summary is null) Toasts.Error(ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private static string SlaBadge(double rate) =>
+        rate >= 90 ? "badge-green" : rate >= 70 ? "badge-amber" : "badge-red";
+}

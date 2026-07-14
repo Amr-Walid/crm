@@ -1,0 +1,124 @@
+@page "/login"
+@layout EmptyLayout
+@inject CrmApiClient Api
+@inject JwtAuthenticationStateProvider Auth
+@inject NavigationManager Nav
+@inject ToastService Toasts
+
+<PageTitle>Sign in — UniGroup CRM</PageTitle>
+
+<div class="auth-page">
+    <div class="auth-orb" style="width:420px;height:420px;background:#6366f1;top:-120px;right:-80px"></div>
+    <div class="auth-orb" style="width:360px;height:360px;background:#d946ef;bottom:-120px;left:-80px"></div>
+
+    <div class="glass auth-card anim-scale-in">
+        <div class="auth-logo">
+            <div class="mark">U</div>
+            <h2 style="font-size:21px">UniGroup <span class="grad-text">CRM</span></h2>
+            <p class="muted" style="margin:0;font-size:13px">Sign in to your workspace</p>
+        </div>
+
+        @if (_expired)
+        {
+            <div class="toast error" style="margin-bottom:16px;box-shadow:none">
+                <span>⚠️</span><span>Your session expired. Please sign in again.</span>
+            </div>
+        }
+
+        <EditForm Model="_model" OnValidSubmit="SubmitAsync">
+            <DataAnnotationsValidator />
+            <div class="field">
+                <label>Email address</label>
+                <InputText class="input" @bind-Value="_model.Email" placeholder="agent@unigroup.com" autocomplete="username" />
+                <ValidationMessage For="() => _model.Email" />
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <InputText class="input" @bind-Value="_model.Password" type="password" placeholder="••••••••" autocomplete="current-password" />
+                <ValidationMessage For="() => _model.Password" />
+            </div>
+
+            @if (_error is not null)
+            {
+                <div style="color:var(--danger);font-size:12.5px;margin-bottom:12px">@_error</div>
+            }
+
+            <button class="btn btn-primary btn-lg" style="width:100%" type="submit" disabled="@_busy">
+                @if (_busy)
+                {
+                    <span class="spinner"></span>
+                    <span>Signing in…</span>
+                }
+                else
+                {
+                    <span>Sign in</span>
+                }
+            </button>
+        </EditForm>
+
+        <p style="text-align:center;margin:18px 0 0;font-size:13px" class="muted">
+            No account yet? <a href="/register">Create one</a>
+        </p>
+    </div>
+</div>
+
+@code {
+    private sealed class LoginModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Email is required")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Invalid email")]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Password is required")]
+        public string Password { get; set; } = string.Empty;
+    }
+
+    private readonly LoginModel _model = new();
+    private bool _busy;
+    private string? _error;
+    private bool _expired;
+    private string? _returnUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        _expired = query["expired"] == "1";
+        _returnUrl = query["returnUrl"];
+
+        // Already signed in with a valid persisted session → go straight in.
+        var state = await Auth.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated == true)
+        {
+            Nav.NavigateTo(SafeReturnUrl());
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var response = await Api.LoginAsync(new LoginRequest(_model.Email.Trim(), _model.Password));
+            await Auth.SignInAsync(response);
+            Toasts.Success($"Welcome back, {response.FirstName}!");
+            Nav.NavigateTo(SafeReturnUrl());
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _error = "Cannot reach the API server. Is the backend running on the configured URL?";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private string SafeReturnUrl() =>
+        string.IsNullOrWhiteSpace(_returnUrl) || _returnUrl.StartsWith("login") ? "/" : "/" + _returnUrl.TrimStart('/');
+}

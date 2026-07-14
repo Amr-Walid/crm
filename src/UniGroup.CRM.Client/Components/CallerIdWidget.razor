@@ -1,0 +1,274 @@
+@implements IDisposable
+@inject CallerIdService CallerId
+@inject CrmApiClient Api
+@inject ToastService Toasts
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+@* Floating Caller-ID simulator — bottom-right corner utility *@
+
+<button class="caller-fab @(CallerId.IsRinging ? "ringing" : "")" title="Caller ID Simulator" @onclick="TogglePanel">
+    <span class="ico">@(CallerId.IsRinging ? "📳" : CallerId.IsInCall ? "🎧" : "📞")</span>
+</button>
+
+@if (_panelOpen)
+{
+    <div class="glass caller-panel anim-fade-up">
+        @if (CallerId.IsRinging)
+        {
+            @* ------- Incoming call (ringing) ------- *@
+            <div class="caller-incoming">
+                <div class="subtle" style="letter-spacing:0.12em;text-transform:uppercase">Incoming call…</div>
+                <div class="phone-num mono">@CallerId.IncomingNumber</div>
+
+                @if (CallerId.Caller is not null)
+                {
+                    <div class="row" style="justify-content:center;margin-top:8px">
+                        <div class="avatar lg">@UiHelpers.Initials(CallerId.Caller.Name)</div>
+                        <div style="text-align:left">
+                            <div style="font-weight:700;font-size:15px">@CallerId.Caller.Name</div>
+                            <div class="subtle">@(CallerId.Caller.City ?? "—") · @(CallerId.Caller.Devices.Count) device(s)</div>
+                        </div>
+                    </div>
+                    @if (CallerId.Caller.Devices.Any(d => d.WarrantyStatus == "Active"))
+                    {
+                        <span class="badge badge-green" style="margin-top:8px"><span class="dot"></span> Active warranty on file</span>
+                    }
+                }
+                else
+                {
+                    <span class="badge badge-amber" style="margin-top:8px">⚠ Unknown caller — not in CRM</span>
+                }
+
+                <div class="call-actions">
+                    <button class="call-btn answer" title="Answer" @onclick="Answer">📞</button>
+                    <button class="call-btn decline" title="Decline" @onclick="Decline">📵</button>
+                </div>
+            </div>
+        }
+        else if (CallerId.IsInCall)
+        {
+            @* ------- Active call ------- *@
+            <div class="spread" style="margin-bottom:12px">
+                <div class="section-title"><span style="color:var(--success)">●</span> On call · <span class="mono">@_callDuration</span></div>
+                <span class="badge badge-green mono">@CallerId.IncomingNumber</span>
+            </div>
+
+            @if (CallerId.Caller is not null)
+            {
+                <div class="row" style="margin-bottom:12px">
+                    <div class="avatar">@UiHelpers.Initials(CallerId.Caller.Name)</div>
+                    <div style="min-width:0;flex:1">
+                        <div style="font-weight:700">@CallerId.Caller.Name</div>
+                        <div class="subtle">@CallerId.Caller.Email</div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" @onclick="OpenProfile">Open 360°</button>
+                </div>
+            }
+            else
+            {
+                <div class="card" style="padding:12px;margin-bottom:12px">
+                    <div class="subtle" style="margin-bottom:8px">Unknown caller — create a customer record:</div>
+                    <div class="field" style="margin-bottom:8px">
+                        <InputText class="input" @bind-Value="_newCustomerName" placeholder="Customer name" />
+                    </div>
+                    <button class="btn btn-secondary btn-sm" style="width:100%" @onclick="QuickCreateAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_newCustomerName))">
+                        @(_busy ? "Creating…" : "➕ Quick-create customer")
+                    </button>
+                </div>
+            }
+
+            <div class="field">
+                <label>Call summary</label>
+                <InputTextArea class="textarea" style="min-height:64px" @bind-Value="_summary" placeholder="Notes about this call…" />
+            </div>
+            <button class="btn btn-danger" style="width:100%" @onclick="EndCallAsync" disabled="@_busy">
+                ⏹ End call &amp; log
+            </button>
+        }
+        else
+        {
+            @* ------- Simulator idle: dial pad ------- *@
+            <div class="section-title" style="margin-bottom:4px">📞 Caller ID Simulator</div>
+            <p class="subtle" style="margin:0 0 12px">Simulate an incoming customer call. The system looks up the caller instantly.</p>
+            <div class="field" style="margin-bottom:10px">
+                <label>Phone number</label>
+                <InputText class="input mono" @bind-Value="_dialNumber" placeholder="e.g. 01012345678" @onkeydown="OnDialKeyDown" />
+            </div>
+            <button class="btn btn-primary" style="width:100%" @onclick="SimulateAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_dialNumber))">
+                @if (_busy)
+                {
+                    <span class="spinner"></span>
+                    <span>Looking up…</span>
+                }
+                else
+                {
+                    <span>📳 Simulate incoming call</span>
+                }
+            </button>
+        }
+    </div>
+}
+
+@code {
+    private bool _panelOpen;
+    private bool _busy;
+    private string _dialNumber = string.Empty;
+    private string _summary = string.Empty;
+    private string _newCustomerName = string.Empty;
+    private string _callDuration = "00:00";
+    private Timer? _durationTimer;
+
+    protected override void OnInitialized() => CallerId.OnChange += OnCallStateChanged;
+
+    private void OnCallStateChanged()
+    {
+        if (CallerId.IsInCall && _durationTimer is null)
+        {
+            _durationTimer = new Timer(_ =>
+            {
+                if (CallerId.AnsweredAtUtc is { } start)
+                {
+                    var elapsed = DateTime.UtcNow - start;
+                    _callDuration = $"{(int)elapsed.TotalMinutes:00}:{elapsed.Seconds:00}";
+                    InvokeAsync(StateHasChanged);
+                }
+            }, null, 1000, 1000);
+        }
+        else if (!CallerId.IsInCall)
+        {
+            _durationTimer?.Dispose();
+            _durationTimer = null;
+            _callDuration = "00:00";
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void TogglePanel() => _panelOpen = !_panelOpen;
+
+    private async Task OnDialKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_dialNumber))
+        {
+            await SimulateAsync();
+        }
+    }
+
+    private async Task SimulateAsync()
+    {
+        _busy = true;
+        try
+        {
+            var caller = await Api.GetCallerProfileAsync(_dialNumber.Trim());
+            CallerId.Ring(_dialNumber.Trim(), caller);
+            await JS.InvokeVoidAsync("unigroup.playRingtone");
+        }
+        catch (ApiException ex)
+        {
+            Toasts.Error(ex.Message);
+        }
+        catch (HttpRequestException)
+        {
+            Toasts.Error("Cannot reach the API server.");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void OpenProfile()
+    {
+        if (CallerId.Caller is not null)
+        {
+            _panelOpen = false;
+            Nav.NavigateTo($"/customers/{CallerId.Caller.Id}");
+        }
+    }
+
+    private void Answer()
+    {
+        CallerId.Answer();
+        // Instantly open the customer's 360° profile for known callers.
+        if (CallerId.Caller is not null)
+        {
+            Nav.NavigateTo($"/customers/{CallerId.Caller.Id}");
+        }
+    }
+
+    private async Task Decline()
+    {
+        // Log the declined (missed) call with zero duration.
+        await LogCallAsync(0, "Declined / missed call");
+        CallerId.End();
+    }
+
+    private async Task QuickCreateAsync()
+    {
+        _busy = true;
+        try
+        {
+            var id = await Api.CreateCustomerAsync(new CreateCustomerRequest(
+                _newCustomerName.Trim(), null, null, null, null, CallerId.IncomingNumber!));
+            var customer = await Api.GetCustomerAsync(id);
+            CallerId.Ring(CallerId.IncomingNumber!, customer); // refresh caller info
+            CallerId.Answer();
+            Toasts.Success($"Customer '{customer.Name}' created.");
+            Nav.NavigateTo($"/customers/{id}");
+        }
+        catch (ApiException ex)
+        {
+            Toasts.Error(ex.Message);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task EndCallAsync()
+    {
+        var duration = CallerId.AnsweredAtUtc is { } start
+            ? (int)(DateTime.UtcNow - start).TotalSeconds
+            : 0;
+        await LogCallAsync(duration, string.IsNullOrWhiteSpace(_summary) ? null : _summary.Trim());
+        _summary = string.Empty;
+        _newCustomerName = string.Empty;
+        CallerId.End();
+    }
+
+    private async Task LogCallAsync(int durationSeconds, string? summary)
+    {
+        _busy = true;
+        try
+        {
+            await Api.LogCallAsync(new LogCallRequest(
+                CallerId.Caller?.Id,
+                "Inbound",
+                CallerId.IncomingNumber ?? _dialNumber,
+                durationSeconds,
+                summary,
+                null));
+            Toasts.Success("Call logged.");
+        }
+        catch (ApiException ex)
+        {
+            Toasts.Error($"Failed to log call: {ex.Message}");
+        }
+        catch (HttpRequestException)
+        {
+            Toasts.Error("Cannot reach the API server.");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        CallerId.OnChange -= OnCallStateChanged;
+        _durationTimer?.Dispose();
+    }
+}

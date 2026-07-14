@@ -44,3 +44,10 @@ phase*_run.log
 unigroup_crm_test.db
 unigroup_crm_test.db-*
 src/UniGroup.CRM.API/wwwroot/uploads/
+
+# Local sandbox/dev override for the Blazor client API base URL
+src/UniGroup.CRM.Client/wwwroot/appsettings.Development.json
+
+# Core dumps
+core
+**/core/

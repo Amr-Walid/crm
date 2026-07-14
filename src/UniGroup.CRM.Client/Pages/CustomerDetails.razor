@@ -1,0 +1,352 @@
+@page "/customers/{Id:guid}"
+@attribute [Authorize]
+@inject CrmApiClient Api
+@inject NavigationManager Nav
+@inject ToastService Toasts
+
+<PageTitle>Customer 360° — UniGroup CRM</PageTitle>
+
+<div class="page-pad anim-fade-up">
+    @if (_loading)
+    {
+        <div class="card" style="padding:24px;margin-bottom:16px">
+            <div class="row"><Skeleton Circle Width="52px" Height="52px" /><div style="flex:1"><Skeleton Width="35%" Height="20px" Style="margin-bottom:10px" /><Skeleton Width="55%" Height="12px" /></div></div>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr 1fr">
+            <div class="card" style="padding:20px"><Skeleton Height="120px" /></div>
+            <div class="card" style="padding:20px"><Skeleton Height="120px" /></div>
+        </div>
+    }
+    else if (_customer is null)
+    {
+        <div class="card empty-state">
+            <div class="icon">🤷</div>
+            <h3>Customer not found</h3>
+            <a class="btn btn-secondary" href="/customers">Back to directory</a>
+        </div>
+    }
+    else
+    {
+        <!-- ======== Header ======== -->
+        <div class="glass" style="padding:22px 24px;margin-bottom:18px">
+            <div class="spread wrap">
+                <div class="row" style="gap:16px">
+                    <div class="avatar lg">@UiHelpers.Initials(_customer.Name)</div>
+                    <div>
+                        <h1 style="font-size:21px">@_customer.Name</h1>
+                        <div class="row wrap subtle" style="margin-top:4px;gap:12px">
+                            @if (!string.IsNullOrWhiteSpace(_customer.Email))
+                            {
+                                <span>✉️ @_customer.Email</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_customer.City) || !string.IsNullOrWhiteSpace(_customer.Province))
+                            {
+                                <span>📍 @string.Join(", ", new[] { _customer.City, _customer.Province }.Where(x => !string.IsNullOrWhiteSpace(x)))</span>
+                            }
+                            <span>🗓 Customer since @_customer.CreatedAt.ToLocalTime().ToString("MMM yyyy")</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row wrap">
+                    @if (_customer.Devices.Any(d => d.WarrantyStatus == "Active"))
+                    {
+                        <span class="badge badge-green"><span class="dot"></span> Active Warranty</span>
+                    }
+                    <button class="btn btn-primary" @onclick="NewTicket">🎫 New Ticket</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:340px 1fr;align-items:start">
+            <!-- ======== Left column ======== -->
+            <div class="grid" style="grid-template-columns:1fr">
+                <!-- Phones -->
+                <div class="card" style="padding:18px 20px">
+                    <div class="section-title" style="margin-bottom:12px">📱 Phone Numbers</div>
+                    @foreach (var p in _customer.Phones)
+                    {
+                        <div class="spread" style="padding:7px 0;border-bottom:1px solid var(--border)">
+                            <span class="mono" style="font-size:13px">@p.Phone</span>
+                            @if (p.IsPrimary)
+                            {
+                                <span class="badge badge-indigo">Primary</span>
+                            }
+                        </div>
+                    }
+                    @if (_customer.Phones.Count == 0)
+                    {
+                        <div class="subtle">No phone numbers on file.</div>
+                    }
+                </div>
+
+                <!-- Address -->
+                @if (!string.IsNullOrWhiteSpace(_customer.AddressDetails))
+                {
+                    <div class="card" style="padding:18px 20px">
+                        <div class="section-title" style="margin-bottom:8px">🏠 Address</div>
+                        <div class="muted" style="font-size:13px">@_customer.AddressDetails</div>
+                    </div>
+                }
+
+                <!-- Devices -->
+                <div class="card" style="padding:18px 20px">
+                    <div class="spread" style="margin-bottom:12px">
+                        <div class="section-title">📟 Devices</div>
+                        <button class="btn btn-secondary btn-sm" @onclick="() => _showAssign = true">➕ Link device</button>
+                    </div>
+                    @if (_customer.Devices.Count == 0)
+                    {
+                        <div class="subtle">No devices registered.</div>
+                    }
+                    @foreach (var d in _customer.Devices)
+                    {
+                        <div style="padding:12px;border:1px solid var(--border);border-radius:12px;margin-bottom:10px">
+                            <div class="spread" style="margin-bottom:6px">
+                                <span style="font-weight:700;font-size:13.5px">@d.BrandName @d.ModelName</span>
+                                <span class="badge @UiHelpers.WarrantyBadge(d.WarrantyStatus)"><span class="dot"></span> @d.WarrantyStatus</span>
+                            </div>
+                            <div class="subtle" style="line-height:1.9">
+                                @if (!string.IsNullOrWhiteSpace(d.IMEI))
+                                {
+                                    <div>IMEI: <span class="mono">@d.IMEI</span></div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(d.SerialNumber))
+                                {
+                                    <div>S/N: <span class="mono">@d.SerialNumber</span></div>
+                                }
+                                <div>Purchased: @d.PurchaseDate.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                <div>Warranty until: <b style="color:@(d.WarrantyStatus == "Active" ? "var(--success)" : "var(--danger)")">@d.WarrantyExpiry.ToLocalTime().ToString("dd MMM yyyy")</b></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- ======== Right column: unified timeline ======== -->
+            <div class="card" style="padding:0">
+                <div class="tabs">
+                    <button class="tab @(_tab == 0 ? "active" : "")" @onclick="() => _tab = 0">📞 Call History</button>
+                    <button class="tab @(_tab == 1 ? "active" : "")" @onclick="() => _tab = 1">🎫 Tickets</button>
+                </div>
+
+                <div style="padding:20px 24px;min-height:300px">
+                    @if (_tab == 0)
+                    {
+                        @if (_calls is null)
+                        {
+                            <Skeleton Height="80px" />
+                        }
+                        else if (_calls.Count == 0)
+                        {
+                            <div class="empty-state"><div class="icon">📞</div>No calls logged for this customer yet.</div>
+                        }
+                        else
+                        {
+                            <div class="timeline">
+                                @foreach (var call in _calls)
+                                {
+                                    <div class="timeline-item">
+                                        <div class="dot @(call.Direction.ToString() == "Inbound" ? "blue" : "green")"></div>
+                                        <div class="spread wrap">
+                                            <span style="font-weight:600;font-size:13px">
+                                                @(call.Direction.ToString() == "Inbound" ? "📥 Inbound" : "📤 Outbound") · <span class="mono">@call.PhoneNumber</span>
+                                            </span>
+                                            <span class="subtle">@UiHelpers.TimeAgo(call.CreatedAt) · @UiHelpers.FormatDuration(call.DurationSeconds)</span>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(call.Summary))
+                                        {
+                                            <div class="muted" style="font-size:12.5px;margin-top:3px">@call.Summary</div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        @if (_tickets is null)
+                        {
+                            <Skeleton Height="80px" />
+                        }
+                        else if (_tickets.Count == 0)
+                        {
+                            <div class="empty-state"><div class="icon">🎫</div>No tickets for this customer yet.</div>
+                        }
+                        else
+                        {
+                            <div class="timeline">
+                                @foreach (var t in _tickets)
+                                {
+                                    <div class="timeline-item" style="cursor:pointer" @onclick="() => GoToTicket(t.Id)">
+                                        <div class="dot @(t.SlaBreached ? "red" : t.Status is "Resolved" or "Closed" ? "green" : "amber")"></div>
+                                        <div class="spread wrap">
+                                            <span style="font-weight:600;font-size:13px">@t.Id — @t.Title</span>
+                                            <span class="subtle">@UiHelpers.TimeAgo(t.CreatedAt)</span>
+                                        </div>
+                                        <div class="row wrap" style="margin-top:5px;gap:6px">
+                                            <span class="badge @UiHelpers.StatusBadge(t.Status)">@UiHelpers.StatusLabel(t.Status)</span>
+                                            <span class="badge @UiHelpers.PriorityBadge(t.Priority)">@t.Priority</span>
+                                            <span class="badge badge-slate">@t.Category</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- ======== Assign Device Modal ======== -->
+<Modal @bind-Visible="_showAssign" Title="📟 Link Device to Customer">
+    <div class="row" style="align-items:flex-end;margin-bottom:14px;gap:8px">
+        <div class="field" style="flex:1;margin-bottom:0">
+            <label>Brand *</label>
+            <InputText class="input" @bind-Value="_assign.BrandName" placeholder="e.g. Samsung" />
+        </div>
+        <div class="field" style="flex:1;margin-bottom:0">
+            <label>Model *</label>
+            <InputText class="input" @bind-Value="_assign.ModelName" placeholder="e.g. Galaxy S25" />
+        </div>
+    </div>
+    <p class="subtle" style="margin:0 0 14px">Brand &amp; model are created automatically if they don't exist.</p>
+    <div class="row" style="align-items:flex-start">
+        <div class="field" style="flex:1">
+            <label>IMEI</label>
+            <InputText class="input mono" @bind-Value="_assign.IMEI" placeholder="15-digit IMEI" />
+        </div>
+        <div class="field" style="flex:1">
+            <label>Serial number</label>
+            <InputText class="input mono" @bind-Value="_assign.SerialNumber" placeholder="S/N" />
+        </div>
+    </div>
+    <div class="row" style="align-items:flex-start">
+        <div class="field" style="flex:1">
+            <label>Purchase date *</label>
+            <InputDate class="input" @bind-Value="_assign.PurchaseDate" />
+        </div>
+        <div class="field" style="flex:1">
+            <label>Warranty expiry</label>
+            <InputDate class="input" @bind-Value="_assign.WarrantyExpiry" />
+        </div>
+    </div>
+    <div class="field">
+        <label>Invoice number</label>
+        <InputText class="input" @bind-Value="_assign.InvoiceNumber" placeholder="INV-…" />
+    </div>
+    <button class="btn btn-primary" style="width:100%" @onclick="AssignDeviceAsync"
+            disabled="@(_assigning || string.IsNullOrWhiteSpace(_assign.BrandName) || string.IsNullOrWhiteSpace(_assign.ModelName))">
+        @(_assigning ? "Linking…" : "Link device")
+    </button>
+</Modal>
+
+@code {
+    /// <summary>The customer id from the route.</summary>
+    [Parameter] public Guid Id { get; set; }
+
+    private sealed class AssignModel
+    {
+        public string BrandName { get; set; } = string.Empty;
+        public string ModelName { get; set; } = string.Empty;
+        public string? IMEI { get; set; }
+        public string? SerialNumber { get; set; }
+        public DateTime PurchaseDate { get; set; } = DateTime.Today;
+        public DateTime? WarrantyExpiry { get; set; } = DateTime.Today.AddYears(1);
+        public string? InvoiceNumber { get; set; }
+    }
+
+    private CustomerDetailsDto? _customer;
+    private List<CallDto>? _calls;
+    private List<TicketSummaryDto>? _tickets;
+    private bool _loading = true;
+    private int _tab;
+    private bool _showAssign;
+    private bool _assigning;
+    private AssignModel _assign = new();
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _customer = null;
+        _calls = null;
+        _tickets = null;
+
+        try
+        {
+            _customer = await Api.GetCustomerAsync(Id);
+            _loading = false;
+            StateHasChanged();
+
+            // Load timeline data in parallel after the main profile renders.
+            var callsTask = Api.GetCallHistoryAsync(Id, 1, 30);
+            var ticketsTask = LoadTicketsAsync();
+            _calls = await callsTask;
+            _tickets = await ticketsTask;
+        }
+        catch (ApiException)
+        {
+            _loading = false;
+            _customer = null;
+        }
+        catch (HttpRequestException)
+        {
+            Toasts.Error("Cannot reach the API server.");
+            _loading = false;
+        }
+    }
+
+    private async Task<List<TicketSummaryDto>> LoadTicketsAsync()
+    {
+        try
+        {
+            // No per-customer ticket filter on the API — fetch recent pages and filter client-side.
+            var page = await Api.GetTicketsAsync(page: 1, pageSize: 100);
+            return page.Items
+                .Where(t => string.Equals(t.CustomerName, _customer!.Name, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private void GoToTicket(string ticketId) => Nav.NavigateTo($"/tickets/{ticketId}");
+
+    private void NewTicket() => Nav.NavigateTo($"/tickets/new?customerId={Id}");
+
+    private async Task AssignDeviceAsync()
+    {
+        _assigning = true;
+        try
+        {
+            // 1) create brand, 2) create model under it, 3) assign to customer.
+            var brandId = await Api.CreateBrandAsync(new CreateBrandRequest(_assign.BrandName.Trim()));
+            var modelId = await Api.CreateModelAsync(new CreateModelRequest(brandId, _assign.ModelName.Trim()));
+            await Api.AssignDeviceAsync(new AssignDeviceRequest(
+                Id, modelId,
+                string.IsNullOrWhiteSpace(_assign.IMEI) ? null : _assign.IMEI!.Trim(),
+                string.IsNullOrWhiteSpace(_assign.SerialNumber) ? null : _assign.SerialNumber!.Trim(),
+                _assign.PurchaseDate,
+                string.IsNullOrWhiteSpace(_assign.InvoiceNumber) ? null : _assign.InvoiceNumber!.Trim(),
+                _assign.WarrantyExpiry));
+
+            Toasts.Success("Device linked to customer.");
+            _showAssign = false;
+            _assign = new AssignModel();
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Toasts.Error(ex.Message);
+        }
+        finally
+        {
+            _assigning = false;
+        }
+    }
+}

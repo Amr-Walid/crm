@@ -1,0 +1,127 @@
+@page "/survey/{Token}"
+@layout EmptyLayout
+@inject CrmApiClient Api
+
+<PageTitle>Rate Your Experience — UniGroup</PageTitle>
+
+<div class="auth-page">
+    <div class="auth-orb"></div>
+    <div class="auth-card glass anim-scale-in" style="max-width:480px">
+        @if (_done)
+        {
+            <div style="text-align:center;padding:12px 0">
+                <div style="font-size:56px;margin-bottom:10px">@(_success ? "🎉" : "😕")</div>
+                <h2 style="font-size:20px;margin:0 0 8px">@(_success ? "Thank you!" : "Something went wrong")</h2>
+                <p class="muted" style="margin:0;line-height:1.6">@_message</p>
+                @if (_success && _rating >= 4)
+                {
+                    <p class="muted" style="margin-top:10px">We're thrilled you had a great experience! ⭐</p>
+                }
+                else if (_success)
+                {
+                    <p class="muted" style="margin-top:10px">Your feedback helps us improve our service.</p>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="auth-logo" style="margin-bottom:6px">
+                <span class="grad-text" style="font-family:var(--font-display);font-weight:800;font-size:22px">UniGroup</span>
+            </div>
+            <h2 style="text-align:center;font-size:19px;margin:0 0 6px">How was your experience?</h2>
+            <p class="muted" style="text-align:center;margin:0 0 22px;font-size:13px">
+                Your support request has been resolved. We'd love to hear your feedback.
+            </p>
+
+            <!-- ═══ STARS ═══ -->
+            <div class="stars" style="margin-bottom:6px">
+                @for (var i = 1; i <= 5; i++)
+                {
+                    var star = i;
+                    <button type="button" class="star-btn @(star <= DisplayRating ? "lit" : "")"
+                            @onclick="() => SetRating(star)"
+                            @onmouseover="() => _hover = star"
+                            @onmouseout="ClearHover"
+                            aria-label="@star star@(star > 1 ? "s" : "")">★</button>
+                }
+            </div>
+            <div style="text-align:center;font-size:13px;font-weight:700;min-height:20px;margin-bottom:16px;color:var(--text-2)">
+                @RatingLabel
+            </div>
+
+            <div class="field">
+                <label>Feedback (optional)</label>
+                <textarea class="textarea" rows="4" maxlength="2000"
+                          placeholder="Tell us more about your experience…"
+                          @bind="_feedback" @bind:event="oninput"></textarea>
+            </div>
+
+            @if (_error is not null)
+            {
+                <div class="badge badge-red" style="display:block;padding:10px 14px;margin-bottom:14px;white-space:normal">⚠ @_error</div>
+            }
+
+            <button class="btn btn-primary btn-lg" style="width:100%"
+                    @onclick="SubmitAsync" disabled="@(_rating == 0 || _submitting)">
+                @(_submitting ? "Submitting…" : "Submit Rating")
+            </button>
+            <p class="subtle" style="text-align:center;margin:14px 0 0">
+                This survey link is unique to your ticket and can be used once.
+            </p>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Token { get; set; } = string.Empty;
+
+    private int _rating;
+    private int _hover;
+    private string _feedback = string.Empty;
+
+    private bool _submitting;
+    private bool _done;
+    private bool _success;
+    private string _message = string.Empty;
+    private string? _error;
+
+    private int DisplayRating => _hover > 0 ? _hover : _rating;
+
+    private string RatingLabel => DisplayRating switch
+    {
+        1 => "😠 Very dissatisfied",
+        2 => "🙁 Dissatisfied",
+        3 => "😐 Neutral",
+        4 => "🙂 Satisfied",
+        5 => "🤩 Very satisfied",
+        _ => "Tap a star to rate",
+    };
+
+    private void SetRating(int stars) => _rating = stars;
+    private void ClearHover() => _hover = 0;
+
+    private async Task SubmitAsync()
+    {
+        if (_rating is < 1 or > 5) return;
+        _submitting = true;
+        _error = null;
+        try
+        {
+            var result = await Api.SubmitSurveyAsync(new SubmitSurveyRequest(
+                Token.Trim(), _rating, string.IsNullOrWhiteSpace(_feedback) ? null : _feedback.Trim()));
+
+            _success = result.Success;
+            _message = result.Message;
+            _done = true;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _error = "Could not reach the server. Please try again shortly.";
+        }
+        finally { _submitting = false; }
+    }
+}
