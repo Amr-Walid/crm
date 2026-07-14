@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UniGroup.CRM.Application.Common.Interfaces;
+using UniGroup.CRM.Application.Features.Notifications.Events;
 using UniGroup.CRM.Domain.Entities;
 using UniGroup.CRM.Domain.Enums;
 
@@ -21,13 +22,15 @@ public record EscalateOverdueTicketsCommand : IRequest;
 public class EscalateOverdueTicketsCommandHandler : IRequestHandler<EscalateOverdueTicketsCommand>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IPublisher _publisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EscalateOverdueTicketsCommandHandler"/> class.
     /// </summary>
-    public EscalateOverdueTicketsCommandHandler(IApplicationDbContext context)
+    public EscalateOverdueTicketsCommandHandler(IApplicationDbContext context, IPublisher publisher)
     {
         _context = context;
+        _publisher = publisher;
     }
 
     /// <inheritdoc />
@@ -103,5 +106,13 @@ public class EscalateOverdueTicketsCommandHandler : IRequestHandler<EscalateOver
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Phase 6: publish SLA breach alerts AFTER data is persisted
+        foreach (var ticket in overdueTickets)
+        {
+            await _publisher.Publish(
+                new SlaBreachedEvent(ticket.Id, ticket.Title),
+                cancellationToken);
+        }
     }
 }

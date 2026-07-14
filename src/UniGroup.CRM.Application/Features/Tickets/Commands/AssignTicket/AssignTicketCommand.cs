@@ -4,6 +4,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using UniGroup.CRM.Application.Common.Interfaces;
+using UniGroup.CRM.Application.Features.Notifications.Events;
 using UniGroup.CRM.Domain.Entities;
 using UniGroup.CRM.Domain.Enums;
 
@@ -26,13 +27,15 @@ public record AssignTicketCommand(
 public class AssignTicketCommandHandler : IRequestHandler<AssignTicketCommand>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IPublisher _publisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AssignTicketCommandHandler"/> class.
     /// </summary>
-    public AssignTicketCommandHandler(IApplicationDbContext context)
+    public AssignTicketCommandHandler(IApplicationDbContext context, IPublisher publisher)
     {
         _context = context;
+        _publisher = publisher;
     }
 
     /// <inheritdoc />
@@ -113,5 +116,13 @@ public class AssignTicketCommandHandler : IRequestHandler<AssignTicketCommand>
         _context.TicketHistories.Add(history);
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Phase 6: publish notification event AFTER data is persisted
+        if (request.AssignedToId.HasValue)
+        {
+            await _publisher.Publish(
+                new TicketAssignedEvent(ticket.Id, request.AssignedToId.Value),
+                cancellationToken);
+        }
     }
 }

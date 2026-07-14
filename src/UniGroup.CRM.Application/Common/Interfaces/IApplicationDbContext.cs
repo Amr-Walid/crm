@@ -86,6 +86,21 @@ public interface IApplicationDbContext
     DbSet<ProcessedWebhookEvent> ProcessedWebhookEvents { get; }
 
     /// <summary>
+    /// Gets the database set for application users (Identity).
+    /// </summary>
+    DbSet<ApplicationUser> Users { get; }
+
+    /// <summary>
+    /// Gets the database set for application roles (Identity).
+    /// </summary>
+    DbSet<ApplicationRole> Roles { get; }
+
+    /// <summary>
+    /// Gets the database set for user-role membership links (Identity).
+    /// </summary>
+    DbSet<Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>> UserRoles { get; }
+
+    /// <summary>
     /// Saves all changes made in this context to the database.
     /// </summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);

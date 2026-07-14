@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UniGroup.CRM.Application.Common.Interfaces;
+using UniGroup.CRM.Application.Features.Notifications.Events;
 using UniGroup.CRM.Domain.Entities;
 using UniGroup.CRM.Domain.Enums;
 
@@ -26,13 +27,15 @@ public record TransitionTicketStatusCommand(
 public class TransitionTicketStatusCommandHandler : IRequestHandler<TransitionTicketStatusCommand>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IPublisher _publisher;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TransitionTicketStatusCommandHandler"/> class.
     /// </summary>
-    public TransitionTicketStatusCommandHandler(IApplicationDbContext context)
+    public TransitionTicketStatusCommandHandler(IApplicationDbContext context, IPublisher publisher)
     {
         _context = context;
+        _publisher = publisher;
     }
 
     /// <inheritdoc />
@@ -158,5 +161,19 @@ public class TransitionTicketStatusCommandHandler : IRequestHandler<TransitionTi
         _context.TicketHistories.Add(history);
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Phase 6: publish notification events AFTER data is persisted
+        if (newStatus == TicketStatus.Resolved)
+        {
+            await _publisher.Publish(
+                new TicketResolvedEvent(ticket.Id, ticket.CustomerId, ticket.ChatwootConversationId),
+                cancellationToken);
+        }
+        else if (newStatus == TicketStatus.Closed)
+        {
+            await _publisher.Publish(
+                new TicketClosedEvent(ticket.Id, ticket.CustomerId, ticket.ChatwootConversationId),
+                cancellationToken);
+        }
     }
 }

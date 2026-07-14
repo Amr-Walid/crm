@@ -90,6 +90,12 @@ public static class DependencyInjection
         services.AddHostedService<BackgroundServices.AuditLogProcessor>();
         services.AddHostedService<BackgroundServices.AuditLogArchiverService>();
 
+        // Phase 6: Notification engine — outbound channels (Chatwoot WhatsApp + SMTP email)
+        services.Configure<ChatwootOptions>(configuration.GetSection("Chatwoot"));
+        services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
+        services.AddHttpClient<IChatwootClientService, ChatwootClientService>();
+        services.AddScoped<IEmailService, EmailService>();
+
         // Register HybridCache
 #pragma warning disable EXTEXP0018
         services.AddHybridCache(options =>

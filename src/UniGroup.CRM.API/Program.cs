@@ -151,6 +151,38 @@ if (args.Contains("--seed"))
             db.CustomerDevices.Add(device);
         }
 
+        // 7. Phase 6: Seed a closed ticket with an EXPIRED CSAT survey token (for expiration tests)
+        const string expiredTicketId = "T-2026-90001";
+        var expiredTicket = await db.Tickets.FindAsync(expiredTicketId);
+        if (expiredTicket == null)
+        {
+            var closedAt = DateTime.UtcNow.AddDays(-10);
+            expiredTicket = new UniGroup.CRM.Domain.Entities.Ticket
+            {
+                Id = expiredTicketId,
+                CustomerId = customerId,
+                Title = "Seeded closed ticket for expired CSAT test",
+                Description = "Used to verify that expired survey tokens are rejected.",
+                Category = UniGroup.CRM.Domain.Enums.TicketCategory.GeneralInquiry,
+                Priority = UniGroup.CRM.Domain.Enums.TicketPriority.Low,
+                Status = UniGroup.CRM.Domain.Enums.TicketStatus.Closed,
+                CreatedAt = closedAt.AddDays(-1),
+                UpdatedAt = closedAt,
+                ClosedAt = closedAt
+            };
+            db.Tickets.Add(expiredTicket);
+
+            db.CsatSurveys.Add(new UniGroup.CRM.Domain.Entities.CsatSurvey
+            {
+                Id = Guid.NewGuid(),
+                TicketId = expiredTicketId,
+                CustomerId = customerId,
+                SurveyToken = "expiredtoken000000000000000000000000000000000000000000000000fixed",
+                SentAt = closedAt,
+                ExpiresAt = closedAt.AddDays(7) // already in the past (closed 10 days ago)
+            });
+        }
+
         await db.SaveChangesAsync();
         Console.WriteLine("Seeding completed successfully.");
         return;
