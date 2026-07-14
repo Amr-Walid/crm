@@ -68,7 +68,7 @@ $stderrLog = Join-Path $WorkingDir "api_stderr.log"
 if (Test-Path $stdoutLog) { Remove-Item $stdoutLog -Force }
 if (Test-Path $stderrLog) { Remove-Item $stderrLog -Force }
 
-$apiProcess = Start-Process dotnet -ArgumentList "run --project `"$ApiDir`" --launch-profile http" `
+$apiProcess = Start-Process dotnet -ArgumentList "run --project `"$ApiDir`" --launch-profile http -- --seed" `
     -PassThru -WorkingDirectory $WorkingDir `
     -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
 
