@@ -26,22 +26,10 @@ Desktop.ini
 .idea/
 
 # Project files
-CRM_Detailed_Explanation.md
-CRM_Requirements.md
 Presentation1.pptx
-database_design.md
 *.zip
 project_updated_extracted/
-*_gallery.md
-company_systems_structure.md
-clean_architecture_guide.md
 dotnet-sdk-9.0-installer.exe
-project_log.md
-modules_design_blueprint.md
-
-
-
-
 
 
 # .NET Build Outputs
