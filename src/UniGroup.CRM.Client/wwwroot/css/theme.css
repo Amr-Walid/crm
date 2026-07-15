@@ -36,6 +36,15 @@
   --topbar-h: 64px;
 }
 
+/* ---------- Arabic (RTL) typography ---------- */
+html[lang='ar'] {
+  --font-display: 'Cairo', 'Outfit', system-ui, sans-serif;
+  --font-body: 'Cairo', 'Inter', system-ui, sans-serif;
+}
+html[lang='ar'] h1, html[lang='ar'] h2, html[lang='ar'] h3, html[lang='ar'] h4 { letter-spacing: 0; }
+html[lang='ar'] .nav-group-label,
+html[lang='ar'] .sidebar-logo .tag { letter-spacing: 0.02em; }
+
 /* ---------- Light theme (default) ---------- */
 :root, [data-theme='light'] {
   --bg: #f2f4fa;
@@ -128,7 +137,7 @@ a { color: var(--brand-500); text-decoration: none; }
 }
 .boot-sub { color: var(--text-3); font-size: 12px; }
 @keyframes bootPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
-@keyframes bootSlide { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+@keyframes bootSlide { 0% { margin-inline-start: -40%; } 100% { margin-inline-start: 100%; } }
 
 /* ---------- Glass & cards ---------- */
 .glass {
@@ -259,7 +268,7 @@ a { color: var(--brand-500); text-decoration: none; }
 .table-wrap { overflow-x: auto; border-radius: var(--radius-lg); }
 table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.data th {
-  text-align: left; padding: 11px 16px;
+  text-align: start; padding: 11px 16px;
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--text-3); border-bottom: 1px solid var(--border);
   background: var(--surface-2);
@@ -287,7 +296,7 @@ table.data tbody tr:last-child td { border-bottom: none; }
 .modal-lg { max-width: 860px; }
 
 /* ---------- Toast ---------- */
-.toast-stack { position: fixed; bottom: 24px; left: 24px; z-index: 500; display: flex; flex-direction: column; gap: 10px; }
+.toast-stack { position: fixed; bottom: 24px; inset-inline-start: 24px; z-index: 500; display: flex; flex-direction: column; gap: 10px; }
 .toast {
   min-width: 280px; max-width: 400px;
   padding: 13px 18px; border-radius: var(--radius-md);
@@ -299,9 +308,9 @@ table.data tbody tr:last-child td { border-bottom: none; }
   background: var(--surface);
   color: var(--text-1);
 }
-.toast.success { border-left: 4px solid var(--success); }
-.toast.error { border-left: 4px solid var(--danger); }
-.toast.info { border-left: 4px solid var(--info); }
+.toast.success { border-inline-start: 4px solid var(--success); }
+.toast.error { border-inline-start: 4px solid var(--danger); }
+.toast.info { border-inline-start: 4px solid var(--info); }
 
 /* ---------- Utility ---------- */
 .row { display: flex; align-items: center; gap: 10px; }
@@ -346,12 +355,14 @@ table.data tbody tr:last-child td { border-bottom: none; }
 /* Markdown content */
 .md-content { font-size: 13.5px; color: var(--text-1); line-height: 1.7; }
 .md-content h1, .md-content h2, .md-content h3 { margin: 14px 0 8px; }
-.md-content ul, .md-content ol { padding-left: 22px; margin: 8px 0; }
+.md-content ul, .md-content ol { padding-inline-start: 22px; margin: 8px 0; }
 .md-content li { margin: 4px 0; }
 .md-content code { background: var(--surface-3); padding: 2px 6px; border-radius: 5px; font-size: 12px; }
 .md-content blockquote {
-  margin: 10px 0; padding: 8px 14px; border-left: 3px solid var(--brand-500);
-  background: var(--hover); border-radius: 0 8px 8px 0; color: var(--text-2);
+  margin: 10px 0; padding: 8px 14px; border-inline-start: 3px solid var(--brand-500);
+  background: var(--hover); color: var(--text-2);
+  border-start-end-radius: 8px; border-end-end-radius: 8px;
+  border-start-start-radius: 0; border-end-start-radius: 0;
 }
 .md-content p { margin: 6px 0; }
 .md-content strong { color: var(--text-1); }
@@ -364,5 +375,5 @@ table.data tbody tr:last-child td { border-bottom: none; }
   font-size: 13px;
   display: none;
 }
-#blazor-error-ui .reload { color: #fff; text-decoration: underline; margin-left: 10px; }
-#blazor-error-ui .dismiss { cursor: pointer; float: right; }
+#blazor-error-ui .reload { color: #fff; text-decoration: underline; margin-inline-start: 10px; }
+#blazor-error-ui .dismiss { cursor: pointer; float: inline-end; }

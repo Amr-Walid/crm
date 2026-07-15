@@ -1,18 +1,19 @@
 @page "/knowledge-base"
 @attribute [Authorize]
+@inherits LocalizedComponentBase
 @inject CrmApiClient Api
 @inject ToastService Toasts
 
-<PageTitle>Knowledge Base — UniGroup CRM</PageTitle>
+<PageTitle>@T("Kb.PageTitle")</PageTitle>
 
 <div class="page-pad anim-fade-up">
     <div class="spread wrap" style="margin-bottom:20px;gap:12px">
         <div>
-            <h1 style="font-size:22px">Knowledge Base</h1>
-            <p class="muted" style="margin:4px 0 0">Interactive agent guidance per issue category</p>
+            <h1 style="font-size:22px">@T("Kb.Title")</h1>
+            <p class="muted" style="margin:4px 0 0">@T("Kb.Subtitle")</p>
         </div>
         <AuthorizeView Roles="Admin">
-            <button class="btn btn-primary" @onclick="OpenCreate">➕ New Article</button>
+            <button class="btn btn-primary" @onclick="OpenCreate"><i class="bi bi-plus-lg"></i> @T("Kb.NewArticle")</button>
         </AuthorizeView>
     </div>
 
@@ -22,7 +23,7 @@
         {
             var c = cat;
             <button class="kb-cat-chip @(_selectedCategory == c ? "active" : "")" @onclick="() => SelectCategoryAsync(c)">
-                @UiHelpers.CategoryIcon(c) @UiHelpers.CategoryLabel(c)
+                <i class="bi @UiHelpers.CategoryIcon(c)"></i> @TCategory(c.ToString())
             </button>
         }
     </div>
@@ -40,11 +41,11 @@
             else if (_guidance is null)
             {
                 <div class="card empty-state">
-                    <div class="icon">📄</div>
-                    <h3>No guidance for @UiHelpers.CategoryLabel(_selectedCategory)</h3>
-                    <p>There is no active knowledge base article for this category yet.</p>
+                    <div class="icon"><i class="bi bi-file-earmark-text"></i></div>
+                    <h3>@T("Kb.NoGuidanceFor", TCategory(_selectedCategory.ToString()))</h3>
+                    <p>@T("Kb.NoActiveArticle")</p>
                     <AuthorizeView Roles="Admin">
-                        <button class="btn btn-primary" @onclick="OpenCreateForSelected">➕ Create one now</button>
+                        <button class="btn btn-primary" @onclick="OpenCreateForSelected"><i class="bi bi-plus-lg"></i> @T("Kb.CreateNow")</button>
                     </AuthorizeView>
                 </div>
             }
@@ -55,28 +56,28 @@
                         <div>
                             <div style="font-weight:800;font-size:17px">@_guidance.Title</div>
                             <div class="subtle">
-                                @UiHelpers.CategoryIcon(_guidance.Category) @UiHelpers.CategoryLabel(_guidance.Category)
-                                · updated @UiHelpers.TimeAgo(_guidance.UpdatedAt ?? _guidance.CreatedAt)
+                                <i class="bi @UiHelpers.CategoryIcon(_guidance.Category)"></i> @TCategory(_guidance.Category.ToString())
+                                · @T("Kb.UpdatedAgo", TimeAgo(_guidance.UpdatedAt ?? _guidance.CreatedAt))
                             </div>
                         </div>
                         <AuthorizeView Roles="Admin">
-                            <button class="btn btn-secondary btn-sm" @onclick="EditGuidance">✏ Edit</button>
+                            <button class="btn btn-secondary btn-sm" @onclick="EditGuidance"><i class="bi bi-pencil"></i> @T("Common.Edit")</button>
                         </AuthorizeView>
                     </div>
                     <div class="card kb-section-card questions">
-                        <div style="font-weight:700;font-size:13px;margin-bottom:8px">❓ Questions to Ask</div>
+                        <div style="font-weight:700;font-size:13px;margin-bottom:8px"><i class="bi bi-question-circle"></i> @T("Kb.Questions")</div>
                         <MarkdownView Content="@_guidance.QuestionsToAsk" />
                     </div>
                     <div class="card kb-section-card diagnosis">
-                        <div style="font-weight:700;font-size:13px;margin-bottom:8px">🔍 Diagnosis Steps</div>
+                        <div style="font-weight:700;font-size:13px;margin-bottom:8px"><i class="bi bi-search"></i> @T("Kb.Diagnosis")</div>
                         <MarkdownView Content="@_guidance.DiagnosisSteps" />
                     </div>
                     <div class="card kb-section-card answers">
-                        <div style="font-weight:700;font-size:13px;margin-bottom:8px">💬 Suggested Answers</div>
+                        <div style="font-weight:700;font-size:13px;margin-bottom:8px"><i class="bi bi-chat-dots"></i> @T("Kb.Answers")</div>
                         <MarkdownView Content="@_guidance.SuggestedAnswers" />
                     </div>
                     <div class="card kb-section-card escalation">
-                        <div style="font-weight:700;font-size:13px;margin-bottom:8px">🚨 Escalate When</div>
+                        <div style="font-weight:700;font-size:13px;margin-bottom:8px"><i class="bi bi-exclamation-octagon"></i> @T("Kb.Escalation")</div>
                         <MarkdownView Content="@_guidance.EscalationConditions" />
                     </div>
                     @if (!string.IsNullOrWhiteSpace(_guidance.Keywords))
@@ -94,8 +95,8 @@
 
         <!-- ═══════ ARTICLE DIRECTORY ═══════ -->
         <div class="card" style="padding:18px">
-            <div class="section-title" style="margin-bottom:12px">📚 All Articles</div>
-            <input class="input" placeholder="🔎 Search articles…" style="margin-bottom:12px"
+            <div class="section-title" style="margin-bottom:12px"><i class="bi bi-book"></i> @T("Kb.AllArticles")</div>
+            <input class="input" placeholder="@T("Kb.SearchPlaceholder")" style="margin-bottom:12px"
                    value="@_search" @oninput="OnSearchInput" />
 
             @if (_loadingList)
@@ -106,7 +107,7 @@
             }
             else if (_articles.Count == 0)
             {
-                <p class="subtle" style="margin:0">No articles found.</p>
+                <p class="subtle" style="margin:0">@T("Kb.NoArticles")</p>
             }
             else
             {
@@ -118,16 +119,16 @@
                             <div class="spread" style="gap:8px">
                                 <div style="min-width:0">
                                     <div style="font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@art.Title</div>
-                                    <div class="subtle">@UiHelpers.CategoryIcon(art.Category) @UiHelpers.CategoryLabel(art.Category)</div>
+                                    <div class="subtle"><i class="bi @UiHelpers.CategoryIcon(art.Category)"></i> @TCategory(art.Category.ToString())</div>
                                 </div>
                                 <div class="row" style="gap:6px;flex-shrink:0">
                                     @if (!art.IsActive)
                                     {
-                                        <span class="badge badge-slate">inactive</span>
+                                        <span class="badge badge-slate">@T("Kb.Inactive")</span>
                                     }
                                     <AuthorizeView Roles="Admin">
-                                        <button class="btn btn-ghost btn-sm" @onclick:stopPropagation="true" @onclick="() => OpenEdit(art)">✏</button>
-                                        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" @onclick:stopPropagation="true" @onclick="() => ConfirmDelete(art)">🗑</button>
+                                        <button class="btn btn-ghost btn-sm" @onclick:stopPropagation="true" @onclick="() => OpenEdit(art)"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" @onclick:stopPropagation="true" @onclick="() => ConfirmDelete(art)"><i class="bi bi-trash"></i></button>
                                     </AuthorizeView>
                                 </div>
                             </div>
@@ -137,9 +138,9 @@
                 @if (_totalPages > 1)
                 {
                     <div class="pagination" style="margin-top:12px">
-                        <button class="btn btn-ghost btn-sm" disabled="@(_page <= 1)" @onclick="PrevPage">←</button>
+                        <button class="btn btn-ghost btn-sm" disabled="@(_page <= 1)" @onclick="PrevPage"><i class="bi bi-arrow-left flip-rtl"></i></button>
                         <span class="subtle">@_page / @_totalPages</span>
-                        <button class="btn btn-ghost btn-sm" disabled="@(_page >= _totalPages)" @onclick="NextPage">→</button>
+                        <button class="btn btn-ghost btn-sm" disabled="@(_page >= _totalPages)" @onclick="NextPage"><i class="bi bi-arrow-right flip-rtl"></i></button>
                     </div>
                 }
             }
@@ -148,65 +149,65 @@
 </div>
 
 <!-- ═══════ CREATE / EDIT MODAL (Admin) ═══════ -->
-<Modal @bind-Visible="_showEditor" Title="@(_editingId is null ? "New Article" : "Edit Article")" Large>
+<Modal @bind-Visible="_showEditor" Title="@(_editingId is null ? T("Kb.NewArticle") : T("Kb.EditArticle"))" Large>
     <div class="row" style="gap:14px;align-items:flex-start">
         <div class="field" style="flex:1">
-            <label>Category *</label>
+            <label>@T("TkC.Category") *</label>
             <select class="select" @onchange="OnEditorCategoryChanged" disabled="@(_editingId is not null)">
                 @foreach (var cat in Enum.GetValues<TicketCategory>())
                 {
-                    <option value="@((int)cat)" selected="@(_fCategory == cat)">@UiHelpers.CategoryIcon(cat) @UiHelpers.CategoryLabel(cat)</option>
+                    <option value="@((int)cat)" selected="@(_fCategory == cat)">@TCategory(cat.ToString())</option>
                 }
             </select>
         </div>
         <div class="field" style="flex:2">
-            <label>Title *</label>
-            <input class="input" maxlength="200" @bind="_fTitle" @bind:event="oninput" placeholder="Article title" />
+            <label>@T("Kb.ArticleTitle") *</label>
+            <input class="input" maxlength="200" @bind="_fTitle" @bind:event="oninput" placeholder="@T("Kb.ArticleTitlePlaceholder")" />
         </div>
     </div>
     <div class="row" style="gap:14px;align-items:flex-start">
         <div class="field" style="flex:1">
-            <label>❓ Questions to Ask * <span class="subtle">(Markdown)</span></label>
+            <label><i class="bi bi-question-circle"></i> @T("Kb.Questions") * <span class="subtle">(Markdown)</span></label>
             <textarea class="textarea mono" rows="6" @bind="_fQuestions" @bind:event="oninput" placeholder="- Question 1&#10;- Question 2"></textarea>
         </div>
         <div class="field" style="flex:1">
-            <label>🔍 Diagnosis Steps * <span class="subtle">(Markdown)</span></label>
+            <label><i class="bi bi-search"></i> @T("Kb.Diagnosis") * <span class="subtle">(Markdown)</span></label>
             <textarea class="textarea mono" rows="6" @bind="_fDiagnosis" @bind:event="oninput" placeholder="1. Step one&#10;2. Step two"></textarea>
         </div>
     </div>
     <div class="row" style="gap:14px;align-items:flex-start">
         <div class="field" style="flex:1">
-            <label>💬 Suggested Answers * <span class="subtle">(Markdown)</span></label>
+            <label><i class="bi bi-chat-dots"></i> @T("Kb.Answers") * <span class="subtle">(Markdown)</span></label>
             <textarea class="textarea mono" rows="6" @bind="_fAnswers" @bind:event="oninput" placeholder="**If X:** say Y…"></textarea>
         </div>
         <div class="field" style="flex:1">
-            <label>🚨 Escalation Conditions * <span class="subtle">(Markdown)</span></label>
+            <label><i class="bi bi-exclamation-octagon"></i> @T("Kb.Escalation") * <span class="subtle">(Markdown)</span></label>
             <textarea class="textarea mono" rows="6" @bind="_fEscalation" @bind:event="oninput" placeholder="- Escalate when…"></textarea>
         </div>
     </div>
     <div class="row" style="gap:14px;align-items:flex-end">
         <div class="field" style="flex:1;margin-bottom:0">
-            <label>Keywords <span class="subtle">(comma separated)</span></label>
+            <label>@T("Kb.Keywords") <span class="subtle">@T("Kb.KeywordsHint")</span></label>
             <input class="input" @bind="_fKeywords" @bind:event="oninput" placeholder="screen, cracked, display" />
         </div>
         <label class="row" style="gap:8px;padding-bottom:10px;cursor:pointer">
-            <input type="checkbox" @bind="_fActive" /> <span style="font-size:13px;font-weight:600">Active</span>
+            <input type="checkbox" @bind="_fActive" /> <span style="font-size:13px;font-weight:600">@T("Kb.Active")</span>
         </label>
     </div>
     <div class="row" style="justify-content:flex-end;gap:10px;margin-top:16px">
-        <button class="btn btn-ghost" @onclick="CloseEditor" disabled="@_saving">Cancel</button>
+        <button class="btn btn-ghost" @onclick="CloseEditor" disabled="@_saving">@T("Common.Cancel")</button>
         <button class="btn btn-primary" @onclick="SaveAsync" disabled="@(!EditorValid || _saving)">
-            @(_saving ? "Saving…" : _editingId is null ? "Create Article" : "Save Changes")
+            @(_saving ? T("Common.Saving") : _editingId is null ? T("Kb.CreateArticle") : T("Kb.SaveChanges"))
         </button>
     </div>
 </Modal>
 
 <!-- ═══════ DELETE CONFIRM ═══════ -->
-<Modal @bind-Visible="_showDelete" Title="Delete Article">
-    <p style="font-size:13.5px">Delete “<b>@_deleteTarget?.Title</b>”? This cannot be undone.</p>
+<Modal @bind-Visible="_showDelete" Title="@T("Kb.DeleteArticle")">
+    <p style="font-size:13.5px">@T("Kb.DeleteConfirm") “<b>@_deleteTarget?.Title</b>”</p>
     <div class="row" style="justify-content:flex-end;gap:10px;margin-top:14px">
-        <button class="btn btn-ghost" @onclick="CancelDelete" disabled="@_deleting">Cancel</button>
-        <button class="btn btn-danger" @onclick="DeleteAsync" disabled="@_deleting">@(_deleting ? "Deleting…" : "Delete")</button>
+        <button class="btn btn-ghost" @onclick="CancelDelete" disabled="@_deleting">@T("Common.Cancel")</button>
+        <button class="btn btn-danger" @onclick="DeleteAsync" disabled="@_deleting">@(_deleting ? T("Common.Deleting") : T("Common.Delete"))</button>
     </div>
 </Modal>
 
@@ -356,14 +357,14 @@
                 await Api.UpdateArticleAsync(new UpdateArticleRequest(
                     id, _fTitle.Trim(), _fQuestions, _fDiagnosis, _fAnswers, _fEscalation,
                     string.IsNullOrWhiteSpace(_fKeywords) ? null : _fKeywords.Trim(), _fActive));
-                Toasts.Success("Article updated");
+                Toasts.Success(T("Kb.ArticleUpdated"));
             }
             else
             {
                 await Api.CreateArticleAsync(new CreateArticleRequest(
                     _fCategory, _fTitle.Trim(), _fQuestions, _fDiagnosis, _fAnswers, _fEscalation,
                     string.IsNullOrWhiteSpace(_fKeywords) ? null : _fKeywords.Trim(), _fActive));
-                Toasts.Success("Article created");
+                Toasts.Success(T("Kb.ArticleCreated"));
             }
             _showEditor = false;
             await Task.WhenAll(LoadListAsync(), LoadGuidanceAsync());
@@ -388,7 +389,7 @@
         try
         {
             await Api.DeleteArticleAsync(_deleteTarget.Id);
-            Toasts.Success("Article deleted");
+            Toasts.Success(T("Kb.ArticleDeleted"));
             _showDelete = false;
             await Task.WhenAll(LoadListAsync(), LoadGuidanceAsync());
         }

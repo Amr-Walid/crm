@@ -1,24 +1,33 @@
-@implements IDisposable
+@inherits LocalizedComponentBase
 
 @if (Deadline is null)
 {
-    <span class="sla-timer sla-done">— no SLA —</span>
+    <span class="sla-timer sla-done">@T("Sla.NoSla")</span>
 }
 else if (IsTerminal)
 {
-    <span class="sla-timer @(Breached ? "sla-breached" : "sla-done")">@(Breached ? "✗ SLA BREACHED" : "✓ SLA MET")</span>
+    <span class="sla-timer @(Breached ? "sla-breached" : "sla-done")">
+        @if (Breached)
+        {
+            <i class="bi bi-x-lg"></i> @T("Sla.Breached")
+        }
+        else
+        {
+            <i class="bi bi-check-lg"></i> @T("Sla.Met")
+        }
+    </span>
 }
 else if (Paused)
 {
-    <span class="sla-timer sla-paused">⏸ PAUSED · @UiHelpers.FormatCountdown(Remaining)</span>
+    <span class="sla-timer sla-paused"><i class="bi bi-pause-circle"></i> @T("Sla.Paused") · @UiHelpers.FormatCountdown(Remaining)</span>
 }
 else if (Breached || Remaining <= TimeSpan.Zero)
 {
-    <span class="sla-timer sla-breached">⏰ BREACHED +@UiHelpers.FormatCountdown(Remaining)</span>
+    <span class="sla-timer sla-breached"><i class="bi bi-alarm"></i> @T("Sla.BreachedBy") +@UiHelpers.FormatCountdown(Remaining)</span>
 }
 else
 {
-    <span class="sla-timer @ColorClass">⏱ @UiHelpers.FormatCountdown(Remaining)</span>
+    <span class="sla-timer @ColorClass"><i class="bi bi-stopwatch"></i> @UiHelpers.FormatCountdown(Remaining)</span>
 }
 
 @code {
@@ -54,6 +63,7 @@ else
 
     protected override void OnInitialized()
     {
+        base.OnInitialized();
         // 1-second live tick; skip when nothing to count down.
         if (Deadline is not null && !IsTerminal && !Paused)
         {
@@ -61,5 +71,9 @@ else
         }
     }
 
-    public void Dispose() => _timer?.Dispose();
+    public override void Dispose()
+    {
+        base.Dispose();
+        _timer?.Dispose();
+    }
 }

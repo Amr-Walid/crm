@@ -1,10 +1,11 @@
 @page "/customers/{Id:guid}"
 @attribute [Authorize]
+@inherits LocalizedComponentBase
 @inject CrmApiClient Api
 @inject NavigationManager Nav
 @inject ToastService Toasts
 
-<PageTitle>Customer 360° — UniGroup CRM</PageTitle>
+<PageTitle>@T("CustD.PageTitle")</PageTitle>
 
 <div class="page-pad anim-fade-up">
     @if (_loading)
@@ -20,9 +21,9 @@
     else if (_customer is null)
     {
         <div class="card empty-state">
-            <div class="icon">🤷</div>
-            <h3>Customer not found</h3>
-            <a class="btn btn-secondary" href="/customers">Back to directory</a>
+            <div class="icon"><i class="bi bi-person-x"></i></div>
+            <h3>@T("CustD.NotFound")</h3>
+            <a class="btn btn-secondary" href="/customers">@T("CustD.BackToDirectory")</a>
         </div>
     }
     else
@@ -37,22 +38,22 @@
                         <div class="row wrap subtle" style="margin-top:4px;gap:12px">
                             @if (!string.IsNullOrWhiteSpace(_customer.Email))
                             {
-                                <span>✉️ @_customer.Email</span>
+                                <span><i class="bi bi-envelope"></i> @_customer.Email</span>
                             }
                             @if (!string.IsNullOrWhiteSpace(_customer.City) || !string.IsNullOrWhiteSpace(_customer.Province))
                             {
-                                <span>📍 @string.Join(", ", new[] { _customer.City, _customer.Province }.Where(x => !string.IsNullOrWhiteSpace(x)))</span>
+                                <span><i class="bi bi-geo-alt"></i> @string.Join(", ", new[] { _customer.City, _customer.Province }.Where(x => !string.IsNullOrWhiteSpace(x)))</span>
                             }
-                            <span>🗓 Customer since @_customer.CreatedAt.ToLocalTime().ToString("MMM yyyy")</span>
+                            <span><i class="bi bi-calendar3"></i> @T("CustD.CustomerSince", _customer.CreatedAt.ToLocalTime().ToString("MMM yyyy"))</span>
                         </div>
                     </div>
                 </div>
                 <div class="row wrap">
                     @if (_customer.Devices.Any(d => d.WarrantyStatus == "Active"))
                     {
-                        <span class="badge badge-green"><span class="dot"></span> Active Warranty</span>
+                        <span class="badge badge-green"><span class="dot"></span> @T("CustD.ActiveWarranty")</span>
                     }
-                    <button class="btn btn-primary" @onclick="NewTicket">🎫 New Ticket</button>
+                    <button class="btn btn-primary" @onclick="NewTicket"><i class="bi bi-ticket-perforated"></i> @T("CustD.NewTicket")</button>
                 </div>
             </div>
         </div>
@@ -62,20 +63,20 @@
             <div class="grid" style="grid-template-columns:1fr">
                 <!-- Phones -->
                 <div class="card" style="padding:18px 20px">
-                    <div class="section-title" style="margin-bottom:12px">📱 Phone Numbers</div>
+                    <div class="section-title" style="margin-bottom:12px"><i class="bi bi-telephone"></i> @T("CustD.PhoneNumbers")</div>
                     @foreach (var p in _customer.Phones)
                     {
                         <div class="spread" style="padding:7px 0;border-bottom:1px solid var(--border)">
                             <span class="mono" style="font-size:13px">@p.Phone</span>
                             @if (p.IsPrimary)
                             {
-                                <span class="badge badge-indigo">Primary</span>
+                                <span class="badge badge-indigo">@T("CustD.Primary")</span>
                             }
                         </div>
                     }
                     @if (_customer.Phones.Count == 0)
                     {
-                        <div class="subtle">No phone numbers on file.</div>
+                        <div class="subtle">@T("CustD.NoPhones")</div>
                     }
                 </div>
 
@@ -83,7 +84,7 @@
                 @if (!string.IsNullOrWhiteSpace(_customer.AddressDetails))
                 {
                     <div class="card" style="padding:18px 20px">
-                        <div class="section-title" style="margin-bottom:8px">🏠 Address</div>
+                        <div class="section-title" style="margin-bottom:8px"><i class="bi bi-house"></i> @T("CustD.Address")</div>
                         <div class="muted" style="font-size:13px">@_customer.AddressDetails</div>
                     </div>
                 }
@@ -91,19 +92,19 @@
                 <!-- Devices -->
                 <div class="card" style="padding:18px 20px">
                     <div class="spread" style="margin-bottom:12px">
-                        <div class="section-title">📟 Devices</div>
-                        <button class="btn btn-secondary btn-sm" @onclick="() => _showAssign = true">➕ Link device</button>
+                        <div class="section-title"><i class="bi bi-phone"></i> @T("CustD.Devices")</div>
+                        <button class="btn btn-secondary btn-sm" @onclick="() => _showAssign = true"><i class="bi bi-plus-lg"></i> @T("CustD.LinkDevice")</button>
                     </div>
                     @if (_customer.Devices.Count == 0)
                     {
-                        <div class="subtle">No devices registered.</div>
+                        <div class="subtle">@T("CustD.NoDevices")</div>
                     }
                     @foreach (var d in _customer.Devices)
                     {
                         <div style="padding:12px;border:1px solid var(--border);border-radius:12px;margin-bottom:10px">
                             <div class="spread" style="margin-bottom:6px">
                                 <span style="font-weight:700;font-size:13.5px">@d.BrandName @d.ModelName</span>
-                                <span class="badge @UiHelpers.WarrantyBadge(d.WarrantyStatus)"><span class="dot"></span> @d.WarrantyStatus</span>
+                                <span class="badge @UiHelpers.WarrantyBadge(d.WarrantyStatus)"><span class="dot"></span> @TWarranty(d.WarrantyStatus)</span>
                             </div>
                             <div class="subtle" style="line-height:1.9">
                                 @if (!string.IsNullOrWhiteSpace(d.IMEI))
@@ -114,8 +115,8 @@
                                 {
                                     <div>S/N: <span class="mono">@d.SerialNumber</span></div>
                                 }
-                                <div>Purchased: @d.PurchaseDate.ToLocalTime().ToString("dd MMM yyyy")</div>
-                                <div>Warranty until: <b style="color:@(d.WarrantyStatus == "Active" ? "var(--success)" : "var(--danger)")">@d.WarrantyExpiry.ToLocalTime().ToString("dd MMM yyyy")</b></div>
+                                <div>@T("CustD.Purchased"): @d.PurchaseDate.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                <div>@T("CustD.WarrantyUntil"): <b style="color:@(d.WarrantyStatus == "Active" ? "var(--success)" : "var(--danger)")">@d.WarrantyExpiry.ToLocalTime().ToString("dd MMM yyyy")</b></div>
                             </div>
                         </div>
                     }
@@ -125,8 +126,8 @@
             <!-- ======== Right column: unified timeline ======== -->
             <div class="card" style="padding:0">
                 <div class="tabs">
-                    <button class="tab @(_tab == 0 ? "active" : "")" @onclick="() => _tab = 0">📞 Call History</button>
-                    <button class="tab @(_tab == 1 ? "active" : "")" @onclick="() => _tab = 1">🎫 Tickets</button>
+                    <button class="tab @(_tab == 0 ? "active" : "")" @onclick="() => _tab = 0"><i class="bi bi-telephone-inbound"></i> @T("CustD.CallHistory")</button>
+                    <button class="tab @(_tab == 1 ? "active" : "")" @onclick="() => _tab = 1"><i class="bi bi-ticket-perforated"></i> @T("CustD.Tickets")</button>
                 </div>
 
                 <div style="padding:20px 24px;min-height:300px">
@@ -138,7 +139,7 @@
                         }
                         else if (_calls.Count == 0)
                         {
-                            <div class="empty-state"><div class="icon">📞</div>No calls logged for this customer yet.</div>
+                            <div class="empty-state"><div class="icon"><i class="bi bi-telephone"></i></div>@T("CustD.NoCalls")</div>
                         }
                         else
                         {
@@ -149,9 +150,17 @@
                                         <div class="dot @(call.Direction.ToString() == "Inbound" ? "blue" : "green")"></div>
                                         <div class="spread wrap">
                                             <span style="font-weight:600;font-size:13px">
-                                                @(call.Direction.ToString() == "Inbound" ? "📥 Inbound" : "📤 Outbound") · <span class="mono">@call.PhoneNumber</span>
+                                                @if (call.Direction.ToString() == "Inbound")
+                                                {
+                                                    <i class="bi bi-telephone-inbound"></i> @T("CustD.Inbound")
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-telephone-outbound"></i> @T("CustD.Outbound")
+                                                }
+                                                · <span class="mono">@call.PhoneNumber</span>
                                             </span>
-                                            <span class="subtle">@UiHelpers.TimeAgo(call.CreatedAt) · @UiHelpers.FormatDuration(call.DurationSeconds)</span>
+                                            <span class="subtle">@TimeAgo(call.CreatedAt) · @UiHelpers.FormatDuration(call.DurationSeconds)</span>
                                         </div>
                                         @if (!string.IsNullOrWhiteSpace(call.Summary))
                                         {
@@ -170,7 +179,7 @@
                         }
                         else if (_tickets.Count == 0)
                         {
-                            <div class="empty-state"><div class="icon">🎫</div>No tickets for this customer yet.</div>
+                            <div class="empty-state"><div class="icon"><i class="bi bi-ticket-perforated"></i></div>@T("CustD.NoTickets")</div>
                         }
                         else
                         {
@@ -181,12 +190,12 @@
                                         <div class="dot @(t.SlaBreached ? "red" : t.Status is "Resolved" or "Closed" ? "green" : "amber")"></div>
                                         <div class="spread wrap">
                                             <span style="font-weight:600;font-size:13px">@t.Id — @t.Title</span>
-                                            <span class="subtle">@UiHelpers.TimeAgo(t.CreatedAt)</span>
+                                            <span class="subtle">@TimeAgo(t.CreatedAt)</span>
                                         </div>
                                         <div class="row wrap" style="margin-top:5px;gap:6px">
-                                            <span class="badge @UiHelpers.StatusBadge(t.Status)">@UiHelpers.StatusLabel(t.Status)</span>
-                                            <span class="badge @UiHelpers.PriorityBadge(t.Priority)">@t.Priority</span>
-                                            <span class="badge badge-slate">@t.Category</span>
+                                            <span class="badge @UiHelpers.StatusBadge(t.Status)">@TStatus(t.Status)</span>
+                                            <span class="badge @UiHelpers.PriorityBadge(t.Priority)">@TPriority(t.Priority)</span>
+                                            <span class="badge badge-slate">@TCategory(t.Category)</span>
                                         </div>
                                     </div>
                                 }
@@ -200,45 +209,45 @@
 </div>
 
 <!-- ======== Assign Device Modal ======== -->
-<Modal @bind-Visible="_showAssign" Title="📟 Link Device to Customer">
+<Modal @bind-Visible="_showAssign" Title="@T("CustD.LinkDeviceTitle")">
     <div class="row" style="align-items:flex-end;margin-bottom:14px;gap:8px">
         <div class="field" style="flex:1;margin-bottom:0">
-            <label>Brand *</label>
-            <InputText class="input" @bind-Value="_assign.BrandName" placeholder="e.g. Samsung" />
+            <label>@T("CustD.Brand")</label>
+            <InputText class="input" @bind-Value="_assign.BrandName" placeholder="@T("CustD.BrandPlaceholder")" />
         </div>
         <div class="field" style="flex:1;margin-bottom:0">
-            <label>Model *</label>
-            <InputText class="input" @bind-Value="_assign.ModelName" placeholder="e.g. Galaxy S25" />
+            <label>@T("CustD.Model")</label>
+            <InputText class="input" @bind-Value="_assign.ModelName" placeholder="@T("CustD.ModelPlaceholder")" />
         </div>
     </div>
-    <p class="subtle" style="margin:0 0 14px">Brand &amp; model are created automatically if they don't exist.</p>
+    <p class="subtle" style="margin:0 0 14px">@T("CustD.AutoCreateNote")</p>
     <div class="row" style="align-items:flex-start">
         <div class="field" style="flex:1">
-            <label>IMEI</label>
-            <InputText class="input mono" @bind-Value="_assign.IMEI" placeholder="15-digit IMEI" />
+            <label>@T("CustD.Imei")</label>
+            <InputText class="input mono" @bind-Value="_assign.IMEI" placeholder="@T("CustD.ImeiPlaceholder")" />
         </div>
         <div class="field" style="flex:1">
-            <label>Serial number</label>
+            <label>@T("CustD.SerialNumber")</label>
             <InputText class="input mono" @bind-Value="_assign.SerialNumber" placeholder="S/N" />
         </div>
     </div>
     <div class="row" style="align-items:flex-start">
         <div class="field" style="flex:1">
-            <label>Purchase date *</label>
+            <label>@T("CustD.PurchaseDate")</label>
             <InputDate class="input" @bind-Value="_assign.PurchaseDate" />
         </div>
         <div class="field" style="flex:1">
-            <label>Warranty expiry</label>
+            <label>@T("CustD.WarrantyExpiry")</label>
             <InputDate class="input" @bind-Value="_assign.WarrantyExpiry" />
         </div>
     </div>
     <div class="field">
-        <label>Invoice number</label>
+        <label>@T("CustD.InvoiceNumber")</label>
         <InputText class="input" @bind-Value="_assign.InvoiceNumber" placeholder="INV-…" />
     </div>
     <button class="btn btn-primary" style="width:100%" @onclick="AssignDeviceAsync"
             disabled="@(_assigning || string.IsNullOrWhiteSpace(_assign.BrandName) || string.IsNullOrWhiteSpace(_assign.ModelName))">
-        @(_assigning ? "Linking…" : "Link device")
+        @(_assigning ? T("CustD.Linking") : T("CustD.LinkDeviceBtn"))
     </button>
 </Modal>
 
@@ -294,7 +303,7 @@
         }
         catch (HttpRequestException)
         {
-            Toasts.Error("Cannot reach the API server.");
+            Toasts.Error(T("Common.CannotReachApi"));
             _loading = false;
         }
     }
@@ -335,7 +344,7 @@
                 string.IsNullOrWhiteSpace(_assign.InvoiceNumber) ? null : _assign.InvoiceNumber!.Trim(),
                 _assign.WarrantyExpiry));
 
-            Toasts.Success("Device linked to customer.");
+            Toasts.Success(T("CustD.DeviceLinked"));
             _showAssign = false;
             _assign = new AssignModel();
             await LoadAsync();

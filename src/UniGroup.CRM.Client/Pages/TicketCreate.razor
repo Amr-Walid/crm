@@ -1,18 +1,19 @@
 @page "/tickets/new"
 @attribute [Authorize]
+@inherits LocalizedComponentBase
 @inject CrmApiClient Api
 @inject NavigationManager Nav
 @inject ToastService Toasts
 
-<PageTitle>New Ticket — UniGroup CRM</PageTitle>
+<PageTitle>@T("TkC.PageTitle")</PageTitle>
 
 <div class="page-pad anim-fade-up">
     <div class="spread" style="margin-bottom:20px">
         <div>
-            <h1 style="font-size:22px">Create Ticket</h1>
-            <p class="muted" style="margin:4px 0 0">Open a new support ticket — agent guidance loads live per category</p>
+            <h1 style="font-size:22px">@T("TkC.Title")</h1>
+            <p class="muted" style="margin:4px 0 0">@T("TkC.Subtitle")</p>
         </div>
-        <button class="btn btn-ghost" @onclick="GoBack">← Back to tickets</button>
+        <button class="btn btn-ghost" @onclick="GoBack"><i class="bi bi-arrow-left flip-rtl"></i> @T("TkC.Back")</button>
     </div>
 
     <div class="grid" style="grid-template-columns:minmax(0,1.15fr) minmax(0,0.85fr);align-items:start;gap:20px">
@@ -22,14 +23,14 @@
 
             <!-- Customer picker -->
             <div class="field">
-                <label>Customer *</label>
+                <label>@T("TkC.Customer") *</label>
                 @if (_customer is null)
                 {
-                    <input class="input" placeholder="🔎 Search by name, phone, IMEI or serial… (min 2 chars)"
+                    <input class="input" placeholder="@T("TkC.CustomerSearchPlaceholder")"
                            value="@_customerSearch" @oninput="OnCustomerSearchInput" />
                     @if (_searching)
                     {
-                        <div class="card" style="padding:12px 14px;margin-top:6px"><span class="subtle">Searching…</span></div>
+                        <div class="card" style="padding:12px 14px;margin-top:6px"><span class="subtle">@T("Nav.Searching")</span></div>
                     }
                     else if (_customerResults is { Count: > 0 })
                     {
@@ -37,13 +38,13 @@
                             @foreach (var c in _customerResults)
                             {
                                 var cust = c;
-                                <button type="button" class="search-result-item" style="width:100%;text-align:left"
+                                <button type="button" class="search-result-item" style="width:100%;text-align:start"
                                         @onclick="() => SelectCustomer(cust)">
                                     <div class="row">
                                         <div class="avatar">@UiHelpers.Initials(cust.Name)</div>
                                         <div style="min-width:0;flex:1">
                                             <div style="font-weight:700;font-size:13.5px">@cust.Name</div>
-                                            <div class="subtle">@(PrimaryPhone(cust) ?? "—") · @(cust.Email ?? "no e-mail")</div>
+                                            <div class="subtle">@(PrimaryPhone(cust) ?? "—") · @(cust.Email ?? T("Common.NoEmail"))</div>
                                         </div>
                                     </div>
                                 </button>
@@ -52,7 +53,7 @@
                     }
                     else if (_searchedOnce && _customerSearch.Trim().Length >= 2)
                     {
-                        <div class="card" style="padding:12px 14px;margin-top:6px"><span class="subtle">No customers found for “@_customerSearch”.</span></div>
+                        <div class="card" style="padding:12px 14px;margin-top:6px"><span class="subtle">@T("TkC.NoCustomers", _customerSearch)</span></div>
                     }
                 }
                 else
@@ -66,7 +67,7 @@
                                     <div class="subtle mono">@(PrimaryPhone(_customer) ?? "—")</div>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-ghost btn-sm" @onclick="ClearCustomer">Change</button>
+                            <button type="button" class="btn btn-ghost btn-sm" @onclick="ClearCustomer">@T("Common.Change")</button>
                         </div>
                     </div>
                 }
@@ -74,19 +75,19 @@
 
             <!-- Device picker -->
             <div class="field">
-                <label>Device (optional)</label>
+                <label>@T("TkC.Device")</label>
                 @if (_customer is null)
                 {
-                    <div class="subtle">Select a customer first to list their devices.</div>
+                    <div class="subtle">@T("TkC.SelectCustomerFirst")</div>
                 }
                 else if (_customer.Devices.Count == 0)
                 {
-                    <div class="subtle">This customer has no registered devices.</div>
+                    <div class="subtle">@T("TkC.NoRegisteredDevices")</div>
                 }
                 else
                 {
                     <select class="select" @onchange="OnDeviceChanged">
-                        <option value="">— No specific device —</option>
+                        <option value="">@T("TkC.NoSpecificDevice")</option>
                         @foreach (var d in _customer.Devices)
                         {
                             <option value="@d.Id" selected="@(_deviceId == d.Id)">@d.BrandName @d.ModelName@(string.IsNullOrEmpty(d.IMEI) ? "" : $" · IMEI {d.IMEI}")</option>
@@ -95,8 +96,8 @@
                     @if (SelectedDevice is { } dev)
                     {
                         <div class="row" style="gap:8px;margin-top:4px">
-                            <span class="badge @UiHelpers.WarrantyBadge(dev.WarrantyStatus)">🛡 @dev.WarrantyStatus warranty</span>
-                            <span class="subtle">expires @dev.WarrantyExpiry.ToString("dd MMM yyyy")</span>
+                            <span class="badge @UiHelpers.WarrantyBadge(dev.WarrantyStatus)"><i class="bi bi-shield-check"></i> @T("TkC.WarrantyLabel", TWarranty(dev.WarrantyStatus))</span>
+                            <span class="subtle">@T("TkC.WarrantyExpires", dev.WarrantyExpiry.ToString("dd MMM yyyy"))</span>
                         </div>
                     }
                 }
@@ -105,53 +106,60 @@
             <!-- Category + Priority -->
             <div class="row" style="gap:14px;align-items:flex-start">
                 <div class="field" style="flex:1">
-                    <label>Category *</label>
+                    <label>@T("TkC.Category") *</label>
                     <select class="select" @onchange="OnCategoryChanged">
                         @foreach (var cat in Enum.GetValues<TicketCategory>())
                         {
-                            <option value="@((int)cat)" selected="@(_category == cat)">@UiHelpers.CategoryIcon(cat) @UiHelpers.CategoryLabel(cat)</option>
+                            <option value="@((int)cat)" selected="@(_category == cat)">@TCategory(cat.ToString())</option>
                         }
                     </select>
                 </div>
                 <div class="field" style="flex:1">
-                    <label>Priority *</label>
+                    <label>@T("TkC.Priority") *</label>
                     <select class="select" @onchange="OnPriorityChanged">
                         @foreach (var pr in Enum.GetValues<TicketPriority>())
                         {
-                            <option value="@((int)pr)" selected="@(_priority == pr)">@pr — SLA @(UiHelpers.SlaHours[pr])h</option>
+                            <option value="@((int)pr)" selected="@(_priority == pr)">@TPriority(pr.ToString()) — @T("TkC.SlaSuffix", UiHelpers.SlaHours[pr])</option>
                         }
                     </select>
                 </div>
             </div>
 
             <div class="field">
-                <label>Title *</label>
-                <input class="input" maxlength="200" placeholder="Short summary of the issue"
+                <label>@T("TkC.TitleField") *</label>
+                <input class="input" maxlength="200" placeholder="@T("TkC.TitlePlaceholder")"
                        @bind="_title" @bind:event="oninput" />
             </div>
 
             <div class="field">
-                <label>Description *</label>
-                <textarea class="textarea" rows="6" placeholder="Detailed description — symptoms, when it started, what was tried…"
+                <label>@T("TkC.Description") *</label>
+                <textarea class="textarea" rows="6" placeholder="@T("TkC.DescriptionPlaceholder")"
                           @bind="_description" @bind:event="oninput"></textarea>
             </div>
 
             @if (_error is not null)
             {
-                <div class="badge badge-red" style="display:block;padding:10px 14px;margin-bottom:14px;white-space:normal">⚠ @_error</div>
+                <div class="badge badge-red" style="display:block;padding:10px 14px;margin-bottom:14px;white-space:normal"><i class="bi bi-exclamation-triangle"></i> @_error</div>
             }
 
             <div class="row" style="justify-content:flex-end;gap:10px">
-                <button class="btn btn-ghost" @onclick="GoBack" disabled="@_submitting">Cancel</button>
+                <button class="btn btn-ghost" @onclick="GoBack" disabled="@_submitting">@T("Common.Cancel")</button>
                 <button class="btn btn-primary" @onclick="SubmitAsync" disabled="@(!CanSubmit || _submitting)">
-                    @(_submitting ? "Creating…" : "🎫 Create Ticket")
+                    @if (_submitting)
+                    {
+                        @T("TkC.Creating")
+                    }
+                    else
+                    {
+                        <i class="bi bi-ticket-perforated"></i> @T("TkC.CreateBtn")
+                    }
                 </button>
             </div>
         </div>
 
         <!-- ══════════════ KB GUIDANCE COLUMN ══════════════ -->
         <div style="position:sticky;top:16px">
-            <div class="section-title" style="margin-bottom:10px">📘 Agent Guidance — @UiHelpers.CategoryLabel(_category)</div>
+            <div class="section-title" style="margin-bottom:10px"><i class="bi bi-journal-bookmark"></i> @T("TkC.Guidance", TCategory(_category.ToString()))</div>
             @if (_loadingArticle)
             {
                 <div class="grid" style="gap:12px">
@@ -161,9 +169,9 @@
             else if (_article is null)
             {
                 <div class="card empty-state" style="padding:28px">
-                    <div class="icon">📄</div>
-                    <h3>No guidance yet</h3>
-                    <p>No knowledge base article exists for <b>@UiHelpers.CategoryLabel(_category)</b>.</p>
+                    <div class="icon"><i class="bi bi-file-earmark-text"></i></div>
+                    <h3>@T("TkC.NoGuidanceTitle")</h3>
+                    <p>@T("TkC.NoGuidanceText") <b>@TCategory(_category.ToString())</b></p>
                 </div>
             }
             else
@@ -171,19 +179,19 @@
                 <div class="grid" style="gap:12px">
                     <div style="font-weight:800;font-size:15px">@_article.Title</div>
                     <div class="card kb-section-card questions">
-                        <div style="font-weight:700;font-size:13px;margin-bottom:8px">❓ Questions to Ask</div>
+                        <div style="font-weight:700;font-size:13px;margin-bottom:8px"><i class="bi bi-question-circle"></i> @T("Kb.Questions")</div>
                         <MarkdownView Content="@_article.QuestionsToAsk" />
                     </div>
                     <div class="card kb-section-card diagnosis">
-                        <div style="font-weight:700;font-size:13px;margin-bottom:8px">🔍 Diagnosis Steps</div>
+                        <div style="font-weight:700;font-size:13px;margin-bottom:8px"><i class="bi bi-search"></i> @T("Kb.Diagnosis")</div>
                         <MarkdownView Content="@_article.DiagnosisSteps" />
                     </div>
                     <div class="card kb-section-card answers">
-                        <div style="font-weight:700;font-size:13px;margin-bottom:8px">💬 Suggested Answers</div>
+                        <div style="font-weight:700;font-size:13px;margin-bottom:8px"><i class="bi bi-chat-dots"></i> @T("Kb.Answers")</div>
                         <MarkdownView Content="@_article.SuggestedAnswers" />
                     </div>
                     <div class="card kb-section-card escalation">
-                        <div style="font-weight:700;font-size:13px;margin-bottom:8px">🚨 Escalate When</div>
+                        <div style="font-weight:700;font-size:13px;margin-bottom:8px"><i class="bi bi-exclamation-octagon"></i> @T("Kb.Escalation")</div>
                         <MarkdownView Content="@_article.EscalationConditions" />
                     </div>
                 </div>
@@ -316,7 +324,7 @@
         {
             var ticketId = await Api.CreateTicketAsync(new CreateTicketRequest(
                 _customer.Id, _deviceId, _title.Trim(), _description.Trim(), _category, _priority));
-            Toasts.Success($"Ticket {ticketId} created");
+            Toasts.Success(T("TkC.Created", ticketId));
             Nav.NavigateTo($"/tickets/{ticketId}");
         }
         catch (ApiException ex)

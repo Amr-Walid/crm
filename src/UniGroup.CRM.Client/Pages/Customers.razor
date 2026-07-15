@@ -1,26 +1,27 @@
 @page "/customers"
 @attribute [Authorize]
+@inherits LocalizedComponentBase
 @inject CrmApiClient Api
 @inject NavigationManager Nav
 @inject ToastService Toasts
 
-<PageTitle>Customers — UniGroup CRM</PageTitle>
+<PageTitle>@T("Cust.PageTitle")</PageTitle>
 
 <div class="page-pad anim-fade-up">
     <div class="spread" style="margin-bottom:20px">
         <div>
-            <h1 style="font-size:22px">Customers</h1>
-            <p class="muted" style="margin:4px 0 0">Search the directory by name, phone, IMEI or serial number</p>
+            <h1 style="font-size:22px">@T("Cust.Title")</h1>
+            <p class="muted" style="margin:4px 0 0">@T("Cust.Subtitle")</p>
         </div>
-        <button class="btn btn-primary" @onclick="() => _showCreate = true">➕ New Customer</button>
+        <button class="btn btn-primary" @onclick="() => _showCreate = true"><i class="bi bi-plus-lg"></i> @T("Cust.New")</button>
     </div>
 
     <div class="card filter-bar" style="margin-bottom:16px">
         <div style="position:relative;flex:1;min-width:220px">
-            <input class="input" placeholder="🔎 Type at least 2 characters to search…"
+            <input class="input" placeholder="@T("Cust.SearchPlaceholder")"
                    value="@_term" @oninput="OnInput" @onkeydown="OnKeyDown" />
         </div>
-        <button class="btn btn-secondary" @onclick="SearchAsync" disabled="@_loading">Search</button>
+        <button class="btn btn-secondary" @onclick="SearchAsync" disabled="@_loading"><i class="bi bi-search"></i> @T("Common.Search")</button>
     </div>
 
     @if (_loading)
@@ -37,18 +38,18 @@
     else if (_results is null)
     {
         <div class="card empty-state">
-            <div class="icon">👥</div>
-            <h3>Find a customer</h3>
-            <p>Search by <b>name</b>, <b>phone number</b>, <b>IMEI</b> or <b>serial number</b> to open the 360° profile.</p>
+            <div class="icon"><i class="bi bi-people"></i></div>
+            <h3>@T("Cust.FindTitle")</h3>
+            <p>@T("Cust.FindText")</p>
         </div>
     }
     else if (_results.Count == 0)
     {
         <div class="card empty-state">
-            <div class="icon">🔍</div>
-            <h3>No customers found</h3>
-            <p>No records match “@_lastTerm”. You can create a new customer.</p>
-            <button class="btn btn-primary" @onclick="() => _showCreate = true">➕ Create Customer</button>
+            <div class="icon"><i class="bi bi-search"></i></div>
+            <h3>@T("Cust.NoneTitle")</h3>
+            <p>@T("Cust.NoneText", _lastTerm)</p>
+            <button class="btn btn-primary" @onclick="() => _showCreate = true"><i class="bi bi-plus-lg"></i> @T("Cust.Create")</button>
         </div>
     }
     else
@@ -61,22 +62,22 @@
                         <div class="avatar">@UiHelpers.Initials(c.Name)</div>
                         <div style="min-width:0;flex:1">
                             <div style="font-weight:700;font-size:14.5px">@c.Name</div>
-                            <div class="subtle">@(c.Email ?? "no e-mail")</div>
+                            <div class="subtle">@(c.Email ?? T("Common.NoEmail"))</div>
                         </div>
                     </div>
                     <div class="row wrap" style="gap:6px">
                         @if (c.Phones.FirstOrDefault(p => p.IsPrimary) is { } primary)
                         {
-                            <span class="badge badge-indigo mono">📱 @primary.Phone</span>
+                            <span class="badge badge-indigo mono"><i class="bi bi-telephone"></i> @primary.Phone</span>
                         }
-                        <span class="badge badge-slate">@c.Devices.Count device(s)</span>
+                        <span class="badge badge-slate">@T("Common.DevicesCount", c.Devices.Count)</span>
                         @if (c.Devices.Any(d => d.WarrantyStatus == "Active"))
                         {
-                            <span class="badge badge-green"><span class="dot"></span> Warranty</span>
+                            <span class="badge badge-green"><span class="dot"></span> @T("Cust.Warranty")</span>
                         }
                         @if (!string.IsNullOrWhiteSpace(c.City))
                         {
-                            <span class="badge badge-slate">📍 @c.City</span>
+                            <span class="badge badge-slate"><i class="bi bi-geo-alt"></i> @c.City</span>
                         }
                     </div>
                 </div>
@@ -85,39 +86,39 @@
     }
 </div>
 
-<Modal @bind-Visible="_showCreate" Title="➕ New Customer">
+<Modal @bind-Visible="_showCreate" Title="@T("Cust.New")">
     <EditForm Model="_create" OnValidSubmit="CreateAsync">
         <DataAnnotationsValidator />
         <div class="field">
-            <label>Full name *</label>
-            <InputText class="input" @bind-Value="_create.Name" placeholder="Customer full name" />
-            <ValidationMessage For="() => _create.Name" />
+            <label>@T("Cust.FullName")</label>
+            <InputText class="input" @bind-Value="_create.Name" placeholder="@T("Cust.FullNamePlaceholder")" />
+            <LocalizedValidationMessage For="() => _create.Name" />
         </div>
         <div class="field">
-            <label>Primary phone *</label>
+            <label>@T("Cust.PrimaryPhone")</label>
             <InputText class="input mono" @bind-Value="_create.Phone" placeholder="01012345678" />
-            <ValidationMessage For="() => _create.Phone" />
+            <LocalizedValidationMessage For="() => _create.Phone" />
         </div>
         <div class="field">
-            <label>Email</label>
+            <label>@T("Cust.Email")</label>
             <InputText class="input" @bind-Value="_create.Email" placeholder="customer@email.com" />
         </div>
         <div class="row" style="align-items:flex-start">
             <div class="field" style="flex:1">
-                <label>Province</label>
+                <label>@T("Cust.Province")</label>
                 <InputText class="input" @bind-Value="_create.Province" placeholder="Cairo" />
             </div>
             <div class="field" style="flex:1">
-                <label>City</label>
+                <label>@T("Cust.City")</label>
                 <InputText class="input" @bind-Value="_create.City" placeholder="Maadi" />
             </div>
         </div>
         <div class="field">
-            <label>Address details</label>
-            <InputText class="input" @bind-Value="_create.AddressDetails" placeholder="Street, building…" />
+            <label>@T("Cust.AddressDetails")</label>
+            <InputText class="input" @bind-Value="_create.AddressDetails" placeholder="@T("Cust.AddressPlaceholder")" />
         </div>
         <button class="btn btn-primary" style="width:100%" type="submit" disabled="@_creating">
-            @(_creating ? "Creating…" : "Create customer")
+            @(_creating ? T("Cust.Creating") : T("Cust.CreateBtn"))
         </button>
     </EditForm>
 </Modal>
@@ -125,10 +126,10 @@
 @code {
     private sealed class CreateModel
     {
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Name is required")]
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Validation.NameRequired")]
         public string Name { get; set; } = string.Empty;
 
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Phone is required")]
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Validation.PhoneRequired")]
         public string Phone { get; set; } = string.Empty;
 
         public string? Email { get; set; }
@@ -162,7 +163,7 @@
         var term = _term.Trim();
         if (term.Length < 2)
         {
-            Toasts.Info("Enter at least 2 characters to search.");
+            Toasts.Info(T("Cust.MinChars"));
             return;
         }
 
@@ -179,7 +180,7 @@
         }
         catch (HttpRequestException)
         {
-            Toasts.Error("Cannot reach the API server.");
+            Toasts.Error(T("Common.CannotReachApi"));
             _results = [];
         }
         finally
@@ -199,7 +200,7 @@
                 _create.Province, _create.City, _create.AddressDetails,
                 _create.Phone.Trim()));
 
-            Toasts.Success("Customer created.");
+            Toasts.Success(T("Cust.Created"));
             _showCreate = false;
             _create = new CreateModel();
             Nav.NavigateTo($"/customers/{id}");

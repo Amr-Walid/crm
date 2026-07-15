@@ -1,12 +1,13 @@
 @page "/tickets/{TicketId}"
 @attribute [Authorize]
+@inherits LocalizedComponentBase
 @inject CrmApiClient Api
 @inject NavigationManager Nav
 @inject ToastService Toasts
 @inject JwtAuthenticationStateProvider Auth
 @inject IJSRuntime JS
 
-<PageTitle>@(_ticket?.Id ?? "Ticket") — UniGroup CRM</PageTitle>
+<PageTitle>@(_ticket?.Id ?? T("TkD.Ticket")) — UniGroup CRM</PageTitle>
 
 <div class="page-pad anim-fade-up">
     @if (_loading)
@@ -20,10 +21,10 @@
     else if (_ticket is null)
     {
         <div class="card empty-state">
-            <div class="icon">🎫</div>
-            <h3>Ticket not found</h3>
-            <p>The ticket “@TicketId” does not exist or you don't have access.</p>
-            <button class="btn btn-primary" @onclick="GoToList">← Back to tickets</button>
+            <div class="icon"><i class="bi bi-ticket-perforated"></i></div>
+            <h3>@T("TkD.NotFoundTitle")</h3>
+            <p>@T("TkD.NotFoundText", TicketId)</p>
+            <button class="btn btn-primary" @onclick="GoToList"><i class="bi bi-arrow-left flip-rtl"></i> @T("TkC.Back")</button>
         </div>
     }
     else
@@ -34,28 +35,28 @@
                 <div style="min-width:0">
                     <div class="row wrap" style="gap:8px;margin-bottom:6px">
                         <span class="mono muted" style="font-size:12.5px">@_ticket.Id</span>
-                        <span class="badge @UiHelpers.StatusBadge(_ticket.Status)">@UiHelpers.StatusLabel(_ticket.Status)</span>
-                        <span class="badge @UiHelpers.PriorityBadge(_ticket.Priority)">@_ticket.Priority</span>
-                        <span class="badge badge-slate">@CategoryDisplay</span>
+                        <span class="badge @UiHelpers.StatusBadge(_ticket.Status)">@TStatus(_ticket.Status)</span>
+                        <span class="badge @UiHelpers.PriorityBadge(_ticket.Priority)">@TPriority(_ticket.Priority)</span>
+                        <span class="badge badge-slate"><i class="bi @CategoryIconClass"></i> @CategoryLabelText</span>
                     </div>
                     <h1 style="font-size:20px;margin:0">@_ticket.Title</h1>
                     <div class="subtle" style="margin-top:6px">
-                        Created @UiHelpers.TimeAgo(_ticket.CreatedAt) · Updated @UiHelpers.TimeAgo(_ticket.UpdatedAt)
+                        @T("TkD.CreatedAt", TimeAgo(_ticket.CreatedAt)) · @T("TkD.UpdatedAt", TimeAgo(_ticket.UpdatedAt))
                         @if (_ticket.ClosedAt is { } closed)
                         {
-                            <text> · Closed @UiHelpers.TimeAgo(closed)</text>
+                            <text> · @T("TkD.ClosedAt", TimeAgo(closed))</text>
                         }
                     </div>
                 </div>
-                <div style="text-align:right">
-                    <div class="subtle" style="margin-bottom:4px">SLA Countdown</div>
+                <div style="text-align:end">
+                    <div class="subtle" style="margin-bottom:4px">@T("TkD.SlaCountdown")</div>
                     <div style="font-size:18px">
                         <SlaTimer Deadline="@_ticket.SlaDeadline" Breached="@_ticket.SlaBreached"
                                   Status="@_ticket.Status" TotalHours="@SlaTotalHours" />
                     </div>
                     @if (UiHelpers.IsSlaPaused(_ticket.Status))
                     {
-                        <div class="subtle" style="margin-top:4px">⏸ paused — waiting state</div>
+                        <div class="subtle" style="margin-top:4px"><i class="bi bi-pause-circle"></i> @T("TkD.SlaPausedNote")</div>
                     }
                 </div>
             </div>
@@ -67,12 +68,12 @@
 
                 <!-- Description -->
                 <div class="card" style="padding:20px">
-                    <div class="section-title" style="margin-bottom:10px">📝 Description</div>
+                    <div class="section-title" style="margin-bottom:10px"><i class="bi bi-card-text"></i> @T("TkD.Description")</div>
                     <p style="white-space:pre-wrap;margin:0;font-size:13.5px;line-height:1.65">@_ticket.Description</p>
                     @if (!string.IsNullOrWhiteSpace(_ticket.ResolutionNote))
                     {
-                        <div class="card" style="margin-top:14px;padding:14px;border-left:4px solid var(--success)">
-                            <div style="font-weight:700;font-size:12.5px;margin-bottom:6px">✅ Resolution</div>
+                        <div class="card resolution-note" style="margin-top:14px;padding:14px">
+                            <div style="font-weight:700;font-size:12.5px;margin-bottom:6px"><i class="bi bi-check-circle-fill"></i> @T("TkD.Resolution")</div>
                             <p style="white-space:pre-wrap;margin:0;font-size:13px">@_ticket.ResolutionNote</p>
                         </div>
                     }
@@ -81,9 +82,9 @@
                 <!-- Tabs: Notes / Attachments / History -->
                 <div class="card" style="padding:0;overflow:hidden">
                     <div class="tabs" style="padding:0 16px;border-bottom:1px solid var(--border)">
-                        <button class="tab @(_tab == "notes" ? "active" : "")" @onclick="ShowNotes">💬 Notes (@_ticket.InternalNotes.Count)</button>
-                        <button class="tab @(_tab == "files" ? "active" : "")" @onclick="ShowFiles">📎 Attachments (@_ticket.Attachments.Count)</button>
-                        <button class="tab @(_tab == "history" ? "active" : "")" @onclick="ShowHistory">🕓 History (@_ticket.Histories.Count)</button>
+                        <button class="tab @(_tab == "notes" ? "active" : "")" @onclick="ShowNotes"><i class="bi bi-chat-dots"></i> @T("TkD.Notes") (@_ticket.InternalNotes.Count)</button>
+                        <button class="tab @(_tab == "files" ? "active" : "")" @onclick="ShowFiles"><i class="bi bi-paperclip"></i> @T("TkD.Attachments") (@_ticket.Attachments.Count)</button>
+                        <button class="tab @(_tab == "history" ? "active" : "")" @onclick="ShowHistory"><i class="bi bi-clock-history"></i> @T("TkD.History") (@_ticket.Histories.Count)</button>
                     </div>
 
                     <div style="padding:18px 20px">
@@ -91,7 +92,7 @@
                         {
                             @if (_ticket.InternalNotes.Count == 0)
                             {
-                                <p class="subtle" style="margin:0 0 14px">No internal notes yet — start the thread below.</p>
+                                <p class="subtle" style="margin:0 0 14px">@T("TkD.NoNotes")</p>
                             }
                             else
                             {
@@ -103,7 +104,7 @@
                                             <div class="card" style="flex:1;padding:12px 14px">
                                                 <div class="spread" style="margin-bottom:5px">
                                                     <span style="font-weight:700;font-size:12.5px">@note.AuthorName</span>
-                                                    <span class="subtle">@UiHelpers.TimeAgo(note.CreatedAt)@(note.IsEdited ? " · edited" : "")</span>
+                                                    <span class="subtle">@TimeAgo(note.CreatedAt)@(note.IsEdited ? $" · {T("TkD.Edited")}" : "")</span>
                                                 </div>
                                                 <p style="white-space:pre-wrap;margin:0;font-size:13px;line-height:1.55">@note.Content</p>
                                             </div>
@@ -112,13 +113,13 @@
                                 </div>
                             }
                             <div class="field" style="margin-bottom:8px">
-                                <textarea class="textarea" rows="3" placeholder="Write an internal note… (visible to staff only)"
+                                <textarea class="textarea" rows="3" placeholder="@T("TkD.NotePlaceholder")"
                                           @bind="_newNote" @bind:event="oninput"></textarea>
                             </div>
                             <div class="row" style="justify-content:flex-end">
                                 <button class="btn btn-primary btn-sm" @onclick="AddNoteAsync"
                                         disabled="@(string.IsNullOrWhiteSpace(_newNote) || _savingNote)">
-                                    @(_savingNote ? "Posting…" : "Post Note")
+                                    @(_savingNote ? T("TkD.Posting") : T("TkD.PostNote"))
                                 </button>
                             </div>
                         }
@@ -126,7 +127,7 @@
                         {
                             @if (_ticket.Attachments.Count == 0)
                             {
-                                <p class="subtle" style="margin:0 0 14px">No attachments uploaded.</p>
+                                <p class="subtle" style="margin:0 0 14px">@T("TkD.NoAttachments")</p>
                             }
                             else
                             {
@@ -135,19 +136,26 @@
                                     {
                                         <div class="card row spread" style="padding:10px 14px">
                                             <div class="row" style="min-width:0">
-                                                <span style="font-size:18px">@FileIcon(file.ContentType)</span>
+                                                <span style="font-size:18px"><i class="bi @FileIcon(file.ContentType)"></i></span>
                                                 <div style="min-width:0">
                                                     <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@file.FileName</div>
-                                                    <div class="subtle">@UiHelpers.FormatBytes(file.FileSizeBytes) · by @file.UploadedByName · @UiHelpers.TimeAgo(file.CreatedAt)</div>
+                                                    <div class="subtle">@UiHelpers.FormatBytes(file.FileSizeBytes) · @T("TkD.By", file.UploadedByName) · @TimeAgo(file.CreatedAt)</div>
                                                 </div>
                                             </div>
-                                            <a class="btn btn-ghost btn-sm" href="@FileHref(file)" target="_blank" rel="noopener">Open</a>
+                                            <a class="btn btn-ghost btn-sm" href="@FileHref(file)" target="_blank" rel="noopener">@T("Common.Open")</a>
                                         </div>
                                     }
                                 </div>
                             }
                             <label class="btn btn-secondary btn-sm" style="position:relative;overflow:hidden;cursor:pointer">
-                                @(_uploading ? "Uploading…" : "📎 Upload file (max 10 MB)")
+                                @if (_uploading)
+                                {
+                                    @T("TkD.Uploading")
+                                }
+                                else
+                                {
+                                    <i class="bi bi-paperclip"></i> @T("TkD.UploadFile")
+                                }
                                 <InputFile OnChange="UploadAsync" disabled="@_uploading"
                                            style="position:absolute;inset:0;opacity:0;cursor:pointer" />
                             </label>
@@ -156,7 +164,7 @@
                         {
                             @if (_ticket.Histories.Count == 0)
                             {
-                                <p class="subtle" style="margin:0">No history entries.</p>
+                                <p class="subtle" style="margin:0">@T("TkD.NoHistory")</p>
                             }
                             else
                             {
@@ -167,16 +175,16 @@
                                             <div class="row wrap" style="gap:8px;margin-bottom:3px">
                                                 @if (h.FromStatus is not null)
                                                 {
-                                                    <span class="badge @UiHelpers.StatusBadge(h.FromStatus)">@UiHelpers.StatusLabel(h.FromStatus)</span>
-                                                    <span class="muted">→</span>
+                                                    <span class="badge @UiHelpers.StatusBadge(h.FromStatus)">@TStatus(h.FromStatus)</span>
+                                                    <span class="muted"><i class="bi bi-arrow-right flip-rtl"></i></span>
                                                 }
-                                                <span class="badge @UiHelpers.StatusBadge(h.ToStatus)">@UiHelpers.StatusLabel(h.ToStatus)</span>
+                                                <span class="badge @UiHelpers.StatusBadge(h.ToStatus)">@TStatus(h.ToStatus)</span>
                                             </div>
                                             <div class="subtle">
-                                                by @h.ChangedByName · @UiHelpers.TimeAgo(h.CreatedAt)
+                                                @T("TkD.By", h.ChangedByName) · @TimeAgo(h.CreatedAt)
                                                 @if (h.TimeInStatus is { } secs and > 0)
                                                 {
-                                                    <text> · @UiHelpers.FormatDuration((int)secs) in previous status</text>
+                                                    <text> · @T("TkD.InPreviousStatus", UiHelpers.FormatDuration((int)secs))</text>
                                                 }
                                             </div>
                                             @if (!string.IsNullOrWhiteSpace(h.Note))
@@ -197,7 +205,7 @@
 
                 <!-- Customer card -->
                 <div class="card hoverable" style="padding:16px;cursor:pointer" @onclick="GoToCustomer">
-                    <div class="section-title" style="margin-bottom:10px">👤 Customer</div>
+                    <div class="section-title" style="margin-bottom:10px"><i class="bi bi-person"></i> @T("TkD.Customer")</div>
                     <div class="row">
                         <div class="avatar">@UiHelpers.Initials(_ticket.CustomerName)</div>
                         <div style="min-width:0">
@@ -215,7 +223,7 @@
                 @if (_ticket.CustomerDeviceId is not null)
                 {
                     <div class="card" style="padding:16px">
-                        <div class="section-title" style="margin-bottom:10px">📱 Device</div>
+                        <div class="section-title" style="margin-bottom:10px"><i class="bi bi-phone"></i> @T("TkD.Device")</div>
                         <div style="font-weight:700;font-size:13.5px">@_ticket.CustomerDeviceBrandName @_ticket.CustomerDeviceModelName</div>
                         @if (!string.IsNullOrEmpty(_ticket.CustomerDeviceIMEI))
                         {
@@ -230,15 +238,15 @@
 
                 <!-- Assignment -->
                 <div class="card" style="padding:16px">
-                    <div class="section-title" style="margin-bottom:10px">🧭 Assignment</div>
+                    <div class="section-title" style="margin-bottom:10px"><i class="bi bi-compass"></i> @T("TkD.Assignment")</div>
                     <div class="field">
-                        <label>Assigned Agent</label>
-                        <div style="font-size:13px;font-weight:600">@(_ticket.AssignedToName ?? "Unassigned")</div>
+                        <label>@T("TkD.AssignedAgent")</label>
+                        <div style="font-size:13px;font-weight:600">@(_ticket.AssignedToName ?? T("TkD.Unassigned"))</div>
                     </div>
                     <div class="field">
-                        <label>Department</label>
+                        <label>@T("TkD.Department")</label>
                         <select class="select" @onchange="OnDeptSelected" disabled="@(_assigning || IsTicketTerminal)">
-                            <option value="" selected="@(_ticket.DepartmentId is null)">— None —</option>
+                            <option value="" selected="@(_ticket.DepartmentId is null)">@T("TkD.None")</option>
                             @foreach (var d in _departments)
                             {
                                 <option value="@d.Id" selected="@(_ticket.DepartmentId == d.Id)">@d.Name</option>
@@ -248,44 +256,51 @@
                     <div class="row wrap" style="gap:8px">
                         <button class="btn btn-secondary btn-sm" @onclick="AssignToMeAsync"
                                 disabled="@(_assigning || IsTicketTerminal || IsAssignedToMe)">
-                            @(IsAssignedToMe ? "✓ Assigned to you" : "🙋 Assign to me")
+                            @if (IsAssignedToMe)
+                            {
+                                <i class="bi bi-check-lg"></i> @T("TkD.AssignedToYou")
+                            }
+                            else
+                            {
+                                <i class="bi bi-person-plus"></i> @T("TkD.AssignToMe")
+                            }
                         </button>
                         <button class="btn btn-primary btn-sm" @onclick="SaveAssignmentAsync"
                                 disabled="@(_assigning || IsTicketTerminal || !_deptDirty)">
-                            @(_assigning ? "Saving…" : "Save Department")
+                            @(_assigning ? T("Common.Saving") : T("TkD.SaveDepartment"))
                         </button>
                     </div>
                 </div>
 
                 <!-- Status transition -->
                 <div class="card" style="padding:16px">
-                    <div class="section-title" style="margin-bottom:10px">🔄 Change Status</div>
+                    <div class="section-title" style="margin-bottom:10px"><i class="bi bi-arrow-repeat"></i> @T("TkD.ChangeStatus")</div>
                     @if (NextOptions.Count == 0)
                     {
-                        <p class="subtle" style="margin:0">This ticket is in a terminal state — no transitions available.</p>
+                        <p class="subtle" style="margin:0">@T("TkD.TerminalNote")</p>
                     }
                     else
                     {
                         <div class="field">
-                            <label>New Status</label>
+                            <label>@T("TkD.NewStatus")</label>
                             <select class="select" @onchange="OnStatusSelected" disabled="@_transitioning">
-                                <option value="">— Choose —</option>
+                                <option value="">@T("TkD.Choose")</option>
                                 @foreach (var s in NextOptions)
                                 {
-                                    <option value="@((int)s)" selected="@(_targetStatus == s)">@UiHelpers.StatusLabel(s.ToString())</option>
+                                    <option value="@((int)s)" selected="@(_targetStatus == s)">@TStatus(s.ToString())</option>
                                 }
                             </select>
                         </div>
                         <div class="field">
-                            <label>Note @(RequiresNote ? "* (required)" : "(optional)")</label>
+                            <label>@T("TkD.Note") @(RequiresNote ? T("TkD.NoteRequired") : T("TkD.NoteOptional"))</label>
                             <textarea class="textarea" rows="2"
-                                      placeholder="@(RequiresNote ? "A resolution/cancellation note is required…" : "Why are you changing the status?")"
+                                      placeholder="@(RequiresNote ? T("TkD.NoteRequiredPlaceholder") : T("TkD.NoteWhy"))"
                                       @bind="_transitionNote" @bind:event="oninput"></textarea>
                         </div>
                         <button class="btn btn-primary" style="width:100%"
                                 @onclick="TransitionAsync"
                                 disabled="@(_transitioning || _targetStatus is null || (RequiresNote && string.IsNullOrWhiteSpace(_transitionNote)))">
-                            @(_transitioning ? "Applying…" : "Apply Transition")
+                            @(_transitioning ? T("TkD.Applying") : T("TkD.ApplyTransition"))
                         </button>
                     }
                 </div>
@@ -327,16 +342,13 @@
     private bool IsAssignedToMe =>
         _ticket?.AssignedToId is { } id && string.Equals(id.ToString(), Auth.Session?.UserId, StringComparison.OrdinalIgnoreCase);
 
-    private string CategoryDisplay
-    {
-        get
-        {
-            if (_ticket is null) return string.Empty;
-            return Enum.TryParse<TicketCategory>(_ticket.Category, out var cat)
-                ? $"{UiHelpers.CategoryIcon(cat)} {UiHelpers.CategoryLabel(cat)}"
-                : _ticket.Category;
-        }
-    }
+    private string CategoryIconClass =>
+        _ticket is not null && Enum.TryParse<TicketCategory>(_ticket.Category, out var cat)
+            ? UiHelpers.CategoryIcon(cat)
+            : "bi-tag";
+
+    private string CategoryLabelText =>
+        _ticket is null ? string.Empty : TCategory(_ticket.Category);
 
     private double SlaTotalHours =>
         _ticket is not null && Enum.TryParse<TicketPriority>(_ticket.Priority, out var pr)
@@ -382,7 +394,7 @@
         {
             await Api.AddInternalNoteAsync(_ticket.Id, new AddInternalNoteRequest(_newNote.Trim()));
             _newNote = string.Empty;
-            Toasts.Success("Note added");
+            Toasts.Success(T("TkD.NoteAdded"));
             await LoadAsync();
         }
         catch (ApiException ex) { Toasts.Error(ex.Message); }
@@ -397,7 +409,7 @@
         const long maxBytes = 10 * 1024 * 1024;
         if (file.Size > maxBytes)
         {
-            Toasts.Error($"File too large ({UiHelpers.FormatBytes(file.Size)}) — limit is 10 MB.");
+            Toasts.Error(T("TkD.FileTooLarge", UiHelpers.FormatBytes(file.Size)));
             return;
         }
         _uploading = true;
@@ -406,7 +418,7 @@
             await using var stream = file.OpenReadStream(maxBytes);
             await Api.UploadAttachmentAsync(_ticket.Id, stream, file.Name,
                 string.IsNullOrEmpty(file.ContentType) ? "application/octet-stream" : file.ContentType);
-            Toasts.Success($"“{file.Name}” uploaded");
+            Toasts.Success(T("TkD.Uploaded", file.Name));
             await LoadAsync();
         }
         catch (ApiException ex) { Toasts.Error(ex.Message); }
@@ -415,11 +427,11 @@
 
     private static string FileIcon(string contentType) => contentType switch
     {
-        var t when t.StartsWith("image/") => "🖼",
-        var t when t.StartsWith("video/") => "🎞",
-        var t when t.StartsWith("audio/") => "🎧",
-        "application/pdf" => "📕",
-        _ => "📄",
+        var t when t.StartsWith("image/") => "bi-file-earmark-image",
+        var t when t.StartsWith("video/") => "bi-file-earmark-play",
+        var t when t.StartsWith("audio/") => "bi-file-earmark-music",
+        "application/pdf" => "bi-file-earmark-pdf",
+        _ => "bi-file-earmark-text",
     };
 
     private string FileHref(AttachmentDto file) =>
@@ -442,7 +454,7 @@
         {
             await Api.AssignTicketAsync(_ticket.Id,
                 new AssignTicketRequest(_ticket.AssignedToId, _selectedDeptId, "Department updated"));
-            Toasts.Success("Department updated");
+            Toasts.Success(T("TkD.DeptUpdated"));
             await LoadAsync();
         }
         catch (ApiException ex) { Toasts.Error(ex.Message); }
@@ -454,7 +466,7 @@
         if (_ticket is null || Auth.Session is not { } session) return;
         if (!Guid.TryParse(session.UserId, out var myId))
         {
-            Toasts.Error("Could not resolve your user id from the session.");
+            Toasts.Error(T("TkD.UserIdError"));
             return;
         }
         _assigning = true;
@@ -462,7 +474,7 @@
         {
             await Api.AssignTicketAsync(_ticket.Id,
                 new AssignTicketRequest(myId, _ticket.DepartmentId, "Self-assigned"));
-            Toasts.Success("Ticket assigned to you");
+            Toasts.Success(T("TkD.TicketAssigned"));
             await LoadAsync();
         }
         catch (ApiException ex) { Toasts.Error(ex.Message); }
@@ -482,7 +494,7 @@
         {
             await Api.TransitionTicketStatusAsync(_ticket.Id,
                 new TransitionStatusRequest(target, string.IsNullOrWhiteSpace(_transitionNote) ? null : _transitionNote.Trim()));
-            Toasts.Success($"Status → {UiHelpers.StatusLabel(target.ToString())}");
+            Toasts.Success(T("TkD.StatusChanged", TStatus(target.ToString())));
             await LoadAsync();
         }
         catch (ApiException ex) { Toasts.Error(ex.Message); }

@@ -1,37 +1,38 @@
 @page "/tickets"
 @attribute [Authorize]
+@inherits LocalizedComponentBase
 @inject CrmApiClient Api
 @inject NavigationManager Nav
 @inject ToastService Toasts
 
-<PageTitle>Tickets — UniGroup CRM</PageTitle>
+<PageTitle>@T("Tk.PageTitle")</PageTitle>
 
 <div class="page-pad anim-fade-up">
     <div class="spread" style="margin-bottom:20px">
         <div>
-            <h1 style="font-size:22px">Tickets</h1>
-            <p class="muted" style="margin:4px 0 0">Track every support case with live SLA monitoring</p>
+            <h1 style="font-size:22px">@T("Tk.Title")</h1>
+            <p class="muted" style="margin:4px 0 0">@T("Tk.Subtitle")</p>
         </div>
-        <a class="btn btn-primary" href="/tickets/new">➕ New Ticket</a>
+        <a class="btn btn-primary" href="/tickets/new"><i class="bi bi-plus-lg"></i> @T("Tk.New")</a>
     </div>
 
     <div class="card filter-bar" style="margin-bottom:16px">
         <select class="select" value="@_statusFilter" @onchange="e => { _statusFilter = e.Value?.ToString() ?? string.Empty; _ = ApplyAsync(); }">
-            <option value="">All statuses</option>
+            <option value="">@T("Tk.AllStatuses")</option>
             @foreach (var s in Enum.GetValues<TicketStatus>())
             {
-                <option value="@((int)s)">@UiHelpers.StatusLabel(s.ToString())</option>
+                <option value="@((int)s)">@TStatus(s.ToString())</option>
             }
         </select>
         <select class="select" value="@_priorityFilter" @onchange="e => { _priorityFilter = e.Value?.ToString() ?? string.Empty; _ = ApplyAsync(); }">
-            <option value="">All priorities</option>
+            <option value="">@T("Tk.AllPriorities")</option>
             @foreach (var p in Enum.GetValues<TicketPriority>())
             {
-                <option value="@((int)p)">@p</option>
+                <option value="@((int)p)">@TPriority(p.ToString())</option>
             }
         </select>
         <select class="select" value="@_departmentFilter" @onchange="e => { _departmentFilter = e.Value?.ToString() ?? string.Empty; _ = ApplyAsync(); }">
-            <option value="">All departments</option>
+            <option value="">@T("Tk.AllDepartments")</option>
             @foreach (var d in _departments)
             {
                 <option value="@d.Id">@d.Name</option>
@@ -39,7 +40,7 @@
         </select>
         <input class="input" type="date" value="@_dateFrom" @onchange="e => { _dateFrom = e.Value?.ToString() ?? string.Empty; _ = ApplyAsync(); }" />
         <input class="input" type="date" value="@_dateTo" @onchange="e => { _dateTo = e.Value?.ToString() ?? string.Empty; _ = ApplyAsync(); }" />
-        <button class="btn btn-ghost btn-sm" @onclick="ClearFiltersAsync">✕ Clear</button>
+        <button class="btn btn-ghost btn-sm" @onclick="ClearFiltersAsync"><i class="bi bi-x-lg"></i> @T("Tk.Clear")</button>
     </div>
 
     <div class="card table-wrap">
@@ -55,9 +56,9 @@
         else if (_page is null || _page.Items.Count == 0)
         {
             <div class="empty-state">
-                <div class="icon">🎫</div>
-                <h3>No tickets found</h3>
-                <p>Adjust the filters or create a new ticket.</p>
+                <div class="icon"><i class="bi bi-ticket-perforated"></i></div>
+                <h3>@T("Tk.NoneTitle")</h3>
+                <p>@T("Tk.NoneText")</p>
             </div>
         }
         else
@@ -65,13 +66,13 @@
             <table class="data">
                 <thead>
                     <tr>
-                        <th>Ticket</th>
-                        <th>Customer</th>
-                        <th>Status</th>
-                        <th>Priority</th>
-                        <th>SLA</th>
-                        <th>Assigned</th>
-                        <th>Created</th>
+                        <th>@T("Tk.ColTicket")</th>
+                        <th>@T("Tk.ColCustomer")</th>
+                        <th>@T("Tk.ColStatus")</th>
+                        <th>@T("Tk.ColPriority")</th>
+                        <th>@T("Tk.ColSla")</th>
+                        <th>@T("Tk.ColAssigned")</th>
+                        <th>@T("Tk.ColCreated")</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -83,22 +84,22 @@
                                 <div class="subtle" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@t.Title</div>
                             </td>
                             <td>@t.CustomerName</td>
-                            <td><span class="badge @UiHelpers.StatusBadge(t.Status)">@UiHelpers.StatusLabel(t.Status)</span></td>
-                            <td><span class="badge @UiHelpers.PriorityBadge(t.Priority)">@t.Priority</span></td>
+                            <td><span class="badge @UiHelpers.StatusBadge(t.Status)">@TStatus(t.Status)</span></td>
+                            <td><span class="badge @UiHelpers.PriorityBadge(t.Priority)">@TPriority(t.Priority)</span></td>
                             <td>
                                 <SlaTimer Deadline="t.SlaDeadline" Breached="t.SlaBreached" Status="@t.Status"
                                           TotalHours="GetSlaHours(t.Priority)" />
                             </td>
                             <td>@(t.AssignedToName ?? "—")<div class="subtle">@t.DepartmentName</div></td>
-                            <td class="subtle">@UiHelpers.TimeAgo(t.CreatedAt)</td>
+                            <td class="subtle">@TimeAgo(t.CreatedAt)</td>
                         </tr>
                     }
                 </tbody>
             </table>
 
             <div class="pagination">
-                <span class="subtle" style="margin-right:auto;padding-left:4px">
-                    @_page.TotalCount ticket(s) · page @_page.Page of @TotalPages
+                <span class="subtle" style="margin-inline-end:auto;padding-inline-start:4px">
+                    @T("Tk.PageInfo", _page.TotalCount, _page.Page, TotalPages)
                 </span>
                 <button disabled="@(_pageNum <= 1)" @onclick="() => GoPage(_pageNum - 1)">‹</button>
                 @foreach (var p in PageWindow())
@@ -162,7 +163,7 @@
         }
         catch (HttpRequestException)
         {
-            Toasts.Error("Cannot reach the API server.");
+            Toasts.Error(T("Common.CannotReachApi"));
         }
         finally
         {

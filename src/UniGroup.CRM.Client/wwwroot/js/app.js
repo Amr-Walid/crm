@@ -9,6 +9,14 @@ window.unigroup = {
     getTheme: function () {
         return document.documentElement.getAttribute('data-theme') || 'light';
     },
+    setLanguage: function (lang) {
+        document.documentElement.setAttribute('lang', lang);
+        document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+        try { localStorage.setItem('unigroup.lang', lang); } catch (e) { }
+    },
+    getLanguage: function () {
+        return document.documentElement.getAttribute('lang') || 'en';
+    },
     // Trigger a browser download from a byte stream (CSV export)
     downloadFile: function (fileName, contentType, base64) {
         const link = document.createElement('a');

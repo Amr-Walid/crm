@@ -1,8 +1,9 @@
 @page "/survey/{Token}"
 @layout EmptyLayout
+@inherits LocalizedComponentBase
 @inject CrmApiClient Api
 
-<PageTitle>Rate Your Experience — UniGroup</PageTitle>
+<PageTitle>@T("Survey.PageTitle")</PageTitle>
 
 <div class="auth-page">
     <div class="auth-orb"></div>
@@ -10,16 +11,16 @@
         @if (_done)
         {
             <div style="text-align:center;padding:12px 0">
-                <div style="font-size:56px;margin-bottom:10px">@(_success ? "🎉" : "😕")</div>
-                <h2 style="font-size:20px;margin:0 0 8px">@(_success ? "Thank you!" : "Something went wrong")</h2>
+                <div style="font-size:56px;margin-bottom:10px"><i class="bi @(_success ? "bi-emoji-laughing" : "bi-emoji-frown")" style="color:@(_success ? "var(--success, #10b981)" : "var(--warning, #f59e0b)")"></i></div>
+                <h2 style="font-size:20px;margin:0 0 8px">@(_success ? T("Survey.ThankYou") : T("Survey.Error"))</h2>
                 <p class="muted" style="margin:0;line-height:1.6">@_message</p>
                 @if (_success && _rating >= 4)
                 {
-                    <p class="muted" style="margin-top:10px">We're thrilled you had a great experience! ⭐</p>
+                    <p class="muted" style="margin-top:10px">@T("Survey.Great") <i class="bi bi-star-fill" style="color:#f59e0b"></i></p>
                 }
                 else if (_success)
                 {
-                    <p class="muted" style="margin-top:10px">Your feedback helps us improve our service.</p>
+                    <p class="muted" style="margin-top:10px">@T("Survey.Improve")</p>
                 }
             </div>
         }
@@ -28,9 +29,9 @@
             <div class="auth-logo" style="margin-bottom:6px">
                 <span class="grad-text" style="font-family:var(--font-display);font-weight:800;font-size:22px">UniGroup</span>
             </div>
-            <h2 style="text-align:center;font-size:19px;margin:0 0 6px">How was your experience?</h2>
+            <h2 style="text-align:center;font-size:19px;margin:0 0 6px">@T("Survey.How")</h2>
             <p class="muted" style="text-align:center;margin:0 0 22px;font-size:13px">
-                Your support request has been resolved. We'd love to hear your feedback.
+                @T("Survey.Resolved")
             </p>
 
             <!-- ═══ STARS ═══ -->
@@ -42,7 +43,7 @@
                             @onclick="() => SetRating(star)"
                             @onmouseover="() => _hover = star"
                             @onmouseout="ClearHover"
-                            aria-label="@star star@(star > 1 ? "s" : "")">★</button>
+                            aria-label="@star"><i class="bi bi-star-fill"></i></button>
                 }
             </div>
             <div style="text-align:center;font-size:13px;font-weight:700;min-height:20px;margin-bottom:16px;color:var(--text-2)">
@@ -50,23 +51,23 @@
             </div>
 
             <div class="field">
-                <label>Feedback (optional)</label>
+                <label>@T("Survey.Feedback")</label>
                 <textarea class="textarea" rows="4" maxlength="2000"
-                          placeholder="Tell us more about your experience…"
+                          placeholder="@T("Survey.FeedbackPlaceholder")"
                           @bind="_feedback" @bind:event="oninput"></textarea>
             </div>
 
             @if (_error is not null)
             {
-                <div class="badge badge-red" style="display:block;padding:10px 14px;margin-bottom:14px;white-space:normal">⚠ @_error</div>
+                <div class="badge badge-red" style="display:block;padding:10px 14px;margin-bottom:14px;white-space:normal"><i class="bi bi-exclamation-triangle"></i> @_error</div>
             }
 
             <button class="btn btn-primary btn-lg" style="width:100%"
                     @onclick="SubmitAsync" disabled="@(_rating == 0 || _submitting)">
-                @(_submitting ? "Submitting…" : "Submit Rating")
+                @(_submitting ? T("Survey.Submitting") : T("Survey.Submit"))
             </button>
             <p class="subtle" style="text-align:center;margin:14px 0 0">
-                This survey link is unique to your ticket and can be used once.
+                @T("Survey.OneTime")
             </p>
         }
     </div>
@@ -89,12 +90,12 @@
 
     private string RatingLabel => DisplayRating switch
     {
-        1 => "😠 Very dissatisfied",
-        2 => "🙁 Dissatisfied",
-        3 => "😐 Neutral",
-        4 => "🙂 Satisfied",
-        5 => "🤩 Very satisfied",
-        _ => "Tap a star to rate",
+        1 => T("Survey.Rate1"),
+        2 => T("Survey.Rate2"),
+        3 => T("Survey.Rate3"),
+        4 => T("Survey.Rate4"),
+        5 => T("Survey.Rate5"),
+        _ => T("Survey.TapStar"),
     };
 
     private void SetRating(int stars) => _rating = stars;
@@ -120,7 +121,7 @@
         }
         catch (HttpRequestException)
         {
-            _error = "Could not reach the server. Please try again shortly.";
+            _error = T("Common.CannotReachApi");
         }
         finally { _submitting = false; }
     }

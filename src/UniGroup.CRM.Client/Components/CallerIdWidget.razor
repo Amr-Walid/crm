@@ -1,4 +1,4 @@
-@implements IDisposable
+@inherits LocalizedComponentBase
 @inject CallerIdService CallerId
 @inject CrmApiClient Api
 @inject ToastService Toasts
@@ -7,8 +7,8 @@
 
 @* Floating Caller-ID simulator — bottom-right corner utility *@
 
-<button class="caller-fab @(CallerId.IsRinging ? "ringing" : "")" title="Caller ID Simulator" @onclick="TogglePanel">
-    <span class="ico">@(CallerId.IsRinging ? "📳" : CallerId.IsInCall ? "🎧" : "📞")</span>
+<button class="caller-fab @(CallerId.IsRinging ? "ringing" : "")" title="@T("Caller.SimTitle")" @onclick="TogglePanel">
+    <span class="ico"><i class="bi @(CallerId.IsRinging ? "bi-phone-vibrate" : CallerId.IsInCall ? "bi-headset" : "bi-telephone")"></i></span>
 </button>
 
 @if (_panelOpen)
@@ -18,31 +18,31 @@
         {
             @* ------- Incoming call (ringing) ------- *@
             <div class="caller-incoming">
-                <div class="subtle" style="letter-spacing:0.12em;text-transform:uppercase">Incoming call…</div>
+                <div class="subtle" style="letter-spacing:0.12em;text-transform:uppercase">@T("Caller.Incoming")</div>
                 <div class="phone-num mono">@CallerId.IncomingNumber</div>
 
                 @if (CallerId.Caller is not null)
                 {
                     <div class="row" style="justify-content:center;margin-top:8px">
                         <div class="avatar lg">@UiHelpers.Initials(CallerId.Caller.Name)</div>
-                        <div style="text-align:left">
+                        <div style="text-align:start">
                             <div style="font-weight:700;font-size:15px">@CallerId.Caller.Name</div>
-                            <div class="subtle">@(CallerId.Caller.City ?? "—") · @(CallerId.Caller.Devices.Count) device(s)</div>
+                            <div class="subtle">@(CallerId.Caller.City ?? "—") · @T("Common.DevicesCount", CallerId.Caller.Devices.Count)</div>
                         </div>
                     </div>
                     @if (CallerId.Caller.Devices.Any(d => d.WarrantyStatus == "Active"))
                     {
-                        <span class="badge badge-green" style="margin-top:8px"><span class="dot"></span> Active warranty on file</span>
+                        <span class="badge badge-green" style="margin-top:8px"><span class="dot"></span> @T("Caller.ActiveWarrantyOnFile")</span>
                     }
                 }
                 else
                 {
-                    <span class="badge badge-amber" style="margin-top:8px">⚠ Unknown caller — not in CRM</span>
+                    <span class="badge badge-amber" style="margin-top:8px"><i class="bi bi-exclamation-triangle"></i> @T("Caller.Unknown")</span>
                 }
 
                 <div class="call-actions">
-                    <button class="call-btn answer" title="Answer" @onclick="Answer">📞</button>
-                    <button class="call-btn decline" title="Decline" @onclick="Decline">📵</button>
+                    <button class="call-btn answer" title="@T("Caller.Answer")" @onclick="Answer"><i class="bi bi-telephone-fill"></i></button>
+                    <button class="call-btn decline" title="@T("Caller.Decline")" @onclick="Decline"><i class="bi bi-telephone-x-fill"></i></button>
                 </div>
             </div>
         }
@@ -50,7 +50,7 @@
         {
             @* ------- Active call ------- *@
             <div class="spread" style="margin-bottom:12px">
-                <div class="section-title"><span style="color:var(--success)">●</span> On call · <span class="mono">@_callDuration</span></div>
+                <div class="section-title"><span style="color:var(--success)">●</span> @T("Caller.OnCall") · <span class="mono">@_callDuration</span></div>
                 <span class="badge badge-green mono">@CallerId.IncomingNumber</span>
             </div>
 
@@ -62,48 +62,55 @@
                         <div style="font-weight:700">@CallerId.Caller.Name</div>
                         <div class="subtle">@CallerId.Caller.Email</div>
                     </div>
-                    <button class="btn btn-primary btn-sm" @onclick="OpenProfile">Open 360°</button>
+                    <button class="btn btn-primary btn-sm" @onclick="OpenProfile">@T("Caller.Open360")</button>
                 </div>
             }
             else
             {
                 <div class="card" style="padding:12px;margin-bottom:12px">
-                    <div class="subtle" style="margin-bottom:8px">Unknown caller — create a customer record:</div>
+                    <div class="subtle" style="margin-bottom:8px">@T("Caller.UnknownCreate")</div>
                     <div class="field" style="margin-bottom:8px">
-                        <InputText class="input" @bind-Value="_newCustomerName" placeholder="Customer name" />
+                        <InputText class="input" @bind-Value="_newCustomerName" placeholder="@T("Caller.CustomerName")" />
                     </div>
                     <button class="btn btn-secondary btn-sm" style="width:100%" @onclick="QuickCreateAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_newCustomerName))">
-                        @(_busy ? "Creating…" : "➕ Quick-create customer")
+                        @if (_busy)
+                        {
+                            @T("TkC.Creating")
+                        }
+                        else
+                        {
+                            <i class="bi bi-plus-lg"></i> @T("Caller.QuickCreate")
+                        }
                     </button>
                 </div>
             }
 
             <div class="field">
-                <label>Call summary</label>
-                <InputTextArea class="textarea" style="min-height:64px" @bind-Value="_summary" placeholder="Notes about this call…" />
+                <label>@T("Caller.CallSummary")</label>
+                <InputTextArea class="textarea" style="min-height:64px" @bind-Value="_summary" placeholder="@T("Caller.SummaryPlaceholder")" />
             </div>
             <button class="btn btn-danger" style="width:100%" @onclick="EndCallAsync" disabled="@_busy">
-                ⏹ End call &amp; log
+                <i class="bi bi-stop-fill"></i> @T("Caller.EndAndLog")
             </button>
         }
         else
         {
             @* ------- Simulator idle: dial pad ------- *@
-            <div class="section-title" style="margin-bottom:4px">📞 Caller ID Simulator</div>
-            <p class="subtle" style="margin:0 0 12px">Simulate an incoming customer call. The system looks up the caller instantly.</p>
+            <div class="section-title" style="margin-bottom:4px"><i class="bi bi-telephone"></i> @T("Caller.SimTitle")</div>
+            <p class="subtle" style="margin:0 0 12px">@T("Caller.SimDesc")</p>
             <div class="field" style="margin-bottom:10px">
-                <label>Phone number</label>
-                <InputText class="input mono" @bind-Value="_dialNumber" placeholder="e.g. 01012345678" @onkeydown="OnDialKeyDown" />
+                <label>@T("Caller.PhoneNumber")</label>
+                <InputText class="input mono" @bind-Value="_dialNumber" placeholder="@T("Caller.PhonePlaceholder")" @onkeydown="OnDialKeyDown" />
             </div>
             <button class="btn btn-primary" style="width:100%" @onclick="SimulateAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_dialNumber))">
                 @if (_busy)
                 {
                     <span class="spinner"></span>
-                    <span>Looking up…</span>
+                    <span>@T("Caller.LookingUp")</span>
                 }
                 else
                 {
-                    <span>📳 Simulate incoming call</span>
+                    <span><i class="bi bi-phone-vibrate"></i> @T("Caller.Simulate")</span>
                 }
             </button>
         }
@@ -119,7 +126,11 @@
     private string _callDuration = "00:00";
     private Timer? _durationTimer;
 
-    protected override void OnInitialized() => CallerId.OnChange += OnCallStateChanged;
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        CallerId.OnChange += OnCallStateChanged;
+    }
 
     private void OnCallStateChanged()
     {
@@ -170,7 +181,7 @@
         }
         catch (HttpRequestException)
         {
-            Toasts.Error("Cannot reach the API server.");
+            Toasts.Error(T("Common.CannotReachApi"));
         }
         finally
         {
@@ -200,7 +211,7 @@
     private async Task Decline()
     {
         // Log the declined (missed) call with zero duration.
-        await LogCallAsync(0, "Declined / missed call");
+        await LogCallAsync(0, T("Caller.DeclinedNote"));
         CallerId.End();
     }
 
@@ -214,7 +225,7 @@
             var customer = await Api.GetCustomerAsync(id);
             CallerId.Ring(CallerId.IncomingNumber!, customer); // refresh caller info
             CallerId.Answer();
-            Toasts.Success($"Customer '{customer.Name}' created.");
+            Toasts.Success(T("Caller.CustomerCreated", customer.Name));
             Nav.NavigateTo($"/customers/{id}");
         }
         catch (ApiException ex)
@@ -250,15 +261,15 @@
                 durationSeconds,
                 summary,
                 null));
-            Toasts.Success("Call logged.");
+            Toasts.Success(T("Caller.CallLogged"));
         }
         catch (ApiException ex)
         {
-            Toasts.Error($"Failed to log call: {ex.Message}");
+            Toasts.Error(T("Caller.LogFailed", ex.Message));
         }
         catch (HttpRequestException)
         {
-            Toasts.Error("Cannot reach the API server.");
+            Toasts.Error(T("Common.CannotReachApi"));
         }
         finally
         {
@@ -266,8 +277,9 @@
         }
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
+        base.Dispose();
         CallerId.OnChange -= OnCallStateChanged;
         _durationTimer?.Dispose();
     }

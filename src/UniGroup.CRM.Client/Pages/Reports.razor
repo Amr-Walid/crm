@@ -1,44 +1,52 @@
 @page "/reports"
 @attribute [Authorize(Roles = "Admin")]
+@inherits LocalizedComponentBase
 @inject CrmApiClient Api
 @inject ToastService Toasts
 @inject IJSRuntime JS
 
-<PageTitle>Reports — UniGroup CRM</PageTitle>
+<PageTitle>@T("Rep.PageTitle")</PageTitle>
 
 <div class="page-pad anim-fade-up">
     <div style="margin-bottom:20px">
-        <h1 style="font-size:22px">Reports & Exports</h1>
-        <p class="muted" style="margin:4px 0 0">Download operational reports as CSV files</p>
+        <h1 style="font-size:22px">@T("Rep.Title")</h1>
+        <p class="muted" style="margin:4px 0 0">@T("Rep.Subtitle")</p>
     </div>
 
     <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">
         <div class="card glass" style="padding:22px">
             <div class="row" style="margin-bottom:12px">
-                <div class="stat-icon" style="position:static;background:rgba(99,102,241,.15)">📤</div>
+                <div class="stat-icon" style="position:static;background:rgba(99,102,241,.15)"><i class="bi bi-file-earmark-spreadsheet"></i></div>
                 <div>
-                    <div style="font-weight:800;font-size:15px">Agent Performance Report</div>
-                    <div class="subtle">Tickets handled, resolution times, SLA compliance & CSAT per agent</div>
+                    <div style="font-weight:800;font-size:15px">@T("Rep.AgentReport")</div>
+                    <div class="subtle">@T("Rep.AgentReportDesc")</div>
                 </div>
             </div>
 
             <div class="row" style="gap:10px;margin-bottom:14px">
                 <div class="field" style="flex:1;margin-bottom:0">
-                    <label>From</label>
+                    <label>@T("Common.From")</label>
                     <input type="date" class="input" value="@_from.ToString("yyyy-MM-dd")" @onchange="OnFromChanged" />
                 </div>
                 <div class="field" style="flex:1;margin-bottom:0">
-                    <label>To</label>
+                    <label>@T("Common.To")</label>
                     <input type="date" class="input" value="@_to.ToString("yyyy-MM-dd")" @onchange="OnToChanged" />
                 </div>
             </div>
 
             <button class="btn btn-primary" style="width:100%" @onclick="ExportAsync" disabled="@_exporting">
-                @(_exporting ? "Generating…" : "⬇ Export CSV")
+                @if (_exporting)
+                {
+                    @T("Rep.Generating")
+                }
+                else
+                {
+                    <i class="bi bi-download"></i> @T("Rep.ExportCsv")
+                }
             </button>
             @if (_lastFile is not null)
             {
-                <div class="subtle" style="margin-top:10px;text-align:center">✓ Downloaded “@_lastFile”</div>
+                <div class="subtle" style="margin-top:10px;text-align:center"><i class="bi bi-check-lg"></i> @T("Rep.Downloaded", _lastFile)</div>
             }
         </div>
     </div>
@@ -64,7 +72,7 @@
     {
         if (_from > _to)
         {
-            Toasts.Error("“From” date must be before “To” date.");
+            Toasts.Error(T("Rep.DateOrderError"));
             return;
         }
         _exporting = true;
@@ -73,7 +81,7 @@
             var (content, fileName) = await Api.ExportAgentReportAsync(_from, _to);
             await JS.InvokeVoidAsync("unigroup.downloadFile", fileName, "text/csv", Convert.ToBase64String(content));
             _lastFile = fileName;
-            Toasts.Success($"Report exported ({UiHelpers.FormatBytes(content.Length)})");
+            Toasts.Success(T("Rep.Exported", UiHelpers.FormatBytes(content.Length)));
         }
         catch (ApiException ex) { Toasts.Error(ex.Message); }
         finally { _exporting = false; }

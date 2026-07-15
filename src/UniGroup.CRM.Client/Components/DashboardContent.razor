@@ -1,3 +1,4 @@
+@inherits LocalizedComponentBase
 @inject CrmApiClient Api
 @inject NavigationManager Nav
 @inject ToastService Toasts
@@ -5,12 +6,21 @@
 <div class="page-pad anim-fade-up">
     <div class="spread wrap" style="margin-bottom:20px;gap:12px">
         <div>
-            <h1 style="font-size:22px">Operations Dashboard</h1>
-            <p class="muted" style="margin:4px 0 0">Live overview of tickets, calls and team performance</p>
+            <h1 style="font-size:22px">@T("Dash.Title")</h1>
+            <p class="muted" style="margin:4px 0 0">@T("Dash.Subtitle")</p>
         </div>
         <div class="row" style="gap:8px">
             <input type="date" class="input" style="width:170px" value="@_date.ToString("yyyy-MM-dd")" @onchange="OnDateChanged" />
-            <button class="btn btn-secondary" @onclick="RefreshAsync" disabled="@_loading">@(_loading ? "Loading…" : "↻ Refresh")</button>
+            <button class="btn btn-secondary" @onclick="RefreshAsync" disabled="@_loading">
+                @if (_loading)
+                {
+                    @T("Common.Loading")
+                }
+                else
+                {
+                    <i class="bi bi-arrow-clockwise"></i> @T("Dash.Refresh")
+                }
+            </button>
         </div>
     </div>
 
@@ -26,10 +36,10 @@
     else if (_summary is null)
     {
         <div class="card empty-state">
-            <div class="icon">📊</div>
-            <h3>Dashboard unavailable</h3>
-            <p>@(_error ?? "Could not load dashboard data.")</p>
-            <button class="btn btn-primary" @onclick="RefreshAsync">Retry</button>
+            <div class="icon"><i class="bi bi-speedometer2"></i></div>
+            <h3>@T("Dash.Unavailable")</h3>
+            <p>@(_error ?? T("Dash.CouldNotLoad"))</p>
+            <button class="btn btn-primary" @onclick="RefreshAsync">@T("Common.Retry")</button>
         </div>
     }
     else
@@ -37,38 +47,38 @@
         <!-- ═══════ METRIC CARDS ═══════ -->
         <div class="stat-grid" style="margin-bottom:16px">
             <div class="card stat-card">
-                <div class="stat-label">New Tickets Today</div>
+                <div class="stat-label">@T("Dash.NewToday")</div>
                 <div class="stat-value">@_summary.TodayNewTickets</div>
-                <div class="stat-sub">top issue: @(_summary.TopIssueCategory ?? "—")</div>
-                <div class="stat-icon" style="background:rgba(99,102,241,.15)">🎫</div>
+                <div class="stat-sub">@T("Dash.TopIssue", _summary.TopIssueCategory ?? "—")</div>
+                <div class="stat-icon" style="background:rgba(99,102,241,.15)"><i class="bi bi-ticket-perforated"></i></div>
             </div>
             <div class="card stat-card">
-                <div class="stat-label">Open Tickets</div>
+                <div class="stat-label">@T("Dash.OpenTickets")</div>
                 <div class="stat-value">@_summary.OpenTicketsTotal</div>
-                <div class="stat-sub">across all departments</div>
-                <div class="stat-icon" style="background:rgba(59,130,246,.15)">📂</div>
+                <div class="stat-sub">@T("Dash.AcrossDepts")</div>
+                <div class="stat-icon" style="background:rgba(59,130,246,.15)"><i class="bi bi-folder2-open"></i></div>
             </div>
             <div class="card stat-card">
-                <div class="stat-label">SLA Breached</div>
+                <div class="stat-label">@T("Dash.SlaBreached")</div>
                 <div class="stat-value" style="color:@(_summary.BreachedSlaCount > 0 ? "var(--danger)" : "inherit")">@_summary.BreachedSlaCount</div>
-                <div class="stat-sub">compliance @(_summary.SlaComplianceRate.ToString("0.#"))%</div>
-                <div class="stat-icon" style="background:rgba(239,68,68,.15)">⏰</div>
+                <div class="stat-sub">@T("Dash.Compliance", _summary.SlaComplianceRate.ToString("0.#"))</div>
+                <div class="stat-icon" style="background:rgba(239,68,68,.15)"><i class="bi bi-alarm"></i></div>
             </div>
             <div class="card stat-card">
-                <div class="stat-label">Avg Resolution (today)</div>
+                <div class="stat-label">@T("Dash.AvgResolution")</div>
                 <div class="stat-value">@(_summary.AvgResolutionTimeToday.ToString("0.#"))h</div>
-                <div class="stat-sub">@_summary.CallsLoggedToday calls logged today</div>
-                <div class="stat-icon" style="background:rgba(16,185,129,.15)">⚡</div>
+                <div class="stat-sub">@T("Dash.CallsLogged", _summary.CallsLoggedToday)</div>
+                <div class="stat-icon" style="background:rgba(16,185,129,.15)"><i class="bi bi-lightning-charge"></i></div>
             </div>
         </div>
 
         <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-bottom:16px">
             <!-- ═══════ TICKETS BY STATUS ═══════ -->
             <div class="card" style="padding:20px">
-                <div class="section-title" style="margin-bottom:12px">🗂 Tickets by Status</div>
+                <div class="section-title" style="margin-bottom:12px"><i class="bi bi-kanban"></i> @T("Dash.ByStatus")</div>
                 @if (_byStatus.Count == 0)
                 {
-                    <p class="subtle" style="margin:0">No ticket data.</p>
+                    <p class="subtle" style="margin:0">@T("Dash.NoTicketData")</p>
                 }
                 else
                 {
@@ -76,7 +86,7 @@
                     @foreach (var kv in _byStatus.OrderByDescending(k => k.Value))
                     {
                         <div class="bar-row">
-                            <div class="bar-label">@UiHelpers.StatusLabel(kv.Key)</div>
+                            <div class="bar-label">@TStatus(kv.Key)</div>
                             <div class="bar-track">
                                 <div class="bar-fill" style="width:@(Math.Max(kv.Value * 100.0 / max, 6).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%">@kv.Value</div>
                             </div>
@@ -87,10 +97,10 @@
 
             <!-- ═══════ HOURLY CALL VOLUME ═══════ -->
             <div class="card" style="padding:20px">
-                <div class="section-title" style="margin-bottom:12px">📞 Hourly Call Volume — @_date.ToString("dd MMM")</div>
+                <div class="section-title" style="margin-bottom:12px"><i class="bi bi-telephone"></i> @T("Dash.CallVolume") — @_date.ToString("dd MMM")</div>
                 @if (_calls.Count == 0 || _calls.All(c => c.CallCount == 0))
                 {
-                    <p class="subtle" style="margin:0">No calls logged for this date.</p>
+                    <p class="subtle" style="margin:0">@T("Dash.NoCalls")</p>
                 }
                 else
                 {
@@ -99,7 +109,7 @@
                         @foreach (var h in _calls.OrderBy(c => c.Hour))
                         {
                             <div class="spark-col" style="height:@(Math.Max(h.CallCount * 100.0 / maxCalls, 2).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%">
-                                <span class="tip">@h.Hour:00 · @h.CallCount calls · avg @UiHelpers.FormatDuration((int)h.AvgDurationSeconds)</span>
+                                <span class="tip">@h.Hour:00 · @T("Dash.CallsTip", h.CallCount, UiHelpers.FormatDuration((int)h.AvgDurationSeconds))</span>
                             </div>
                         }
                     </div>
@@ -116,11 +126,11 @@
         <!-- ═══════ AGENT PERFORMANCE GRID ═══════ -->
         <div class="card" style="padding:20px;margin-bottom:16px">
             <div class="spread" style="margin-bottom:12px">
-                <div class="section-title">🧑‍💼 Agent Performance (last 30 days)</div>
+                <div class="section-title"><i class="bi bi-person-badge"></i> @T("Dash.AgentPerf")</div>
             </div>
             @if (_agents.Count == 0)
             {
-                <p class="subtle" style="margin:0">No agent activity in the selected period.</p>
+                <p class="subtle" style="margin:0">@T("Dash.NoAgentActivity")</p>
             }
             else
             {
@@ -128,12 +138,12 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Agent</th>
-                                <th style="text-align:right">Handled</th>
-                                <th style="text-align:right">Open</th>
-                                <th style="text-align:right">Avg Resolution</th>
-                                <th style="text-align:right">SLA Compliance</th>
-                                <th style="text-align:right">CSAT</th>
+                                <th>@T("Dash.ColAgent")</th>
+                                <th style="text-align:end">@T("Dash.ColHandled")</th>
+                                <th style="text-align:end">@T("Dash.ColOpen")</th>
+                                <th style="text-align:end">@T("Dash.ColAvgRes")</th>
+                                <th style="text-align:end">@T("Dash.ColSla")</th>
+                                <th style="text-align:end">@T("Dash.ColCsat")</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -146,13 +156,22 @@
                                             <span style="font-weight:600">@a.AgentName</span>
                                         </div>
                                     </td>
-                                    <td style="text-align:right" class="mono">@a.TotalTicketsHandled</td>
-                                    <td style="text-align:right" class="mono">@a.OpenTicketsCount</td>
-                                    <td style="text-align:right" class="mono">@(a.AvgResolutionTimeHours.ToString("0.#"))h</td>
-                                    <td style="text-align:right">
+                                    <td style="text-align:end" class="mono">@a.TotalTicketsHandled</td>
+                                    <td style="text-align:end" class="mono">@a.OpenTicketsCount</td>
+                                    <td style="text-align:end" class="mono">@(a.AvgResolutionTimeHours.ToString("0.#"))h</td>
+                                    <td style="text-align:end">
                                         <span class="badge @SlaBadge(a.SlaComplianceRate)">@(a.SlaComplianceRate.ToString("0.#"))%</span>
                                     </td>
-                                    <td style="text-align:right">@(a.CsatAvgScore is { } cs ? $"⭐ {cs:0.0}" : "—")</td>
+                                    <td style="text-align:end">
+                                        @if (a.CsatAvgScore is { } cs)
+                                        {
+                                            <i class="bi bi-star-fill" style="color:#f59e0b;font-size:11px"></i> @cs.ToString("0.0")
+                                        }
+                                        else
+                                        {
+                                            <text>—</text>
+                                        }
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -163,10 +182,10 @@
 
         <!-- ═══════ DEVICE FAILURE BREAKDOWN ═══════ -->
         <div class="card" style="padding:20px">
-            <div class="section-title" style="margin-bottom:12px">📉 Device Failure Breakdown (last 30 days)</div>
+            <div class="section-title" style="margin-bottom:12px"><i class="bi bi-graph-down-arrow"></i> @T("Dash.DeviceFailures")</div>
             @if (_failures.Count == 0)
             {
-                <p class="subtle" style="margin:0">No device failures recorded in the selected period.</p>
+                <p class="subtle" style="margin:0">@T("Dash.NoFailures")</p>
             }
             else
             {
@@ -179,7 +198,7 @@
                             <div class="bar-fill" style="width:@(Math.Max(f.FailureCount * 100.0 / maxF, 6).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%;background:linear-gradient(90deg,#ef4444,#f97316)">@f.FailureCount</div>
                         </div>
                         <div class="subtle" style="width:180px;flex-shrink:0">
-                            @(f.MostCommonCategory ?? "—") · @f.RepeatCustomersCount repeat
+                            @(f.MostCommonCategory ?? "—") · @T("Dash.Repeat", f.RepeatCustomersCount)
                         </div>
                     </div>
                 }

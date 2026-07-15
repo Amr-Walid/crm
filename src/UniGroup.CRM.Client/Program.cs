@@ -23,6 +23,7 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredServ
 builder.Services.AddScoped<CrmApiClient>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<ThemeService>();
+builder.Services.AddScoped<LanguageService>();
 builder.Services.AddScoped<CallerIdService>();
 
 await builder.Build().RunAsync();

@@ -33,20 +33,20 @@ public static class UiHelpers
         _ => "Other",
     };
 
-    /// <summary>Emoji icon for a ticket category.</summary>
+    /// <summary>Bootstrap Icons class name for a ticket category (e.g. "bi-phone").</summary>
     public static string CategoryIcon(TicketCategory c) => c switch
     {
-        TicketCategory.ScreenDamage => "📱",
-        TicketCategory.BatteryIssue => "🔋",
-        TicketCategory.ChargingPort => "🔌",
-        TicketCategory.SoftwareIssue => "💾",
-        TicketCategory.NetworkConnectivity => "📶",
-        TicketCategory.CameraIssue => "📷",
-        TicketCategory.SpeakerMicrophone => "🔊",
-        TicketCategory.PhysicalDamage => "🛠️",
-        TicketCategory.WarrantyInquiry => "🛡️",
-        TicketCategory.GeneralInquiry => "💬",
-        _ => "❓",
+        TicketCategory.ScreenDamage => "bi-phone",
+        TicketCategory.BatteryIssue => "bi-battery-half",
+        TicketCategory.ChargingPort => "bi-plug",
+        TicketCategory.SoftwareIssue => "bi-cpu",
+        TicketCategory.NetworkConnectivity => "bi-wifi",
+        TicketCategory.CameraIssue => "bi-camera",
+        TicketCategory.SpeakerMicrophone => "bi-volume-up",
+        TicketCategory.PhysicalDamage => "bi-tools",
+        TicketCategory.WarrantyInquiry => "bi-shield-check",
+        TicketCategory.GeneralInquiry => "bi-chat-dots",
+        _ => "bi-question-circle",
     };
 
     /// <summary>Human label for a status enum-name string (e.g. "InProgress" → "In Progress").</summary>
@@ -136,14 +136,17 @@ public static class UiHelpers
             : ts.TotalMinutes >= 1 ? $"{ts.Minutes}m {ts.Seconds}s" : $"{ts.Seconds}s";
     }
 
-    /// <summary>"Just now" / "5m ago" / "3h ago" / date, from a UTC timestamp.</summary>
-    public static string TimeAgo(DateTime utc)
+    /// <summary>"Just now" / "5m ago" / "3h ago" / date, from a UTC timestamp (English).</summary>
+    public static string TimeAgo(DateTime utc) => TimeAgo(utc, "en");
+
+    /// <summary>Localized relative time from a UTC timestamp ("en" / "ar").</summary>
+    public static string TimeAgo(DateTime utc, string lang)
     {
         var span = DateTime.UtcNow - DateTime.SpecifyKind(utc, DateTimeKind.Utc);
-        return span.TotalSeconds < 60 ? "just now"
-            : span.TotalMinutes < 60 ? $"{(int)span.TotalMinutes}m ago"
-            : span.TotalHours < 24 ? $"{(int)span.TotalHours}h ago"
-            : span.TotalDays < 7 ? $"{(int)span.TotalDays}d ago"
+        return span.TotalSeconds < 60 ? TranslationResources.Get("Time.JustNow", lang)
+            : span.TotalMinutes < 60 ? string.Format(TranslationResources.Get("Time.MinutesAgo", lang), (int)span.TotalMinutes)
+            : span.TotalHours < 24 ? string.Format(TranslationResources.Get("Time.HoursAgo", lang), (int)span.TotalHours)
+            : span.TotalDays < 7 ? string.Format(TranslationResources.Get("Time.DaysAgo", lang), (int)span.TotalDays)
             : utc.ToLocalTime().ToString("dd MMM yyyy");
     }
 

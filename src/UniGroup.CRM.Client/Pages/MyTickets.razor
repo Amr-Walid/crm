@@ -1,22 +1,23 @@
 @page "/my-tickets"
 @attribute [Authorize]
+@inherits LocalizedComponentBase
 @inject CrmApiClient Api
 @inject NavigationManager Nav
 @inject ToastService Toasts
 
-<PageTitle>My Tickets — UniGroup CRM</PageTitle>
+<PageTitle>@T("MyTk.PageTitle")</PageTitle>
 
 <div class="page-pad anim-fade-up">
     <div class="spread" style="margin-bottom:20px">
         <div>
-            <h1 style="font-size:22px">My Tickets</h1>
-            <p class="muted" style="margin:4px 0 0">Cases assigned to you</p>
+            <h1 style="font-size:22px">@T("MyTk.Title")</h1>
+            <p class="muted" style="margin:4px 0 0">@T("MyTk.Subtitle")</p>
         </div>
         <select class="select" style="width:auto" value="@_statusFilter" @onchange="OnStatusChanged">
-            <option value="">All statuses</option>
+            <option value="">@T("Tk.AllStatuses")</option>
             @foreach (var s in Enum.GetValues<TicketStatus>())
             {
-                <option value="@((int)s)">@UiHelpers.StatusLabel(s.ToString())</option>
+                <option value="@((int)s)">@TStatus(s.ToString())</option>
             }
         </select>
     </div>
@@ -33,9 +34,9 @@
     else if (_tickets.Count == 0)
     {
         <div class="card empty-state">
-            <div class="icon">🎉</div>
-            <h3>Nothing assigned to you</h3>
-            <p>You're all caught up. New assignments will appear here.</p>
+            <div class="icon"><i class="bi bi-emoji-smile"></i></div>
+            <h3>@T("MyTk.EmptyTitle")</h3>
+            <p>@T("MyTk.EmptyText")</p>
         </div>
     }
     else
@@ -50,11 +51,11 @@
                     </div>
                     <div style="font-weight:700;font-size:14px;margin-bottom:8px">@t.Title</div>
                     <div class="row wrap" style="gap:6px;margin-bottom:8px">
-                        <span class="badge @UiHelpers.StatusBadge(t.Status)">@UiHelpers.StatusLabel(t.Status)</span>
-                        <span class="badge @UiHelpers.PriorityBadge(t.Priority)">@t.Priority</span>
-                        <span class="badge badge-slate">@t.Category</span>
+                        <span class="badge @UiHelpers.StatusBadge(t.Status)">@TStatus(t.Status)</span>
+                        <span class="badge @UiHelpers.PriorityBadge(t.Priority)">@TPriority(t.Priority)</span>
+                        <span class="badge badge-slate">@TCategory(t.Category)</span>
                     </div>
-                    <div class="subtle">👤 @t.CustomerName · @UiHelpers.TimeAgo(t.CreatedAt)</div>
+                    <div class="subtle"><i class="bi bi-person"></i> @t.CustomerName · @TimeAgo(t.CreatedAt)</div>
                 </div>
             }
         </div>
@@ -88,7 +89,7 @@
         }
         catch (HttpRequestException)
         {
-            Toasts.Error("Cannot reach the API server.");
+            Toasts.Error(T("Common.CannotReachApi"));
         }
         finally
         {

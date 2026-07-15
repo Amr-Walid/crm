@@ -2,6 +2,7 @@
 @implements IDisposable
 @inject JwtAuthenticationStateProvider Auth
 @inject ThemeService Theme
+@inject LanguageService Lang
 @inject NavigationManager Nav
 @inject CrmApiClient Api
 
@@ -13,27 +14,27 @@
                     <div class="mark">U</div>
                     <div>
                         <div class="name">UniGroup <span>CRM</span></div>
-                        <div class="tag">Service Excellence</div>
+                        <div class="tag">@T("Nav.Tagline")</div>
                     </div>
                 </div>
 
                 <nav class="nav-group">
-                    <div class="nav-group-label">Workspace</div>
+                    <div class="nav-group-label">@T("Nav.Workspace")</div>
                     <AuthorizeView Roles="Admin,Team Leader,TeamLeader" Context="dash">
-                        <NavLink class="nav-item" href="/" Match="NavLinkMatch.All"><span class="ico">📊</span> Dashboard</NavLink>
+                        <NavLink class="nav-item" href="/" Match="NavLinkMatch.All"><span class="ico"><i class="bi bi-speedometer2"></i></span> @T("Nav.Dashboard")</NavLink>
                     </AuthorizeView>
-                    <NavLink class="nav-item" href="/customers"><span class="ico">👥</span> Customers</NavLink>
-                    <NavLink class="nav-item" href="/tickets"><span class="ico">🎫</span> Tickets</NavLink>
-                    <NavLink class="nav-item" href="/my-tickets"><span class="ico">📋</span> My Tickets</NavLink>
-                    <NavLink class="nav-item" href="/knowledge-base"><span class="ico">📚</span> Knowledge Base</NavLink>
+                    <NavLink class="nav-item" href="/customers"><span class="ico"><i class="bi bi-people"></i></span> @T("Nav.Customers")</NavLink>
+                    <NavLink class="nav-item" href="/tickets"><span class="ico"><i class="bi bi-ticket-perforated"></i></span> @T("Nav.Tickets")</NavLink>
+                    <NavLink class="nav-item" href="/my-tickets"><span class="ico"><i class="bi bi-clipboard-check"></i></span> @T("Nav.MyTickets")</NavLink>
+                    <NavLink class="nav-item" href="/knowledge-base"><span class="ico"><i class="bi bi-book"></i></span> @T("Nav.KnowledgeBase")</NavLink>
                 </nav>
 
                 <AuthorizeView Roles="Admin,Team Leader,TeamLeader" Context="mgmt">
                     <nav class="nav-group">
-                        <div class="nav-group-label">Management</div>
-                        <NavLink class="nav-item" href="/csat-report"><span class="ico">⭐</span> CSAT Report</NavLink>
+                        <div class="nav-group-label">@T("Nav.Management")</div>
+                        <NavLink class="nav-item" href="/csat-report"><span class="ico"><i class="bi bi-star"></i></span> @T("Nav.CsatReport")</NavLink>
                         <AuthorizeView Roles="Admin" Context="adminOnly">
-                            <NavLink class="nav-item" href="/reports"><span class="ico">📤</span> Reports</NavLink>
+                            <NavLink class="nav-item" href="/reports"><span class="ico"><i class="bi bi-file-earmark-spreadsheet"></i></span> @T("Nav.Reports")</NavLink>
                         </AuthorizeView>
                     </nav>
                 </AuthorizeView>
@@ -47,7 +48,7 @@
                         </div>
                     </div>
                     <button class="btn btn-secondary btn-sm" style="width:100%" @onclick="SignOutAsync">
-                        <span>↩</span> Sign out
+                        <i class="bi bi-box-arrow-left"></i> @T("Nav.SignOut")
                     </button>
                 </div>
             </aside>
@@ -59,11 +60,11 @@
 
             <div class="main-area">
                 <header class="topbar">
-                    <button class="menu-btn" @onclick="() => _sidebarOpen = !_sidebarOpen">☰</button>
+                    <button class="menu-btn" @onclick="() => _sidebarOpen = !_sidebarOpen"><i class="bi bi-list"></i></button>
 
                     <div class="search-box">
-                        <span class="ico">🔎</span>
-                        <input class="input" placeholder="Search customers, phones, IMEI, serial…"
+                        <span class="ico"><i class="bi bi-search"></i></span>
+                        <input class="input" placeholder="@T("Nav.SearchPlaceholder")"
                                value="@_searchTerm"
                                @oninput="OnSearchInput"
                                @onfocusout="CloseSearchSoon" />
@@ -72,11 +73,11 @@
                             <div class="glass search-results anim-fade-up">
                                 @if (_searching)
                                 {
-                                    <div style="padding:14px" class="row"><span class="spinner dark"></span><span class="muted">Searching…</span></div>
+                                    <div style="padding:14px" class="row"><span class="spinner dark"></span><span class="muted">@T("Nav.Searching")</span></div>
                                 }
                                 else if (_searchResults.Count == 0)
                                 {
-                                    <div class="empty-state" style="padding:22px"><div>No matches found</div></div>
+                                    <div class="empty-state" style="padding:22px"><div>@T("Nav.NoMatches")</div></div>
                                 }
                                 else
                                 {
@@ -86,7 +87,7 @@
                                             <div class="avatar">@UiHelpers.Initials(c.Name)</div>
                                             <div style="min-width:0">
                                                 <div style="font-weight:600;font-size:13px">@c.Name</div>
-                                                <div class="subtle">@(c.Phones.FirstOrDefault(p => p.IsPrimary)?.Phone ?? c.Phones.FirstOrDefault()?.Phone) · @(c.Devices.Count) device(s)</div>
+                                                <div class="subtle">@(c.Phones.FirstOrDefault(p => p.IsPrimary)?.Phone ?? c.Phones.FirstOrDefault()?.Phone) · @T("Common.DevicesCount", c.Devices.Count)</div>
                                             </div>
                                         </div>
                                     }
@@ -97,8 +98,13 @@
 
                     <div style="flex:1"></div>
 
-                    <button class="theme-toggle" title="Toggle theme" @onclick="ToggleThemeAsync">
-                        @(Theme.Current == "dark" ? "🌙" : "☀️")
+                    <button class="lang-toggle" title="@T("Nav.ToggleLanguage")" @onclick="ToggleLanguageAsync">
+                        <i class="bi bi-translate"></i>
+                        <span>@(Lang.Current == "ar" ? "EN" : "عربي")</span>
+                    </button>
+
+                    <button class="theme-toggle" title="@T("Nav.ToggleTheme")" @onclick="ToggleThemeAsync">
+                        <i class="bi @(Theme.Current == "dark" ? "bi-moon" : "bi-sun")"></i>
                     </button>
                 </header>
 
@@ -125,13 +131,17 @@
     private List<CustomerDetailsDto> _searchResults = [];
     private CancellationTokenSource? _searchCts;
 
-    private string RoleLabel => Auth.Session is { Roles.Count: > 0 } s ? string.Join(" · ", s.Roles) : "User";
+    private string T(string key) => TranslationResources.Get(key, Lang.Current);
+    private string T(string key, params object?[] args) => string.Format(TranslationResources.Get(key, Lang.Current), args);
+
+    private string RoleLabel => Auth.Session is { Roles.Count: > 0 } s ? string.Join(" · ", s.Roles) : T("Nav.User");
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             await Theme.InitializeAsync();
+            await Lang.InitializeAsync();
             StateHasChanged();
         }
     }
@@ -139,6 +149,7 @@
     protected override void OnInitialized()
     {
         Theme.OnChange += StateHasChanged;
+        Lang.OnChange += StateHasChanged;
         Nav.LocationChanged += OnLocationChanged;
     }
 
@@ -150,6 +161,8 @@
     }
 
     private async Task ToggleThemeAsync() => await Theme.ToggleAsync();
+
+    private async Task ToggleLanguageAsync() => await Lang.ToggleAsync();
 
     private async Task SignOutAsync()
     {
@@ -210,6 +223,7 @@
     public void Dispose()
     {
         Theme.OnChange -= StateHasChanged;
+        Lang.OnChange -= StateHasChanged;
         Nav.LocationChanged -= OnLocationChanged;
         _searchCts?.Cancel();
     }

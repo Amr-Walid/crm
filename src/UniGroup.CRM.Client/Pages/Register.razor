@@ -1,11 +1,12 @@
 @page "/register"
 @layout EmptyLayout
+@inherits LocalizedComponentBase
 @inject CrmApiClient Api
 @inject JwtAuthenticationStateProvider Auth
 @inject NavigationManager Nav
 @inject ToastService Toasts
 
-<PageTitle>Create account — UniGroup CRM</PageTitle>
+<PageTitle>@T("Register.PageTitle")</PageTitle>
 
 <div class="auth-page">
     <div class="auth-orb" style="width:420px;height:420px;background:#8b5cf6;top:-120px;left:-80px"></div>
@@ -14,33 +15,33 @@
     <div class="glass auth-card anim-scale-in">
         <div class="auth-logo">
             <div class="mark">U</div>
-            <h2 style="font-size:21px">Create your account</h2>
-            <p class="muted" style="margin:0;font-size:13px">Join the UniGroup CRM workspace</p>
+            <h2 style="font-size:21px">@T("Register.Title")</h2>
+            <p class="muted" style="margin:0;font-size:13px">@T("Register.Subtitle")</p>
         </div>
 
         <EditForm Model="_model" OnValidSubmit="SubmitAsync">
             <DataAnnotationsValidator />
             <div class="row" style="align-items:flex-start">
                 <div class="field" style="flex:1">
-                    <label>First name</label>
+                    <label>@T("Register.FirstName")</label>
                     <InputText class="input" @bind-Value="_model.FirstName" placeholder="Ahmed" />
-                    <ValidationMessage For="() => _model.FirstName" />
+                    <LocalizedValidationMessage For="() => _model.FirstName" />
                 </div>
                 <div class="field" style="flex:1">
-                    <label>Last name</label>
+                    <label>@T("Register.LastName")</label>
                     <InputText class="input" @bind-Value="_model.LastName" placeholder="Walid" />
-                    <ValidationMessage For="() => _model.LastName" />
+                    <LocalizedValidationMessage For="() => _model.LastName" />
                 </div>
             </div>
             <div class="field">
-                <label>Email address</label>
+                <label>@T("Login.Email")</label>
                 <InputText class="input" @bind-Value="_model.Email" placeholder="agent@unigroup.com" autocomplete="username" />
-                <ValidationMessage For="() => _model.Email" />
+                <LocalizedValidationMessage For="() => _model.Email" />
             </div>
             <div class="field">
-                <label>Password</label>
+                <label>@T("Login.Password")</label>
                 <InputText class="input" @bind-Value="_model.Password" type="password" placeholder="Min 8 chars, upper, lower, digit, symbol" autocomplete="new-password" />
-                <ValidationMessage For="() => _model.Password" />
+                <LocalizedValidationMessage For="() => _model.Password" />
             </div>
 
             @if (_error is not null)
@@ -52,17 +53,17 @@
                 @if (_busy)
                 {
                     <span class="spinner"></span>
-                    <span>Creating account…</span>
+                    <span>@T("Register.CreatingAccount")</span>
                 }
                 else
                 {
-                    <span>Create account</span>
+                    <span>@T("Register.CreateAccount")</span>
                 }
             </button>
         </EditForm>
 
         <p style="text-align:center;margin:18px 0 0;font-size:13px" class="muted">
-            Already registered? <a href="/login">Sign in</a>
+            @T("Register.AlreadyRegistered") <a href="/login">@T("Login.SignIn")</a>
         </p>
     </div>
 </div>
@@ -70,18 +71,18 @@
 @code {
     private sealed class RegisterModel
     {
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "First name is required")]
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Validation.FirstNameRequired")]
         public string FirstName { get; set; } = string.Empty;
 
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Last name is required")]
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Validation.LastNameRequired")]
         public string LastName { get; set; } = string.Empty;
 
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Email is required")]
-        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Invalid email")]
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Validation.EmailRequired")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Validation.EmailInvalid")]
         public string Email { get; set; } = string.Empty;
 
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Password is required")]
-        [System.ComponentModel.DataAnnotations.MinLength(8, ErrorMessage = "Minimum 8 characters")]
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Validation.PasswordRequired")]
+        [System.ComponentModel.DataAnnotations.MinLength(8, ErrorMessage = "Validation.PasswordMin")]
         public string Password { get; set; } = string.Empty;
     }
 
@@ -98,7 +99,7 @@
             var response = await Api.RegisterAsync(new RegisterRequest(
                 _model.Email.Trim(), _model.Password, _model.FirstName.Trim(), _model.LastName.Trim()));
             await Auth.SignInAsync(response);
-            Toasts.Success($"Welcome aboard, {response.FirstName}!");
+            Toasts.Success(T("Register.WelcomeAboard", response.FirstName));
             Nav.NavigateTo("/");
         }
         catch (ApiException ex)
@@ -107,7 +108,7 @@
         }
         catch (HttpRequestException)
         {
-            _error = "Cannot reach the API server. Is the backend running on the configured URL?";
+            _error = T("Common.CannotReachApiBackend");
         }
         finally
         {

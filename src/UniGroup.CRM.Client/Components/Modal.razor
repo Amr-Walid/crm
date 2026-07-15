@@ -4,7 +4,7 @@
         <div class="glass modal @(Large ? "modal-lg" : "")" style="padding:26px" @onclick:stopPropagation="true">
             <div class="spread" style="margin-bottom:18px">
                 <h3 style="font-size:17px">@Title</h3>
-                <button class="btn btn-ghost btn-sm" @onclick="CloseAsync">✕</button>
+                <button class="btn btn-ghost btn-sm" @onclick="CloseAsync"><i class="bi bi-x-lg"></i></button>
             </div>
             @ChildContent
         </div>

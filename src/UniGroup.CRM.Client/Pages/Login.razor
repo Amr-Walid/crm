@@ -1,11 +1,12 @@
 @page "/login"
 @layout EmptyLayout
+@inherits LocalizedComponentBase
 @inject CrmApiClient Api
 @inject JwtAuthenticationStateProvider Auth
 @inject NavigationManager Nav
 @inject ToastService Toasts
 
-<PageTitle>Sign in — UniGroup CRM</PageTitle>
+<PageTitle>@T("Login.PageTitle")</PageTitle>
 
 <div class="auth-page">
     <div class="auth-orb" style="width:420px;height:420px;background:#6366f1;top:-120px;right:-80px"></div>
@@ -15,27 +16,27 @@
         <div class="auth-logo">
             <div class="mark">U</div>
             <h2 style="font-size:21px">UniGroup <span class="grad-text">CRM</span></h2>
-            <p class="muted" style="margin:0;font-size:13px">Sign in to your workspace</p>
+            <p class="muted" style="margin:0;font-size:13px">@T("Login.Subtitle")</p>
         </div>
 
         @if (_expired)
         {
             <div class="toast error" style="margin-bottom:16px;box-shadow:none">
-                <span>⚠️</span><span>Your session expired. Please sign in again.</span>
+                <i class="bi bi-exclamation-triangle-fill"></i><span>@T("Login.SessionExpired")</span>
             </div>
         }
 
         <EditForm Model="_model" OnValidSubmit="SubmitAsync">
             <DataAnnotationsValidator />
             <div class="field">
-                <label>Email address</label>
+                <label>@T("Login.Email")</label>
                 <InputText class="input" @bind-Value="_model.Email" placeholder="agent@unigroup.com" autocomplete="username" />
-                <ValidationMessage For="() => _model.Email" />
+                <LocalizedValidationMessage For="() => _model.Email" />
             </div>
             <div class="field">
-                <label>Password</label>
+                <label>@T("Login.Password")</label>
                 <InputText class="input" @bind-Value="_model.Password" type="password" placeholder="••••••••" autocomplete="current-password" />
-                <ValidationMessage For="() => _model.Password" />
+                <LocalizedValidationMessage For="() => _model.Password" />
             </div>
 
             @if (_error is not null)
@@ -47,17 +48,17 @@
                 @if (_busy)
                 {
                     <span class="spinner"></span>
-                    <span>Signing in…</span>
+                    <span>@T("Login.SigningIn")</span>
                 }
                 else
                 {
-                    <span>Sign in</span>
+                    <span>@T("Login.SignIn")</span>
                 }
             </button>
         </EditForm>
 
         <p style="text-align:center;margin:18px 0 0;font-size:13px" class="muted">
-            No account yet? <a href="/register">Create one</a>
+            @T("Login.NoAccount") <a href="/register">@T("Login.CreateOne")</a>
         </p>
     </div>
 </div>
@@ -65,11 +66,11 @@
 @code {
     private sealed class LoginModel
     {
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Email is required")]
-        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Invalid email")]
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Validation.EmailRequired")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Validation.EmailInvalid")]
         public string Email { get; set; } = string.Empty;
 
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Password is required")]
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Validation.PasswordRequired")]
         public string Password { get; set; } = string.Empty;
     }
 
@@ -102,7 +103,7 @@
         {
             var response = await Api.LoginAsync(new LoginRequest(_model.Email.Trim(), _model.Password));
             await Auth.SignInAsync(response);
-            Toasts.Success($"Welcome back, {response.FirstName}!");
+            Toasts.Success(T("Login.WelcomeBack", response.FirstName));
             Nav.NavigateTo(SafeReturnUrl());
         }
         catch (ApiException ex)
@@ -111,7 +112,7 @@
         }
         catch (HttpRequestException)
         {
-            _error = "Cannot reach the API server. Is the backend running on the configured URL?";
+            _error = T("Common.CannotReachApiBackend");
         }
         finally
         {

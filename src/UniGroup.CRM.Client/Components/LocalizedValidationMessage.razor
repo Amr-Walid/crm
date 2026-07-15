@@ -1,0 +1,61 @@
+@typeparam TValue
+@implements IDisposable
+@inject LanguageService Lang
+
+@foreach (var message in Messages)
+{
+    <div class="validation-message">@Translate(message)</div>
+}
+
+@code {
+    /// <summary>The field the validation messages belong to (same as ValidationMessage's For).</summary>
+    [Parameter] public System.Linq.Expressions.Expression<Func<TValue>>? For { get; set; }
+
+    [CascadingParameter] private EditContext? EditContext { get; set; }
+
+    private FieldIdentifier _field;
+    private EditContext? _subscribed;
+
+    private IEnumerable<string> Messages =>
+        EditContext is null || For is null ? [] : EditContext.GetValidationMessages(_field);
+
+    /// <summary>Translates a message that is stored as a translation key; unknown keys pass through.</summary>
+    private string Translate(string message) => TranslationResources.Get(message, Lang.Current);
+
+    protected override void OnInitialized() => Lang.OnChange += OnLangChanged;
+
+    protected override void OnParametersSet()
+    {
+        if (For is not null)
+        {
+            _field = FieldIdentifier.Create(For);
+        }
+
+        if (!ReferenceEquals(_subscribed, EditContext))
+        {
+            if (_subscribed is not null)
+            {
+                _subscribed.OnValidationStateChanged -= OnValidationStateChanged;
+            }
+
+            _subscribed = EditContext;
+            if (_subscribed is not null)
+            {
+                _subscribed.OnValidationStateChanged += OnValidationStateChanged;
+            }
+        }
+    }
+
+    private void OnValidationStateChanged(object? sender, ValidationStateChangedEventArgs e) => StateHasChanged();
+
+    private void OnLangChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Lang.OnChange -= OnLangChanged;
+        if (_subscribed is not null)
+        {
+            _subscribed.OnValidationStateChanged -= OnValidationStateChanged;
+        }
+    }
+}

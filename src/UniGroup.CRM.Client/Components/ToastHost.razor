@@ -7,7 +7,7 @@
         @foreach (var t in Toasts.Toasts)
         {
             <div class="toast @LevelClass(t.Level)" @onclick="() => Toasts.Dismiss(t.Id)">
-                <span>@LevelIcon(t.Level)</span>
+                <span><i class="bi @LevelIcon(t.Level)"></i></span>
                 <span>@t.Text</span>
             </div>
         }
@@ -26,9 +26,9 @@
 
     private static string LevelIcon(ToastLevel level) => level switch
     {
-        ToastLevel.Success => "✅",
-        ToastLevel.Error => "⚠️",
-        _ => "ℹ️",
+        ToastLevel.Success => "bi-check-circle-fill",
+        ToastLevel.Error => "bi-exclamation-triangle-fill",
+        _ => "bi-info-circle-fill",
     };
 
     public void Dispose() => Toasts.OnChange -= StateHasChanged;
