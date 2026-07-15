@@ -109,7 +109,7 @@
                         @foreach (var h in _calls.OrderBy(c => c.Hour))
                         {
                             <div class="spark-col" style="height:@(Math.Max(h.CallCount * 100.0 / maxCalls, 2).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%">
-                                <span class="tip">@h.Hour:00 · @T("Dash.CallsTip", h.CallCount, UiHelpers.FormatDuration((int)h.AvgDurationSeconds))</span>
+                                <span class="tip">@T("Dash.CallsTip", h.Hour, h.CallCount, UiHelpers.FormatDuration((int)h.AvgDurationSeconds))</span>
                             </div>
                         }
                     </div>
