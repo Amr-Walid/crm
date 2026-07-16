@@ -5,7 +5,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
-using UniGroup.CRM.Application.Common.Interfaces;
 using UniGroup.CRM.Domain.Entities;
 using UniGroup.CRM.Domain.Enums;
 using UniGroup.CRM.Infrastructure.Channels;
@@ -15,10 +14,13 @@ namespace UniGroup.CRM.Infrastructure.BackgroundServices;
 
 /// <summary>
 /// Background consumer for the Chatwoot webhook bounded channel. Applies
-/// idempotency via <see cref="ProcessedWebhookEvent"/>, resolves customers by
-/// phone, links messages to active tickets by ChatwootConversationId, and
-/// auto-creates General Inquiry tickets for new conversations. Uses Polly
-/// retries (3x exponential backoff) and supports graceful shutdown draining.
+/// idempotency via <see cref="ProcessedWebhookEvent"/> and appends incoming
+/// messages as internal notes to tickets already linked to the conversation
+/// (by ChatwootConversationId). It deliberately does NOT auto-create tickets
+/// or customers for new conversations — registration and ticket linking are
+/// performed manually by the agent through the CRM sidebar widget
+/// (<c>/chatwoot-widget</c>). Uses Polly retries (3x exponential backoff) and
+/// supports graceful shutdown draining.
 /// </summary>
 public class ChatwootWebhookProcessor : BackgroundService
 {
@@ -119,44 +121,17 @@ public class ChatwootWebhookProcessor : BackgroundService
             return;
         }
 
-        // ===== Extract conversation + sender =====
+        // ===== Extract conversation =====
         var conversationId = ExtractConversationId(root);
-        var (senderName, senderPhone, senderEmail) = ExtractSender(root);
         var content = ExtractString(root, "content") ?? string.Empty;
 
-        // ===== Resolve or create the customer by phone =====
-        Customer? customer = null;
-        if (!string.IsNullOrEmpty(senderPhone))
+        // ===== IMPORTANT: no auto ticket/customer creation =====
+        // New Chatwoot conversations must NOT create CRM tickets automatically.
+        // Agents register customers and link tickets manually via the sidebar
+        // widget. Here we only append messages to a ticket that was already
+        // linked to this conversation (manually, from the widget).
+        if (!string.IsNullOrEmpty(conversationId))
         {
-            var normalizedPhone = senderPhone.Replace("+2", "").Trim();
-            customer = await db.CustomerPhones
-                .Where(p => p.Phone == normalizedPhone || p.Phone == senderPhone)
-                .Select(p => p.Customer)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (customer == null)
-            {
-                customer = new Customer
-                {
-                    Id = Guid.NewGuid(),
-                    Name = string.IsNullOrEmpty(senderName) ? $"Chatwoot Contact {senderPhone}" : senderName,
-                    Email = senderEmail,
-                    CreatedAt = DateTime.UtcNow
-                };
-                db.Customers.Add(customer);
-                db.CustomerPhones.Add(new CustomerPhone
-                {
-                    Id = Guid.NewGuid(),
-                    CustomerId = customer.Id,
-                    Phone = normalizedPhone,
-                    IsPrimary = true
-                });
-            }
-        }
-
-        if (customer != null && !string.IsNullOrEmpty(conversationId))
-        {
-            // ===== Conversation-level idempotency: reuse the active ticket =====
             var activeTicket = await db.Tickets
                 .Where(t => t.ChatwootConversationId == conversationId &&
                             t.Status != TicketStatus.Resolved &&
@@ -164,57 +139,39 @@ public class ChatwootWebhookProcessor : BackgroundService
                             t.Status != TicketStatus.Cancelled)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            // System actor: first (oldest) user acts as the automation identity.
-            var systemUserId = await db.Users
-                .OrderBy(u => u.CreatedAt)
-                .Select(u => u.Id)
-                .FirstAsync(cancellationToken);
-
             if (activeTicket != null)
             {
-                // Append message as internal note to the existing ticket.
-                db.InternalNotes.Add(new InternalNote
+                // System actor: first (oldest) user acts as the automation identity.
+                var systemUserId = await db.Users
+                    .OrderBy(u => u.CreatedAt)
+                    .Select(u => (Guid?)u.Id)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (systemUserId.HasValue)
                 {
-                    Id = Guid.NewGuid(),
-                    TicketId = activeTicket.Id,
-                    AuthorId = systemUserId,
-                    Content = $"[Chatwoot message] {content}",
-                    CreatedAt = DateTime.UtcNow
-                });
-                activeTicket.UpdatedAt = DateTime.UtcNow;
+                    // Append message as internal note to the linked ticket.
+                    db.InternalNotes.Add(new InternalNote
+                    {
+                        Id = Guid.NewGuid(),
+                        TicketId = activeTicket.Id,
+                        AuthorId = systemUserId.Value,
+                        Content = $"[Chatwoot message] {content}",
+                        CreatedAt = DateTime.UtcNow
+                    });
+                    activeTicket.UpdatedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "No system user available to attribute Chatwoot note for conversation {ConversationId}.",
+                        conversationId);
+                }
             }
             else
             {
-                // Auto-create a General Inquiry ticket for the new conversation.
-                var numberGenerator = scope.ServiceProvider.GetRequiredService<ITicketNumberGenerator>();
-                var ticketId = await numberGenerator.GenerateAsync(cancellationToken);
-                var now = DateTime.UtcNow;
-
-                var ticket = new Ticket
-                {
-                    Id = ticketId,
-                    CustomerId = customer.Id,
-                    Title = $"Chatwoot Conversation - {conversationId}",
-                    Description = content,
-                    Category = TicketCategory.GeneralInquiry,
-                    Status = TicketStatus.New,
-                    Priority = TicketPriority.Medium,
-                    ChatwootConversationId = conversationId,
-                    SlaDeadline = now.AddHours(72), // Medium priority SLA
-                    CreatedAt = now,
-                    UpdatedAt = now
-                };
-                db.Tickets.Add(ticket);
-                db.TicketHistories.Add(new TicketHistory
-                {
-                    Id = Guid.NewGuid(),
-                    TicketId = ticketId,
-                    FromStatus = null,
-                    ToStatus = TicketStatus.New,
-                    ChangedById = systemUserId,
-                    Note = "Ticket auto-created from Chatwoot conversation.",
-                    CreatedAt = now
-                });
+                _logger.LogInformation(
+                    "Chatwoot conversation {ConversationId} has no linked active ticket — message stored as processed only (no auto-creation).",
+                    conversationId);
             }
         }
 
@@ -251,18 +208,4 @@ public class ChatwootWebhookProcessor : BackgroundService
         return null;
     }
 
-    private static (string? Name, string? Phone, string? Email) ExtractSender(JsonElement root)
-    {
-        if (!root.TryGetProperty("sender", out var sender) || sender.ValueKind != JsonValueKind.Object)
-        {
-            return (null, null, null);
-        }
-
-        string? name = sender.TryGetProperty("name", out var n) ? n.GetString() : null;
-        string? phone = sender.TryGetProperty("phone_number", out var p) ? p.GetString() : null;
-        string? email = sender.TryGetProperty("email", out var e) && e.ValueKind == JsonValueKind.String
-            ? e.GetString()
-            : null;
-        return (name, phone, email);
-    }
 }

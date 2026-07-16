@@ -30,6 +30,62 @@
             document.documentElement.setAttribute('dir', l === 'ar' ? 'rtl' : 'ltr');
         } catch (e) { }
     </script>
+    <script>
+        // ============================================================
+        // Chatwoot Dashboard-App bridge (window "message" listener).
+        // Registered before Blazor boots so no context event is missed.
+        // Chatwoot posts a JSON string payload to the iframe whenever the
+        // agent opens/switches a conversation; we normalize it, keep the
+        // latest context, and forward changes to the Blazor widget page
+        // once it registers a .NET object reference.
+        // ============================================================
+        (function () {
+            var bridge = window.chatwootBridge = {
+                lastContext: null,
+                _dotnetRef: null,
+
+                register: function (dotnetRef) {
+                    this._dotnetRef = dotnetRef;
+                    // Replay the buffered context so the page gets data even
+                    // if Chatwoot posted it before Blazor finished booting.
+                    if (this.lastContext) this._notify(this.lastContext);
+                    // Ask Chatwoot to (re)send the current conversation info.
+                    this.requestInfo();
+                },
+                unregister: function () { this._dotnetRef = null; },
+                requestInfo: function () {
+                    try { window.parent.postMessage('chatwoot-dashboard-app:fetch-info', '*'); } catch (e) { }
+                },
+                _notify: function (ctx) {
+                    if (this._dotnetRef) {
+                        try { this._dotnetRef.invokeMethodAsync('OnChatwootContext', ctx); } catch (e) { }
+                    }
+                }
+            };
+
+            window.addEventListener('message', function (event) {
+                var raw = event.data;
+                if (typeof raw !== 'string' || raw.indexOf('chatwoot-widget') !== -1) return;
+                var payload;
+                try { payload = JSON.parse(raw); } catch (e) { return; }
+                if (!payload || payload.event !== 'appContext' || !payload.data) return;
+
+                var data = payload.data;
+                var conv = data.conversation || {};
+                var contact = data.contact || (conv.meta && conv.meta.sender) || {};
+
+                var ctx = {
+                    conversationId: conv.id != null ? String(conv.id) : null,
+                    contactId: contact.id != null ? String(contact.id) : null,
+                    contactName: contact.name || null,
+                    contactPhone: contact.phone_number || null,
+                    contactEmail: contact.email || null
+                };
+                bridge.lastContext = ctx;
+                bridge._notify(ctx);
+            });
+        })();
+    </script>
 </head>
 
 <body>

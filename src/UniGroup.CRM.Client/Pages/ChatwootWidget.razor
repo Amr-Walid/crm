@@ -1,0 +1,343 @@
+@page "/chatwoot-widget"
+@layout EmptyLayout
+@implements IDisposable
+@inject CrmApiClient Api
+@inject IJSRuntime JS
+
+<PageTitle>CRM — Chatwoot Widget</PageTitle>
+
+<div class="cw-widget">
+    <div class="cw-header">
+        <span class="grad-text" style="font-family:var(--font-display);font-weight:800">UniGroup CRM</span>
+        @if (!string.IsNullOrEmpty(_conversationId))
+        {
+            <span class="cw-conv-badge">Conv #@_conversationId</span>
+        }
+    </div>
+
+    @if (_loading)
+    {
+        <div class="cw-block muted"><i class="bi bi-arrow-repeat cw-spin"></i> Loading customer context…</div>
+    }
+    else if (string.IsNullOrEmpty(_conversationId) && string.IsNullOrEmpty(_contactPhone) && string.IsNullOrEmpty(_contactEmail))
+    {
+        <div class="cw-block muted">
+            <i class="bi bi-chat-left-dots"></i>
+            Waiting for Chatwoot conversation context…
+            <button class="btn btn-ghost" style="margin-top:8px" @onclick="RequestContextAsync">
+                <i class="bi bi-arrow-clockwise"></i> Retry
+            </button>
+        </div>
+    }
+    else if (_details is { Found: true, Customer: not null })
+    {
+        var c = _details.Customer;
+        <div class="cw-block">
+            <div class="cw-cust-name"><i class="bi bi-person-check-fill" style="color:var(--success,#10b981)"></i> @c.Name</div>
+            <div class="cw-rows">
+                @if (!string.IsNullOrEmpty(c.Email)) { <div><i class="bi bi-envelope"></i> @c.Email</div> }
+                @foreach (var p in c.Phones)
+                {
+                    <div><i class="bi bi-telephone"></i> @p.Phone @(p.IsPrimary ? "★" : "")</div>
+                }
+                @if (!string.IsNullOrEmpty(c.City)) { <div><i class="bi bi-geo-alt"></i> @c.Province / @c.City</div> }
+            </div>
+            @if (c.Devices.Count > 0)
+            {
+                <div class="cw-subtitle">Devices</div>
+                @foreach (var d in c.Devices)
+                {
+                    <div class="cw-device">
+                        @d.BrandName @d.ModelName
+                        <span class="cw-badge @(d.WarrantyStatus == "Active" ? "ok" : "warn")">@d.WarrantyStatus</span>
+                    </div>
+                }
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(_details.LinkedTicketId))
+        {
+            <div class="cw-block cw-linked">
+                <i class="bi bi-link-45deg"></i> Linked ticket: <strong>@_details.LinkedTicketId</strong>
+            </div>
+        }
+        else
+        {
+            <div class="cw-block">
+                @if (!_showTicketForm)
+                {
+                    <button class="btn btn-primary" style="width:100%" @onclick="() => _showTicketForm = true"
+                            disabled="@string.IsNullOrEmpty(_conversationId)">
+                        <i class="bi bi-ticket-perforated"></i> Create &amp; link ticket
+                    </button>
+                }
+                else
+                {
+                    <div class="cw-form">
+                        <input class="form-control" placeholder="Ticket title" @bind="_ticketTitle" />
+                        <textarea class="form-control" rows="2" placeholder="Description" @bind="_ticketDescription"></textarea>
+                        <select class="form-control" @bind="_ticketCategory">
+                            @foreach (var cat in Enum.GetValues<TicketCategory>())
+                            {
+                                <option value="@cat">@cat</option>
+                            }
+                        </select>
+                        <select class="form-control" @bind="_ticketPriority">
+                            @foreach (var pr in Enum.GetValues<TicketPriority>())
+                            {
+                                <option value="@pr">@pr</option>
+                            }
+                        </select>
+                        <div style="display:flex;gap:8px">
+                            <button class="btn btn-primary" @onclick="LinkTicketAsync" disabled="@_busy">
+                                @(_busy ? "Creating…" : "Create ticket")
+                            </button>
+                            <button class="btn btn-ghost" @onclick="() => _showTicketForm = false">Cancel</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (_details.RecentTickets.Count > 0)
+        {
+            <div class="cw-block">
+                <div class="cw-subtitle">Recent tickets</div>
+                @foreach (var t in _details.RecentTickets)
+                {
+                    <div class="cw-ticket">
+                        <strong>@t.Id</strong> — @t.Title
+                        <span class="cw-badge">@t.Status</span>
+                    </div>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <div class="cw-block">
+            <div class="cw-cust-name"><i class="bi bi-person-plus" style="color:var(--warning,#f59e0b)"></i> Unregistered contact</div>
+            <p class="muted" style="margin:4px 0 10px">No CRM customer matches this conversation. Register them below — details sync back to Chatwoot automatically.</p>
+            <div class="cw-form">
+                <input class="form-control" placeholder="Full name *" @bind="_regName" />
+                <input class="form-control" placeholder="Phone *" @bind="_regPhone" />
+                <input class="form-control" placeholder="Email" @bind="_regEmail" />
+                <input class="form-control" placeholder="Province" @bind="_regProvince" />
+                <input class="form-control" placeholder="City" @bind="_regCity" />
+                <button class="btn btn-primary" @onclick="RegisterAsync" disabled="@_busy">
+                    @(_busy ? "Saving…" : "Register customer")
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(_statusMessage))
+    {
+        <div class="cw-block @(_statusIsError ? "cw-error" : "cw-success")">@_statusMessage</div>
+    }
+</div>
+
+<style>
+    .cw-widget { padding: 12px; font-size: 13px; max-width: 420px; }
+    .cw-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 15px; }
+    .cw-conv-badge { font-size: 11px; background: var(--surface-2, #eef); border-radius: 999px; padding: 2px 10px; }
+    .cw-block { background: var(--surface-1, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+    .cw-cust-name { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+    .cw-rows div { margin: 2px 0; }
+    .cw-subtitle { font-weight: 600; margin: 8px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; opacity: .7; }
+    .cw-device, .cw-ticket { padding: 4px 0; border-top: 1px dashed var(--border, #e5e7eb); }
+    .cw-badge { font-size: 10px; border-radius: 999px; padding: 1px 8px; background: var(--surface-2, #eef); margin-inline-start: 6px; }
+    .cw-badge.ok { background: #d1fae5; color: #065f46; }
+    .cw-badge.warn { background: #fef3c7; color: #92400e; }
+    .cw-form { display: flex; flex-direction: column; gap: 8px; }
+    .cw-linked { border-color: var(--success, #10b981); }
+    .cw-error { border-color: #ef4444; color: #b91c1c; }
+    .cw-success { border-color: var(--success, #10b981); color: #065f46; }
+    .cw-spin { display: inline-block; animation: cwspin 1s linear infinite; }
+    @@keyframes cwspin { to { transform: rotate(360deg); } }
+</style>
+
+@code {
+    private DotNetObjectReference<ChatwootWidget>? _selfRef;
+
+    // Chatwoot context (updated live via postMessage when the agent switches chats)
+    private string? _conversationId;
+    private string? _contactId;
+    private string? _contactPhone;
+    private string? _contactEmail;
+
+    private ChatwootWidgetDetailsResponse? _details;
+    private bool _loading;
+    private bool _busy;
+    private bool _showTicketForm;
+    private string? _statusMessage;
+    private bool _statusIsError;
+
+    // Registration form
+    private string _regName = string.Empty;
+    private string _regPhone = string.Empty;
+    private string? _regEmail;
+    private string? _regProvince;
+    private string? _regCity;
+
+    // Ticket form
+    private string? _ticketTitle;
+    private string? _ticketDescription;
+    private TicketCategory _ticketCategory = TicketCategory.GeneralInquiry;
+    private TicketPriority _ticketPriority = TicketPriority.Medium;
+
+    /// <summary>Payload shape produced by the JS bridge in index.html.</summary>
+    public sealed class ChatwootContext
+    {
+        public string? ConversationId { get; set; }
+        public string? ContactId { get; set; }
+        public string? ContactName { get; set; }
+        public string? ContactPhone { get; set; }
+        public string? ContactEmail { get; set; }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("chatwootBridge.register", _selfRef);
+        }
+    }
+
+    /// <summary>Invoked by the JS bridge every time Chatwoot posts appContext.</summary>
+    [JSInvokable]
+    public async Task OnChatwootContext(ChatwootContext ctx)
+    {
+        var changed = ctx.ConversationId != _conversationId || ctx.ContactId != _contactId;
+        _conversationId = ctx.ConversationId;
+        _contactId = ctx.ContactId;
+        _contactPhone = ctx.ContactPhone;
+        _contactEmail = ctx.ContactEmail;
+
+        // Pre-fill the registration form from the Chatwoot contact.
+        if (string.IsNullOrWhiteSpace(_regName) && !string.IsNullOrWhiteSpace(ctx.ContactName)) _regName = ctx.ContactName!;
+        if (string.IsNullOrWhiteSpace(_regPhone) && !string.IsNullOrWhiteSpace(ctx.ContactPhone)) _regPhone = ctx.ContactPhone!;
+        if (string.IsNullOrWhiteSpace(_regEmail) && !string.IsNullOrWhiteSpace(ctx.ContactEmail)) _regEmail = ctx.ContactEmail;
+
+        if (changed || _details is null)
+        {
+            await LoadDetailsAsync();
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task LoadDetailsAsync()
+    {
+        _loading = true;
+        _statusMessage = null;
+        StateHasChanged();
+        try
+        {
+            _details = await Api.GetChatwootWidgetDetailsAsync(_conversationId, _contactPhone, _contactEmail);
+        }
+        catch (Exception ex)
+        {
+            _details = null;
+            SetStatus($"Lookup failed: {ex.Message}", isError: true);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RegisterAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_regName) || string.IsNullOrWhiteSpace(_regPhone))
+        {
+            SetStatus("Name and phone are required.", isError: true);
+            return;
+        }
+
+        _busy = true;
+        _statusMessage = null;
+        try
+        {
+            var result = await Api.RegisterChatwootCustomerAsync(new ChatwootRegisterRequest(
+                _regName.Trim(), _regEmail, _regPhone.Trim(), _regProvince, _regCity, null, _contactId));
+
+            SetStatus(result.AlreadyExisted
+                ? "Phone already registered — existing customer loaded."
+                : result.ChatwootSynced
+                    ? "Customer registered and synced to Chatwoot ✓"
+                    : "Customer registered (Chatwoot sync unavailable).",
+                isError: false);
+
+            await LoadDetailsAsync();
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Registration failed: {ex.Message}", isError: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task LinkTicketAsync()
+    {
+        if (_details?.Customer is null || string.IsNullOrEmpty(_conversationId)) return;
+
+        _busy = true;
+        _statusMessage = null;
+        try
+        {
+            var result = await Api.LinkChatwootTicketAsync(new ChatwootLinkTicketRequest(
+                _details.Customer.Id, _conversationId, _ticketTitle, _ticketDescription,
+                _ticketCategory, _ticketPriority));
+
+            SetStatus(result.AlreadyLinked
+                ? $"Conversation already linked to {result.TicketId}."
+                : $"Ticket {result.TicketId} created and linked ✓", isError: false);
+
+            _showTicketForm = false;
+            await LoadDetailsAsync();
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Ticket creation failed: {ex.Message}", isError: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RequestContextAsync() =>
+        await JS.InvokeVoidAsync("chatwootBridge.requestInfo");
+
+    private void SetStatus(string message, bool isError)
+    {
+        _statusMessage = message;
+        _statusIsError = isError;
+    }
+
+    /// <summary>
+    /// Unregisters the JS bridge callback and releases the
+    /// <see cref="DotNetObjectReference{T}"/> to prevent a memory leak when
+    /// the agent navigates away or Chatwoot reloads the iframe.
+    /// </summary>
+    public void Dispose()
+    {
+        try
+        {
+            _ = JS.InvokeVoidAsync("chatwootBridge.unregister");
+        }
+        catch
+        {
+            // JS runtime may already be gone during teardown — safe to ignore.
+        }
+
+        _selfRef?.Dispose();
+        _selfRef = null;
+    }
+}

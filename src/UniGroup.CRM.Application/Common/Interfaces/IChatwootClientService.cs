@@ -28,4 +28,17 @@ public interface IChatwootClientService
     /// <param name="ct">Cancellation token.</param>
     /// <returns>True when the API call succeeded.</returns>
     Task<bool> UpdateContactCustomAttributesAsync(string contactId, Dictionary<string, string> attributes, CancellationToken ct = default);
+
+    /// <summary>
+    /// Updates the core identity details (name, email, phone number) of a
+    /// Chatwoot contact — used to synchronize CRM customer registrations back
+    /// to Chatwoot immediately.
+    /// </summary>
+    /// <param name="contactId">The Chatwoot contact identifier.</param>
+    /// <param name="name">The contact full name (null to leave unchanged).</param>
+    /// <param name="email">The contact email (null to leave unchanged).</param>
+    /// <param name="phoneNumber">The contact phone number in E.164-ish format (null to leave unchanged).</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>True when the API call succeeded.</returns>
+    Task<bool> UpdateContactDetailsAsync(string contactId, string? name, string? email, string? phoneNumber, CancellationToken ct = default);
 }

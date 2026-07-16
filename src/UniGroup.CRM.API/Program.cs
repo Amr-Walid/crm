@@ -49,7 +49,13 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+// HTTPS redirection — skipped for the Chatwoot webhook ingest path:
+// Chatwoot's webhook delivery client does not follow 307 redirects, so the
+// endpoint must be reachable over plain HTTP. Security is preserved by the
+// HMAC-SHA256 signature verification inside ChatwootWebhookController.
+app.UseWhen(
+    ctx => !ctx.Request.Path.StartsWithSegments("/api/webhooks/chatwoot"),
+    branch => branch.UseHttpsRedirection());
 
 app.UseCors(ClientCorsPolicy);
 

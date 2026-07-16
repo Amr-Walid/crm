@@ -94,3 +94,51 @@ public record UpdateArticleRequest(
     string EscalationConditions,
     string? Keywords,
     bool IsActive);
+
+/* ================= Chatwoot sidebar widget contracts =================
+   Mirror ChatwootWidgetController request/response records (API project). */
+
+/// <summary>Widget lookup result — mirrors <c>ChatwootWidgetDetailsResponse</c>.</summary>
+public record ChatwootWidgetDetailsResponse(
+    bool Found,
+    UniGroup.CRM.Application.Features.Customers.Queries.Common.CustomerDetailsDto? Customer,
+    string? LinkedTicketId,
+    List<ChatwootTicketSummary> RecentTickets);
+
+/// <summary>Compact ticket summary — mirrors <c>ChatwootTicketSummary</c>.</summary>
+public record ChatwootTicketSummary(
+    string Id,
+    string Title,
+    string Status,
+    string Priority,
+    string? ChatwootConversationId,
+    DateTime CreatedAt);
+
+/// <summary>Widget registration body — mirrors <c>ChatwootRegisterRequest</c>.</summary>
+public record ChatwootRegisterRequest(
+    string Name,
+    string? Email,
+    string Phone,
+    string? Province,
+    string? City,
+    string? AddressDetails,
+    string? ChatwootContactId);
+
+/// <summary>Widget registration result — mirrors <c>ChatwootRegisterResponse</c>.</summary>
+public record ChatwootRegisterResponse(
+    Guid CustomerId,
+    bool AlreadyExisted,
+    bool ChatwootSynced,
+    UniGroup.CRM.Application.Features.Customers.Queries.Common.CustomerDetailsDto Customer);
+
+/// <summary>Widget ticket-link body — mirrors <c>ChatwootLinkTicketRequest</c>.</summary>
+public record ChatwootLinkTicketRequest(
+    Guid CustomerId,
+    string ConversationId,
+    string? Title,
+    string? Description,
+    TicketCategory? Category,
+    TicketPriority? Priority);
+
+/// <summary>Widget ticket-link result — mirrors <c>ChatwootLinkTicketResponse</c>.</summary>
+public record ChatwootLinkTicketResponse(string TicketId, bool AlreadyLinked);

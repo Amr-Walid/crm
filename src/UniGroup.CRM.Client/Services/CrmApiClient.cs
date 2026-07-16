@@ -328,7 +328,43 @@ public class CrmApiClient
         await EnsureSuccessAsync(response);
     }
 
+    /* ================= Chatwoot sidebar widget (anonymous) ================= */
+
+    /// <summary>GET /api/chatwoot-widget/details — customer lookup for the Chatwoot sidebar.</summary>
+    public Task<ChatwootWidgetDetailsResponse> GetChatwootWidgetDetailsAsync(string? conversationId, string? phone, string? email)
+    {
+        var qs = new List<string>();
+        if (!string.IsNullOrWhiteSpace(conversationId)) qs.Add($"conversationId={Uri.EscapeDataString(conversationId)}");
+        if (!string.IsNullOrWhiteSpace(phone)) qs.Add($"phone={Uri.EscapeDataString(phone)}");
+        if (!string.IsNullOrWhiteSpace(email)) qs.Add($"email={Uri.EscapeDataString(email)}");
+        var suffix = qs.Count > 0 ? "?" + string.Join('&', qs) : string.Empty;
+        return GetAnonymousAsync<ChatwootWidgetDetailsResponse>($"api/chatwoot-widget/details{suffix}");
+    }
+
+    /// <summary>POST /api/chatwoot-widget/register — create customer + sync details back to Chatwoot.</summary>
+    public Task<ChatwootRegisterResponse> RegisterChatwootCustomerAsync(ChatwootRegisterRequest request) =>
+        PostAsync<ChatwootRegisterResponse>("api/chatwoot-widget/register", request, authorize: false);
+
+    /// <summary>POST /api/chatwoot-widget/link-ticket — create CRM ticket linked to the conversation.</summary>
+    public Task<ChatwootLinkTicketResponse> LinkChatwootTicketAsync(ChatwootLinkTicketRequest request) =>
+        PostAsync<ChatwootLinkTicketResponse>("api/chatwoot-widget/link-ticket", request, authorize: false);
+
     /* ================= Core helpers ================= */
+
+    private async Task<T> GetAnonymousAsync<T>(string path)
+    {
+        // Widget endpoints are anonymous and run inside the Chatwoot iframe,
+        // where no CRM session exists — skip auth header and the 401 redirect.
+        using var request = new HttpRequestMessage(HttpMethod.Get, path);
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new ApiException(response.StatusCode, await ExtractErrorAsync(response));
+        }
+
+        var raw = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<T>(raw, Json)!;
+    }
 
     private async Task<T> GetAsync<T>(string path)
     {

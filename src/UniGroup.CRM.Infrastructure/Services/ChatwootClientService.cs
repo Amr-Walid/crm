@@ -103,4 +103,46 @@ public class ChatwootClientService : IChatwootClientService
             return false;
         }
     }
+
+    /// <inheritdoc />
+    public async Task<bool> UpdateContactDetailsAsync(string contactId, string? name, string? email, string? phoneNumber, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(_options.ApiUrl))
+        {
+            _logger.LogWarning("Chatwoot API not configured; contact {ContactId} details not synced.", contactId);
+            return false;
+        }
+
+        try
+        {
+            var url = $"/api/v1/accounts/{_options.AccountId}/contacts/{contactId}";
+
+            // Only include fields that were provided so we never blank out
+            // existing values on the Chatwoot side.
+            var payload = new Dictionary<string, string>();
+            if (!string.IsNullOrWhiteSpace(name)) payload["name"] = name;
+            if (!string.IsNullOrWhiteSpace(email)) payload["email"] = email;
+            if (!string.IsNullOrWhiteSpace(phoneNumber)) payload["phone_number"] = phoneNumber;
+
+            if (payload.Count == 0)
+            {
+                return true; // nothing to update
+            }
+
+            var response = await _httpClient.PutAsJsonAsync(url, payload, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "Chatwoot contact sync for {ContactId} returned {StatusCode}.",
+                    contactId, (int)response.StatusCode);
+            }
+
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to sync Chatwoot contact details for {ContactId}.", contactId);
+            return false;
+        }
+    }
 }
