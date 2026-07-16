@@ -5,10 +5,48 @@
 @inject LanguageService Lang
 @inject NavigationManager Nav
 @inject CrmApiClient Api
+@inject EmbeddedStateService Embedded
+@inject ChatwootContextService CwContext
 
-<div class="app-shell">
+<div class="app-shell @(Embedded.IsEmbedded ? "embedded" : "")">
     <AuthorizeView>
         <Authorized>
+            @if (Embedded.IsEmbedded)
+            {
+                <!-- ══════════ EMBEDDED (Chatwoot Dashboard App) CHROME ══════════ -->
+                <div class="main-area embedded-main">
+                    <header class="embed-topbar">
+                        <div class="embed-tabs">
+                            <AuthorizeView Roles="Admin,Team Leader,TeamLeader" Context="edash">
+                                <NavLink class="embed-tab" href="/" Match="NavLinkMatch.All" title="@T("Nav.Dashboard")"><i class="bi bi-speedometer2"></i><span>@T("Nav.Dashboard")</span></NavLink>
+                            </AuthorizeView>
+                            <NavLink class="embed-tab" href="/customers" title="@T("Nav.Customers")"><i class="bi bi-person-badge"></i><span>@T("Cust.Title")</span></NavLink>
+                            <NavLink class="embed-tab" href="/tickets/new" title="@T("TkC.Title")"><i class="bi bi-ticket-perforated"></i><span>@T("TkC.Title")</span></NavLink>
+                            <NavLink class="embed-tab" href="/my-tickets" title="@T("Nav.MyTickets")"><i class="bi bi-clipboard-check"></i><span>@T("Nav.MyTickets")</span></NavLink>
+                            <NavLink class="embed-tab" href="/knowledge-base" title="@T("Nav.KnowledgeBase")"><i class="bi bi-book"></i><span>@T("Nav.KnowledgeBase")</span></NavLink>
+                        </div>
+                        <div style="flex:1"></div>
+                        @if (CwContext.HasContext)
+                        {
+                            <span class="embed-ctx-badge" title="@T("Cw.ActiveConversation")">
+                                <i class="bi bi-chat-left-dots"></i>
+                                @(string.IsNullOrEmpty(CwContext.ContactName) ? (CwContext.ContactPhone ?? "#" + CwContext.ConversationId) : CwContext.ContactName)
+                            </span>
+                        }
+                        <button class="embed-icon-btn" title="@T("Nav.ToggleLanguage")" @onclick="ToggleLanguageAsync">
+                            <i class="bi bi-translate"></i>
+                        </button>
+                        <button class="embed-icon-btn" title="@T("Nav.ToggleTheme")" @onclick="ToggleThemeAsync">
+                            <i class="bi @(Theme.Current == "dark" ? "bi-moon" : "bi-sun")"></i>
+                        </button>
+                    </header>
+                    <main class="embed-body">
+                        @Body
+                    </main>
+                </div>
+            }
+            else
+            {
             <aside class="sidebar @(_sidebarOpen ? "open" : "")">
                 <div class="sidebar-logo">
                     <div class="mark">U</div>
@@ -114,6 +152,7 @@
             </div>
 
             <CallerIdWidget />
+            }
         </Authorized>
         <NotAuthorized>
             <div style="flex:1">@Body</div>
@@ -142,16 +181,31 @@
         {
             await Theme.InitializeAsync();
             await Lang.InitializeAsync();
+            // When embedded in Chatwoot, wire up the live conversation bridge so
+            // every CRM page can react to the active customer.
+            if (Embedded.IsEmbedded)
+            {
+                await CwContext.EnsureRegisteredAsync();
+            }
             StateHasChanged();
         }
     }
 
     protected override void OnInitialized()
     {
+        // Detect ?embedded=true once and cache it for the whole SPA session.
+        Embedded.Initialize(Nav);
+
         Theme.OnChange += StateHasChanged;
         Lang.OnChange += StateHasChanged;
+        Embedded.OnChange += OnEmbeddedChanged;
+        CwContext.OnContextChanged += OnContextChanged;
         Nav.LocationChanged += OnLocationChanged;
     }
+
+    private void OnEmbeddedChanged() => InvokeAsync(StateHasChanged);
+
+    private void OnContextChanged() => InvokeAsync(StateHasChanged);
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
@@ -224,6 +278,8 @@
     {
         Theme.OnChange -= StateHasChanged;
         Lang.OnChange -= StateHasChanged;
+        Embedded.OnChange -= OnEmbeddedChanged;
+        CwContext.OnContextChanged -= OnContextChanged;
         Nav.LocationChanged -= OnLocationChanged;
         _searchCts?.Cancel();
     }

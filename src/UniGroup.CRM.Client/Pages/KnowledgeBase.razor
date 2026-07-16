@@ -3,6 +3,8 @@
 @inherits LocalizedComponentBase
 @inject CrmApiClient Api
 @inject ToastService Toasts
+@inject EmbeddedStateService Embedded
+@inject ChatwootContextService CwContext
 
 <PageTitle>@T("Kb.PageTitle")</PageTitle>
 
@@ -60,24 +62,41 @@
                                 · @T("Kb.UpdatedAgo", TimeAgo(_guidance.UpdatedAt ?? _guidance.CreatedAt))
                             </div>
                         </div>
-                        <AuthorizeView Roles="Admin">
-                            <button class="btn btn-secondary btn-sm" @onclick="EditGuidance"><i class="bi bi-pencil"></i> @T("Common.Edit")</button>
-                        </AuthorizeView>
+                        <div class="row" style="gap:8px;flex-shrink:0">
+                            <button class="kb-copy-btn" title="@T("Cw.CopyAll")" @onclick="() => CopySectionAsync(BuildFullArticle(_guidance), true)">
+                                <i class="bi bi-clipboard-check"></i> @T("Cw.CopyAll")
+                            </button>
+                            <AuthorizeView Roles="Admin">
+                                <button class="btn btn-secondary btn-sm" @onclick="EditGuidance"><i class="bi bi-pencil"></i> @T("Common.Edit")</button>
+                            </AuthorizeView>
+                        </div>
                     </div>
                     <div class="card kb-section-card questions">
-                        <div style="font-weight:700;font-size:13px;margin-bottom:8px"><i class="bi bi-question-circle"></i> @T("Kb.Questions")</div>
+                        <div class="spread" style="gap:8px;margin-bottom:8px">
+                            <div style="font-weight:700;font-size:13px"><i class="bi bi-question-circle"></i> @T("Kb.Questions")</div>
+                            @SectionCopyButton(_guidance.QuestionsToAsk)
+                        </div>
                         <MarkdownView Content="@_guidance.QuestionsToAsk" />
                     </div>
                     <div class="card kb-section-card diagnosis">
-                        <div style="font-weight:700;font-size:13px;margin-bottom:8px"><i class="bi bi-search"></i> @T("Kb.Diagnosis")</div>
+                        <div class="spread" style="gap:8px;margin-bottom:8px">
+                            <div style="font-weight:700;font-size:13px"><i class="bi bi-search"></i> @T("Kb.Diagnosis")</div>
+                            @SectionCopyButton(_guidance.DiagnosisSteps)
+                        </div>
                         <MarkdownView Content="@_guidance.DiagnosisSteps" />
                     </div>
                     <div class="card kb-section-card answers">
-                        <div style="font-weight:700;font-size:13px;margin-bottom:8px"><i class="bi bi-chat-dots"></i> @T("Kb.Answers")</div>
+                        <div class="spread" style="gap:8px;margin-bottom:8px">
+                            <div style="font-weight:700;font-size:13px"><i class="bi bi-chat-dots"></i> @T("Kb.Answers")</div>
+                            @SectionCopyButton(_guidance.SuggestedAnswers, primary: true)
+                        </div>
                         <MarkdownView Content="@_guidance.SuggestedAnswers" />
                     </div>
                     <div class="card kb-section-card escalation">
-                        <div style="font-weight:700;font-size:13px;margin-bottom:8px"><i class="bi bi-exclamation-octagon"></i> @T("Kb.Escalation")</div>
+                        <div class="spread" style="gap:8px;margin-bottom:8px">
+                            <div style="font-weight:700;font-size:13px"><i class="bi bi-exclamation-octagon"></i> @T("Kb.Escalation")</div>
+                            @SectionCopyButton(_guidance.EscalationConditions)
+                        </div>
                         <MarkdownView Content="@_guidance.EscalationConditions" />
                     </div>
                     @if (!string.IsNullOrWhiteSpace(_guidance.Keywords))
@@ -253,6 +272,73 @@
     protected override async Task OnInitializedAsync()
     {
         await Task.WhenAll(LoadGuidanceAsync(), LoadListAsync());
+    }
+
+    // ───── copy-to-chat (embedded agent workflow) ─────
+
+    /// <summary>
+    /// Small copy/insert button rendered on each guidance section. When the CRM
+    /// runs embedded inside Chatwoot it labels the action "Insert into reply"
+    /// (text is pushed into the agent editor + copied); otherwise it's a plain
+    /// "Copy this section" clipboard action. <paramref name="primary"/> gives the
+    /// Suggested-Answers button a slightly stronger affordance.
+    /// </summary>
+    private RenderFragment SectionCopyButton(string? content, bool primary = false) => builder =>
+    {
+        if (string.IsNullOrWhiteSpace(content)) return;
+        var label = Embedded.IsEmbedded ? T("Cw.InsertToReply") : T("Cw.CopySection");
+        var icon = Embedded.IsEmbedded ? "bi-box-arrow-in-down-left" : "bi-clipboard";
+        builder.OpenElement(0, "button");
+        builder.AddAttribute(1, "class", "kb-copy-btn" + (primary ? " primary" : ""));
+        builder.AddAttribute(2, "title", label);
+        builder.AddAttribute(3, "onclick",
+            EventCallback.Factory.Create(this, () => CopySectionAsync(content, false)));
+        builder.OpenElement(4, "i");
+        builder.AddAttribute(5, "class", "bi " + icon);
+        builder.CloseElement();
+        builder.AddContent(6, " " + label);
+        builder.CloseElement();
+    };
+
+    /// <summary>
+    /// Copies a KB section to the clipboard — and, when embedded in Chatwoot,
+    /// also pushes it straight into the agent reply editor. Shows a toast so the
+    /// agent gets immediate feedback.
+    /// </summary>
+    private async Task CopySectionAsync(string? content, bool fullArticle)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return;
+        var text = content.Trim();
+        bool ok;
+        if (Embedded.IsEmbedded)
+        {
+            ok = await CwContext.SendToReplyAsync(text);
+            if (ok) { Toasts.Success(T("Cw.SentToReply")); return; }
+        }
+        else
+        {
+            ok = await CwContext.CopyToClipboardAsync(text);
+        }
+
+        if (ok) Toasts.Success(T("Cw.Copied"));
+        else Toasts.Error(T("Cw.CopyFailed"));
+    }
+
+    /// <summary>Builds a clean plain-text rendering of the whole guidance article.</summary>
+    private string BuildFullArticle(KnowledgeBaseArticleDto a)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"# {a.Title}").AppendLine();
+        void Section(string heading, string? body)
+        {
+            if (string.IsNullOrWhiteSpace(body)) return;
+            sb.AppendLine($"## {heading}").AppendLine(body.Trim()).AppendLine();
+        }
+        Section(T("Kb.Questions"), a.QuestionsToAsk);
+        Section(T("Kb.Diagnosis"), a.DiagnosisSteps);
+        Section(T("Kb.Answers"), a.SuggestedAnswers);
+        Section(T("Kb.Escalation"), a.EscalationConditions);
+        return sb.ToString().TrimEnd();
     }
 
     // ───── guidance ─────

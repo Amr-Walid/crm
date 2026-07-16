@@ -301,3 +301,111 @@
 }
 
 @media print { .sidebar, .topbar, .caller-fab, .caller-panel, .toast-stack { display: none !important; } .main-area { margin: 0; } }
+
+/* ============================================================
+   Embedded mode — CRM running inside a Chatwoot Dashboard App
+   iframe. Chrome is stripped to a slim tab bar so the CRM feels
+   native to Chatwoot; content spans the full iframe viewport and
+   scales down gracefully to a narrow sidebar width.
+   ============================================================ */
+
+/* Kill the outer scroll/height chrome so the iframe never double-scrolls. */
+html[data-embedded="true"], html[data-embedded="true"] body { height: 100%; margin: 0; }
+html[data-embedded="true"] body { background: var(--bg, #f6f7fb); }
+
+.app-shell.embedded { min-height: 100vh; height: 100vh; display: block; }
+
+/* The embedded main area takes the whole iframe — no sidebar offset. */
+.embedded-main {
+  margin-inline-start: 0 !important;
+  width: 100%; height: 100vh;
+  display: flex; flex-direction: column; min-width: 0;
+}
+
+/* Slim top tab bar (replaces the full sidebar + topbar). */
+.embed-topbar {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  background: var(--glass, var(--surface));
+  backdrop-filter: blur(16px) saturate(1.3);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 90;
+  overflow-x: auto; scrollbar-width: thin;
+}
+.embed-tabs { display: flex; align-items: center; gap: 4px; }
+.embed-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 11px; border-radius: var(--radius-md, 10px);
+  color: var(--text-2); font-weight: 600; font-size: 12.5px;
+  white-space: nowrap; transition: all var(--transition-fast, .15s);
+}
+.embed-tab i { font-size: 15px; }
+.embed-tab:hover { background: var(--hover); color: var(--text-1); }
+.embed-tab.active {
+  background: var(--brand-grad, var(--brand-500)); color: #fff;
+  box-shadow: 0 4px 12px -5px rgba(99,102,241,.6);
+}
+.embed-icon-btn {
+  flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--border); background: var(--surface);
+  cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-2);
+}
+.embed-icon-btn:hover { color: var(--text-1); background: var(--hover); }
+
+.embed-ctx-badge {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 6px;
+  max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 5px 10px; border-radius: 999px;
+  background: color-mix(in srgb, var(--brand-500) 12%, transparent);
+  color: var(--brand-600, var(--brand-500)); font-size: 12px; font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--brand-500) 25%, transparent);
+}
+
+.embed-body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+
+/* Tighten page padding inside the iframe so no space is wasted. */
+.app-shell.embedded .page-pad { padding: 16px 18px; }
+
+/* Context banner shown at the top of adaptive pages when embedded. */
+.cw-context-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; margin-bottom: 16px;
+  border-radius: var(--radius-md, 10px);
+  background: color-mix(in srgb, var(--brand-500) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--brand-500) 22%, transparent);
+  font-size: 12.5px;
+}
+.cw-context-banner .bi { color: var(--brand-500); font-size: 16px; }
+.cw-context-banner strong { font-weight: 700; }
+
+/* Copy-to-chat button on KB sections. */
+.kb-copy-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 600;
+  padding: 4px 9px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-2); cursor: pointer;
+  transition: all var(--transition-fast, .15s);
+}
+.kb-copy-btn:hover { color: var(--brand-500); border-color: var(--brand-500); }
+.kb-copy-btn.primary {
+  color: #fff; background: var(--success, #16a34a);
+  border-color: var(--success, #16a34a);
+}
+.kb-copy-btn.primary:hover { filter: brightness(1.06); color: #fff; }
+
+/* Narrow (Chatwoot sidebar) adaptation: collapse tab labels to icons and
+   stack any 2-column page grids into a single column. */
+@media (max-width: 620px) {
+  .app-shell.embedded .embed-tab span { display: none; }
+  .app-shell.embedded .embed-tab { padding: 8px 10px; }
+  .app-shell.embedded .embed-ctx-badge { max-width: 120px; }
+  .app-shell.embedded .page-pad { padding: 12px 12px; }
+  .app-shell.embedded .grid[style*="minmax"] { grid-template-columns: 1fr !important; }
+  .app-shell.embedded [style*="position:sticky"] { position: static !important; }
+}

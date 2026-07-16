@@ -30,6 +30,33 @@ window.unigroup = {
         const el = document.getElementById(id);
         if (el) el.focus();
     },
+    // Copy plain text to the clipboard. Returns true on success. Falls back to
+    // a hidden <textarea> + execCommand for older browsers / insecure contexts
+    // (Chatwoot self-hosted may serve the iframe over plain HTTP where the
+    // async Clipboard API is unavailable).
+    copyText: async function (text) {
+        if (text == null) return false;
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+        } catch (e) { /* fall through to legacy path */ }
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'absolute';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            return ok;
+        } catch (e) {
+            return false;
+        }
+    },
     scrollToBottom: function (id) {
         const el = document.getElementById(id);
         if (el) el.scrollTop = el.scrollHeight;

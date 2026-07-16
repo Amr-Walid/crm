@@ -26,4 +26,10 @@ builder.Services.AddScoped<ThemeService>();
 builder.Services.AddScoped<LanguageService>();
 builder.Services.AddScoped<CallerIdService>();
 
+// Chatwoot Dashboard-App embedding: single shared instance for the SPA session.
+// EmbeddedStateService caches the ?embedded=true flag across navigations, and
+// ChatwootContextService bridges the live conversation context from Chatwoot.
+builder.Services.AddSingleton<EmbeddedStateService>();
+builder.Services.AddSingleton<ChatwootContextService>();
+
 await builder.Build().RunAsync();

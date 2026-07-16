@@ -4,10 +4,23 @@
 @inject CrmApiClient Api
 @inject NavigationManager Nav
 @inject ToastService Toasts
+@inject EmbeddedStateService Embedded
+@inject ChatwootContextService CwContext
 
 <PageTitle>@T("TkC.PageTitle")</PageTitle>
 
 <div class="page-pad anim-fade-up">
+    @if (Embedded.IsEmbedded && !string.IsNullOrEmpty(_conversationId))
+    {
+        <div class="cw-context-banner">
+            <i class="bi bi-link-45deg"></i>
+            <div style="flex:1;min-width:0">
+                <strong>@T("Cw.LinkedToConversation")</strong>
+                <span class="subtle"> #@_conversationId</span>
+            </div>
+        </div>
+    }
+
     <div class="spread" style="margin-bottom:20px">
         <div>
             <h1 style="font-size:22px">@T("TkC.Title")</h1>
@@ -205,6 +218,17 @@
     [SupplyParameterFromQuery(Name = "customerId")]
     public Guid? CustomerId { get; set; }
 
+    /// <summary>
+    /// Optional Chatwoot conversation to link the new ticket to, e.g.
+    /// /tickets/new?customerId=…&amp;conversationId=42. When present (embedded
+    /// mode), submitting links the ticket to the conversation so future Chatwoot
+    /// messages append to it as internal notes.
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "conversationId")]
+    public string? ConversationIdParam { get; set; }
+
+    private string? _conversationId;
+
     private string _customerSearch = string.Empty;
     private List<CustomerDetailsDto>? _customerResults;
     private CustomerDetailsDto? _customer;
@@ -234,14 +258,65 @@
     private static string? PrimaryPhone(CustomerDetailsDto c) =>
         c.Phones.FirstOrDefault(p => p.IsPrimary)?.Phone ?? c.Phones.FirstOrDefault()?.Phone;
 
+    protected override void OnInitialized()
+    {
+        base.OnInitialized(); // keep language-change subscription from the base
+        if (Embedded.IsEmbedded)
+        {
+            CwContext.OnContextChanged += OnCwContextChanged;
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        // Resolve the Chatwoot conversation to link: query param wins, else the
+        // live embedded context.
+        _conversationId = !string.IsNullOrWhiteSpace(ConversationIdParam)
+            ? ConversationIdParam
+            : (Embedded.IsEmbedded ? CwContext.ConversationId : null);
+
+        // Pre-select the customer from the query param, otherwise auto-match the
+        // active Chatwoot contact by phone/email so the agent starts ready-to-go.
         if (CustomerId is Guid cid)
         {
             try { _customer = await Api.GetCustomerAsync(cid); }
             catch { /* ignore bad query param */ }
         }
+        else if (Embedded.IsEmbedded && CwContext.HasContext)
+        {
+            await TryMatchCustomerFromContextAsync();
+        }
+
         await LoadArticleAsync();
+    }
+
+    private void OnCwContextChanged() => InvokeAsync(async () =>
+    {
+        // Keep the linked conversation current if the agent switches chats and
+        // no explicit conversation was passed via the query string.
+        if (string.IsNullOrWhiteSpace(ConversationIdParam))
+        {
+            _conversationId = CwContext.ConversationId;
+        }
+        if (_customer is null && CwContext.HasContext)
+        {
+            await TryMatchCustomerFromContextAsync();
+        }
+        StateHasChanged();
+    });
+
+    private async Task TryMatchCustomerFromContextAsync()
+    {
+        var term = !string.IsNullOrWhiteSpace(CwContext.ContactPhone)
+            ? CwContext.ContactPhone
+            : CwContext.ContactEmail;
+        if (string.IsNullOrWhiteSpace(term)) return;
+        try
+        {
+            var matches = await Api.SearchCustomersAsync(term.Trim());
+            if (matches.Count > 0) _customer = matches[0];
+        }
+        catch { /* best-effort auto-match */ }
     }
 
     // ───── customer search (350 ms debounce) ─────
@@ -322,9 +397,26 @@
         _error = null;
         try
         {
-            var ticketId = await Api.CreateTicketAsync(new CreateTicketRequest(
-                _customer.Id, _deviceId, _title.Trim(), _description.Trim(), _category, _priority));
-            Toasts.Success(T("TkC.Created", ticketId));
+            string ticketId;
+            if (Embedded.IsEmbedded && !string.IsNullOrWhiteSpace(_conversationId))
+            {
+                // Embedded in Chatwoot with an active conversation: create the
+                // ticket AND link it to the conversation so incoming Chatwoot
+                // messages are appended to it as internal notes.
+                var linkResult = await Api.LinkChatwootTicketAsync(new ChatwootLinkTicketRequest(
+                    _customer.Id, _conversationId!, _title.Trim(), _description.Trim(),
+                    _category, _priority));
+                ticketId = linkResult.TicketId;
+                Toasts.Success(linkResult.AlreadyLinked
+                    ? T("Cw.LinkedToConversation") + $" — {ticketId}"
+                    : T("TkC.Created", ticketId));
+            }
+            else
+            {
+                ticketId = await Api.CreateTicketAsync(new CreateTicketRequest(
+                    _customer.Id, _deviceId, _title.Trim(), _description.Trim(), _category, _priority));
+                Toasts.Success(T("TkC.Created", ticketId));
+            }
             Nav.NavigateTo($"/tickets/{ticketId}");
         }
         catch (ApiException ex)
@@ -334,5 +426,15 @@
         finally { _submitting = false; }
     }
 
-    private void GoBack() => Nav.NavigateTo("/tickets");
+    private void GoBack() =>
+        Nav.NavigateTo(Embedded.IsEmbedded ? "/my-tickets" : "/tickets");
+
+    public override void Dispose()
+    {
+        if (Embedded.IsEmbedded)
+        {
+            CwContext.OnContextChanged -= OnCwContextChanged;
+        }
+        base.Dispose();
+    }
 }

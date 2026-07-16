@@ -330,7 +330,7 @@
     {
         try
         {
-            _ = JS.InvokeVoidAsync("chatwootBridge.unregister");
+            _ = JS.InvokeVoidAsync("chatwootBridge.unregister", _selfRef);
         }
         catch
         {

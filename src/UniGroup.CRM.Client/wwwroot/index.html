@@ -31,34 +31,78 @@
         } catch (e) { }
     </script>
     <script>
+        // Detect embedded (Chatwoot iframe) mode before first paint and tag the
+        // <html> element so CSS can hide the CRM chrome with zero flash. Both an
+        // explicit ?embedded=true flag and actually being framed count as embedded.
+        try {
+            var qs = window.location.search || '';
+            var flagged = /[?&]embedded(=(1|true|yes))?(&|$)/i.test(qs);
+            var framed = window.self !== window.top;
+            if (flagged || framed) {
+                document.documentElement.setAttribute('data-embedded', 'true');
+            }
+        } catch (e) { }
+    </script>
+    <script>
         // ============================================================
         // Chatwoot Dashboard-App bridge (window "message" listener).
         // Registered before Blazor boots so no context event is missed.
         // Chatwoot posts a JSON string payload to the iframe whenever the
         // agent opens/switches a conversation; we normalize it, keep the
-        // latest context, and forward changes to the Blazor widget page
-        // once it registers a .NET object reference.
+        // latest context, and forward changes to any registered Blazor
+        // subscribers (the global ChatwootContextService and/or the widget
+        // page) once they register a .NET object reference.
         // ============================================================
         (function () {
             var bridge = window.chatwootBridge = {
                 lastContext: null,
-                _dotnetRef: null,
+                _refs: [],
 
+                // Multiple subscribers are supported (global context service +
+                // legacy widget page). Each registers its own .NET reference.
                 register: function (dotnetRef) {
-                    this._dotnetRef = dotnetRef;
-                    // Replay the buffered context so the page gets data even
+                    if (this._refs.indexOf(dotnetRef) === -1) this._refs.push(dotnetRef);
+                    // Replay the buffered context so subscribers get data even
                     // if Chatwoot posted it before Blazor finished booting.
-                    if (this.lastContext) this._notify(this.lastContext);
+                    if (this.lastContext) this._notifyOne(dotnetRef, this.lastContext);
                     // Ask Chatwoot to (re)send the current conversation info.
                     this.requestInfo();
                 },
-                unregister: function () { this._dotnetRef = null; },
+                unregister: function (dotnetRef) {
+                    if (dotnetRef == null) { this._refs = []; return; }
+                    var i = this._refs.indexOf(dotnetRef);
+                    if (i !== -1) this._refs.splice(i, 1);
+                },
                 requestInfo: function () {
                     try { window.parent.postMessage('chatwoot-dashboard-app:fetch-info', '*'); } catch (e) { }
                 },
+                // Push text straight into the Chatwoot agent reply editor. We post
+                // the documented Dashboard-App reply payload (a few historical
+                // event names are sent for cross-version compatibility). Always
+                // returns whether we appear to be framed inside Chatwoot; the
+                // caller still copies to the clipboard as a guaranteed fallback.
+                pasteToReply: function (text) {
+                    if (text == null) return false;
+                    var framed = false;
+                    try { framed = window.parent && window.parent !== window; } catch (e) { framed = false; }
+                    if (!framed) return false;
+                    var payloads = [
+                        { event: 'appContext', content: text },
+                        JSON.stringify({ event: 'set-conversation-content', data: { content: text } }),
+                        JSON.stringify({ event: 'setReplyContent', data: { content: text } })
+                    ];
+                    try {
+                        window.parent.postMessage(JSON.stringify({ event: 'set-conversation-content', data: { content: text } }), '*');
+                        window.parent.postMessage(JSON.stringify({ event: 'setReplyContent', data: { content: text } }), '*');
+                    } catch (e) { }
+                    return true;
+                },
+                _notifyOne: function (ref, ctx) {
+                    try { ref.invokeMethodAsync('OnChatwootContext', ctx); } catch (e) { }
+                },
                 _notify: function (ctx) {
-                    if (this._dotnetRef) {
-                        try { this._dotnetRef.invokeMethodAsync('OnChatwootContext', ctx); } catch (e) { }
+                    for (var i = 0; i < this._refs.length; i++) {
+                        this._notifyOne(this._refs[i], ctx);
                     }
                 }
             };
@@ -69,6 +113,9 @@
                 var payload;
                 try { payload = JSON.parse(raw); } catch (e) { return; }
                 if (!payload || payload.event !== 'appContext' || !payload.data) return;
+
+                // Receiving appContext confirms we are embedded in Chatwoot.
+                document.documentElement.setAttribute('data-embedded', 'true');
 
                 var data = payload.data;
                 var conv = data.conversation || {};

@@ -42,6 +42,21 @@ public static class TranslationResources
         ["Nav.ToggleTheme"] = E("Toggle theme", "تبديل المظهر"),
         ["Nav.ToggleLanguage"] = E("Switch language", "تغيير اللغة"),
 
+        // ───────────────────────── Chatwoot embedded mode ─────────────────────────
+        ["Cw.ActiveConversation"] = E("Active Chatwoot conversation", "محادثة Chatwoot النشطة"),
+        ["Cw.LinkedToConversation"] = E("Linked to conversation", "مرتبطة بالمحادثة"),
+        ["Cw.FromChatwoot"] = E("From Chatwoot", "من Chatwoot"),
+        ["Cw.AutoMatched"] = E("Auto-matched from the active conversation", "تمت مطابقته تلقائيًا من المحادثة النشطة"),
+        ["Cw.NoMatchPrefill"] = E("No customer matched — the form is pre-filled from Chatwoot.", "لا يوجد عميل مطابق — تم ملء النموذج مسبقًا من Chatwoot."),
+        ["Cw.WaitingContext"] = E("Waiting for a Chatwoot conversation…", "في انتظار محادثة Chatwoot…"),
+        ["Cw.CopyToChat"] = E("Copy to reply", "نسخ للرد"),
+        ["Cw.Copied"] = E("Copied — paste it into the chat reply.", "تم النسخ — الصقه في الرد."),
+        ["Cw.CopySection"] = E("Copy this section", "نسخ هذا القسم"),
+        ["Cw.SentToReply"] = E("Sent to the Chatwoot reply box.", "تم الإرسال إلى صندوق الرد في Chatwoot."),
+        ["Cw.CopyFailed"] = E("Couldn't copy — please select and copy manually.", "تعذّر النسخ — يرجى التحديد والنسخ يدويًا."),
+        ["Cw.InsertToReply"] = E("Insert into reply", "إدراج في الرد"),
+        ["Cw.CopyAll"] = E("Copy full article", "نسخ المقال كاملًا"),
+
         // ───────────────────────── App shell ─────────────────────────
         ["App.NotFoundTitle"] = E("Page not found", "الصفحة غير موجودة"),
         ["App.NotFoundText"] = E("The page you are looking for does not exist.", "الصفحة التي تبحث عنها غير موجودة."),

@@ -4,10 +4,29 @@
 @inject CrmApiClient Api
 @inject NavigationManager Nav
 @inject ToastService Toasts
+@inject EmbeddedStateService Embedded
+@inject ChatwootContextService CwContext
 
 <PageTitle>@T("Cust.PageTitle")</PageTitle>
 
 <div class="page-pad anim-fade-up">
+    @if (Embedded.IsEmbedded && CwContext.HasContext)
+    {
+        <div class="cw-context-banner">
+            <i class="bi bi-chat-left-dots"></i>
+            <div style="flex:1;min-width:0">
+                <strong>@(string.IsNullOrEmpty(CwContext.ContactName) ? T("Cw.FromChatwoot") : CwContext.ContactName)</strong>
+                <span class="subtle">
+                    @if (!string.IsNullOrEmpty(CwContext.ContactPhone)) { <span class="mono">@CwContext.ContactPhone</span> }
+                    @if (!string.IsNullOrEmpty(CwContext.ContactEmail)) { <span> · @CwContext.ContactEmail</span> }
+                </span>
+            </div>
+            <button class="btn btn-ghost btn-sm" @onclick="MatchFromContextAsync" disabled="@_loading" title="@T("Cw.AutoMatched")">
+                <i class="bi bi-arrow-repeat"></i>
+            </button>
+        </div>
+    }
+
     <div class="spread" style="margin-bottom:20px">
         <div>
             <h1 style="font-size:22px">@T("Cust.Title")</h1>
@@ -57,29 +76,38 @@
         <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
             @foreach (var c in _results)
             {
-                <div class="card hoverable" style="padding:18px;cursor:pointer" @onclick="() => GoTo(c.Id)">
+                var cust = c;
+                <div class="card hoverable" style="padding:18px;cursor:pointer" @onclick="() => GoTo(cust.Id)">
                     <div class="row" style="margin-bottom:12px">
-                        <div class="avatar">@UiHelpers.Initials(c.Name)</div>
+                        <div class="avatar">@UiHelpers.Initials(cust.Name)</div>
                         <div style="min-width:0;flex:1">
-                            <div style="font-weight:700;font-size:14.5px">@c.Name</div>
-                            <div class="subtle">@(c.Email ?? T("Common.NoEmail"))</div>
+                            <div style="font-weight:700;font-size:14.5px">@cust.Name</div>
+                            <div class="subtle">@(cust.Email ?? T("Common.NoEmail"))</div>
                         </div>
                     </div>
                     <div class="row wrap" style="gap:6px">
-                        @if (c.Phones.FirstOrDefault(p => p.IsPrimary) is { } primary)
+                        @if (cust.Phones.FirstOrDefault(p => p.IsPrimary) is { } primary)
                         {
                             <span class="badge badge-indigo mono"><i class="bi bi-telephone"></i> @primary.Phone</span>
                         }
-                        <span class="badge badge-slate">@T("Common.DevicesCount", c.Devices.Count)</span>
-                        @if (c.Devices.Any(d => d.WarrantyStatus == "Active"))
+                        <span class="badge badge-slate">@T("Common.DevicesCount", cust.Devices.Count)</span>
+                        @if (cust.Devices.Any(d => d.WarrantyStatus == "Active"))
                         {
                             <span class="badge badge-green"><span class="dot"></span> @T("Cust.Warranty")</span>
                         }
-                        @if (!string.IsNullOrWhiteSpace(c.City))
+                        @if (!string.IsNullOrWhiteSpace(cust.City))
                         {
-                            <span class="badge badge-slate"><i class="bi bi-geo-alt"></i> @c.City</span>
+                            <span class="badge badge-slate"><i class="bi bi-geo-alt"></i> @cust.City</span>
                         }
                     </div>
+                    @if (Embedded.IsEmbedded && !string.IsNullOrEmpty(CwContext.ConversationId))
+                    {
+                        <div class="row" style="gap:8px;margin-top:12px" @onclick:stopPropagation="true">
+                            <button class="btn btn-primary btn-sm" style="flex:1" @onclick="() => CreateTicketFor(cust.Id)">
+                                <i class="bi bi-ticket-perforated"></i> @T("TkC.Title")
+                            </button>
+                        </div>
+                    }
                 </div>
             }
         </div>
@@ -146,6 +174,92 @@
     private bool _creating;
     private CreateModel _create = new();
 
+    // Tracks the last Chatwoot contact we auto-matched so a re-render (e.g. theme
+    // toggle) doesn't re-trigger the search for the same conversation.
+    private string? _lastMatchedKey;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized(); // keep language-change subscription from the base
+        if (Embedded.IsEmbedded)
+        {
+            CwContext.OnContextChanged += OnCwContextChanged;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // If Chatwoot context already arrived before this page mounted, use it.
+        if (Embedded.IsEmbedded && CwContext.HasContext)
+        {
+            await MatchFromContextAsync();
+        }
+    }
+
+    private void OnCwContextChanged() => InvokeAsync(async () =>
+    {
+        await MatchFromContextAsync();
+        StateHasChanged();
+    });
+
+    /// <summary>
+    /// Auto-searches for the customer behind the active Chatwoot conversation by
+    /// phone (preferred) or email. If none is found, the registration form is
+    /// opened pre-filled with the Chatwoot contact identity so the agent can
+    /// register the customer in one step.
+    /// </summary>
+    private async Task MatchFromContextAsync()
+    {
+        var phone = CwContext.ContactPhone;
+        var email = CwContext.ContactEmail;
+        var searchTerm = !string.IsNullOrWhiteSpace(phone) ? phone : email;
+        if (string.IsNullOrWhiteSpace(searchTerm)) return;
+
+        var key = $"{CwContext.ConversationId}|{phone}|{email}";
+        if (key == _lastMatchedKey && _results is not null) return;
+        _lastMatchedKey = key;
+
+        _term = searchTerm.Trim();
+        _loading = true;
+        _lastTerm = _term;
+        StateHasChanged();
+        try
+        {
+            _results = await Api.SearchCustomersAsync(_term);
+            if (_results.Count == 0)
+            {
+                // No CRM customer matches this conversation — pre-fill registration.
+                PrefillCreateFromContext();
+                _showCreate = true;
+                Toasts.Info(T("Cw.NoMatchPrefill"));
+            }
+        }
+        catch (ApiException ex) { Toasts.Error(ex.Message); _results = []; }
+        catch (HttpRequestException) { Toasts.Error(T("Common.CannotReachApi")); _results = []; }
+        finally { _loading = false; StateHasChanged(); }
+    }
+
+    private void PrefillCreateFromContext()
+    {
+        _create = new CreateModel
+        {
+            Name = CwContext.ContactName ?? string.Empty,
+            Phone = CwContext.ContactPhone ?? string.Empty,
+            Email = CwContext.ContactEmail
+        };
+    }
+
+    /// <summary>Navigate to ticket creation, carrying the customer + Chatwoot conversation.</summary>
+    private void CreateTicketFor(Guid customerId)
+    {
+        var url = $"/tickets/new?customerId={customerId}";
+        if (!string.IsNullOrEmpty(CwContext.ConversationId))
+        {
+            url += $"&conversationId={Uri.EscapeDataString(CwContext.ConversationId)}";
+        }
+        Nav.NavigateTo(url);
+    }
+
     private void GoTo(Guid id) => Nav.NavigateTo($"/customers/{id}");
 
     private void OnInput(ChangeEventArgs e) => _term = e.Value?.ToString() ?? string.Empty;
@@ -203,7 +317,17 @@
             Toasts.Success(T("Cust.Created"));
             _showCreate = false;
             _create = new CreateModel();
-            Nav.NavigateTo($"/customers/{id}");
+
+            // Inside Chatwoot, keep the agent in the conversation flow by going
+            // straight to ticket creation with the new customer + conversation.
+            if (Embedded.IsEmbedded && !string.IsNullOrEmpty(CwContext.ConversationId))
+            {
+                CreateTicketFor(id);
+            }
+            else
+            {
+                Nav.NavigateTo($"/customers/{id}");
+            }
         }
         catch (ApiException ex)
         {
@@ -213,5 +337,14 @@
         {
             _creating = false;
         }
+    }
+
+    public override void Dispose()
+    {
+        if (Embedded.IsEmbedded)
+        {
+            CwContext.OnContextChanged -= OnCwContextChanged;
+        }
+        base.Dispose();
     }
 }
