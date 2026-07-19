@@ -97,7 +97,7 @@
 
             <!-- ═══════ HOURLY CALL VOLUME ═══════ -->
             <div class="card" style="padding:20px">
-                <div class="section-title" style="margin-bottom:12px"><i class="bi bi-telephone"></i> @T("Dash.CallVolume") — @_date.ToString("dd MMM")</div>
+                <div class="section-title" style="margin-bottom:12px"><i class="bi bi-telephone"></i> @T("Dash.CallVolume", _date.ToString("dd MMM"))</div>
                 @if (_calls.Count == 0 || _calls.All(c => c.CallCount == 0))
                 {
                     <p class="subtle" style="margin:0">@T("Dash.NoCalls")</p>
