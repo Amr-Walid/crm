@@ -9,6 +9,7 @@ using UniGroup.CRM.Application.Features.Calls.Queries.Common;
 using UniGroup.CRM.Application.Features.Csat.Commands.SubmitCsatSurvey;
 using UniGroup.CRM.Application.Features.Csat.Queries.GetCsatReport;
 using UniGroup.CRM.Application.Features.Customers.Queries.Common;
+using UniGroup.CRM.Application.Features.Customers.Queries.SearchCustomers;
 using UniGroup.CRM.Application.Features.Dashboards.Queries.Common;
 using UniGroup.CRM.Application.Features.Departments.Queries.Common;
 using UniGroup.CRM.Application.Features.KnowledgeBase.Common;
@@ -80,9 +81,9 @@ public class CrmApiClient
     public Task<CustomerDetailsDto> GetCustomerAsync(Guid id) =>
         GetAsync<CustomerDetailsDto>($"api/customers/{id}");
 
-    /// <summary>GET /api/customers/search?searchTerm=.</summary>
-    public Task<List<CustomerDetailsDto>> SearchCustomersAsync(string searchTerm) =>
-        GetAsync<List<CustomerDetailsDto>>($"api/customers/search?searchTerm={Uri.EscapeDataString(searchTerm)}");
+    /// <summary>GET /api/customers/search?searchTerm=&page=&pageSize=.</summary>
+    public Task<SearchCustomersResult> SearchCustomersAsync(string? searchTerm, int page = 1, int pageSize = 9) =>
+        GetAsync<SearchCustomersResult>($"api/customers/search?searchTerm={Uri.EscapeDataString(searchTerm ?? string.Empty)}&page={page}&pageSize={pageSize}");
 
     /// <summary>GET /api/search?q= (unified system search).</summary>
     public Task<List<CustomerDetailsDto>> SystemSearchAsync(string q) =>

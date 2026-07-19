@@ -11,14 +11,24 @@ using System.Threading.Tasks;
 namespace UniGroup.CRM.Application.Features.Customers.Queries.SearchCustomers;
 
 /// <summary>
+/// Result structure for paginated customer search.
+/// </summary>
+public record SearchCustomersResult(
+    List<CustomerDetailsDto> Customers,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    int TotalPages);
+
+/// <summary>
 /// Query to search customers by Name, Phone, SerialNumber, or IMEI.
 /// </summary>
-public record SearchCustomersQuery(string? SearchTerm) : IRequest<List<CustomerDetailsDto>>;
+public record SearchCustomersQuery(string? SearchTerm, int Page = 1, int PageSize = 9) : IRequest<SearchCustomersResult>;
 
 /// <summary>
 /// Handler for executing the search customers query.
 /// </summary>
-public class SearchCustomersQueryHandler : IRequestHandler<SearchCustomersQuery, List<CustomerDetailsDto>>
+public class SearchCustomersQueryHandler : IRequestHandler<SearchCustomersQuery, SearchCustomersResult>
 {
     private readonly IApplicationDbContext _context;
 
@@ -33,7 +43,7 @@ public class SearchCustomersQueryHandler : IRequestHandler<SearchCustomersQuery,
     /// <summary>
     /// Handles searching customers.
     /// </summary>
-    public async Task<List<CustomerDetailsDto>> Handle(SearchCustomersQuery request, CancellationToken cancellationToken)
+    public async Task<SearchCustomersResult> Handle(SearchCustomersQuery request, CancellationToken cancellationToken)
     {
         var term = request.SearchTerm?.Trim().ToLower() ?? string.Empty;
 
@@ -56,10 +66,17 @@ public class SearchCustomersQueryHandler : IRequestHandler<SearchCustomersQuery,
             );
         }
 
-        var customers = await query.ToListAsync(cancellationToken);
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var customers = await query
+            .OrderByDescending(c => c.CreatedAt)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToListAsync(cancellationToken);
+
         var currentDate = DateTime.UtcNow;
 
-        return customers.Select(customer =>
+        var mappedCustomers = customers.Select(customer =>
         {
             var phones = customer.CustomerPhones
                 .Select(p => new CustomerPhoneDto(p.Id, p.Phone, p.IsPrimary))
@@ -93,5 +110,14 @@ public class SearchCustomersQueryHandler : IRequestHandler<SearchCustomersQuery,
                 customer.CustomerGroup
             );
         }).ToList();
+
+        var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
+
+        return new SearchCustomersResult(
+            mappedCustomers,
+            totalCount,
+            request.Page,
+            request.PageSize,
+            totalPages);
     }
 }

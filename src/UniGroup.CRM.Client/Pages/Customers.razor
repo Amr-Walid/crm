@@ -115,6 +115,14 @@
                 </div>
             }
         </div>
+        @if (_totalPages > 1)
+        {
+            <div class="row" style="justify-content:center;margin-top:20px;gap:12px">
+                <button class="btn btn-ghost btn-sm" disabled="@(_page <= 1)" @onclick="PrevPage"><i class="bi bi-arrow-left flip-rtl"></i></button>
+                <span class="subtle">@_page / @_totalPages</span>
+                <button class="btn btn-ghost btn-sm" disabled="@(_page >= _totalPages)" @onclick="NextPage"><i class="bi bi-arrow-right flip-rtl"></i></button>
+            </div>
+        }
     }
 </div>
 
@@ -250,6 +258,8 @@
     private string _lastTerm = string.Empty;
     private bool _loading;
     private List<CustomerDetailsDto>? _results;
+    private int _page = 1;
+    private int _totalPages = 1;
     private bool _showCreate;
     private bool _creating;
     private CreateModel _create = new();
@@ -319,7 +329,10 @@
         StateHasChanged();
         try
         {
-            _results = await Api.SearchCustomersAsync(_term);
+            var result = await Api.SearchCustomersAsync(_term, 1, 9);
+            _results = result.Customers;
+            _totalPages = Math.Max(result.TotalPages, 1);
+            _page = 1;
             if (_results.Count == 0)
             {
                 // No CRM customer matches this conversation — pre-fill registration.
@@ -363,6 +376,7 @@
     private async Task OnSearchInput(ChangeEventArgs e)
     {
         _term = e.Value?.ToString() ?? string.Empty;
+        _page = 1;
 
         // Cancel any pending debounced search and start a fresh window.
         _debounceCts?.Cancel();
@@ -390,6 +404,7 @@
         {
             // Enter fires an immediate search, cancelling any pending debounce.
             _debounceCts?.Cancel();
+            _page = 1;
             await SearchAsync();
         }
     }
@@ -410,7 +425,9 @@
         _lastTerm = term;
         try
         {
-            _results = await Api.SearchCustomersAsync(term);
+            var result = await Api.SearchCustomersAsync(term, _page, 9);
+            _results = result.Customers;
+            _totalPages = Math.Max(result.TotalPages, 1);
         }
         catch (ApiException ex)
         {
@@ -493,7 +510,13 @@
                 // Refresh the current search results so imported customers appear.
                 if (!string.IsNullOrWhiteSpace(_lastTerm))
                 {
-                    try { _results = await Api.SearchCustomersAsync(_lastTerm); } catch { /* non-fatal */ }
+                    try
+                    {
+                        var result = await Api.SearchCustomersAsync(_lastTerm, _page, 9);
+                        _results = result.Customers;
+                        _totalPages = Math.Max(result.TotalPages, 1);
+                    }
+                    catch { /* non-fatal */ }
                 }
             }
             else
@@ -542,6 +565,9 @@
             _creating = false;
         }
     }
+
+    private async Task PrevPage() { if (_page > 1) { _page--; await SearchAsync(); } }
+    private async Task NextPage() { if (_page < _totalPages) { _page++; await SearchAsync(); } }
 
     public override void Dispose()
     {

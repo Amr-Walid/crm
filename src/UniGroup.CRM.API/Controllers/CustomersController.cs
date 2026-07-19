@@ -116,13 +116,17 @@ public class CustomersController : ControllerBase
     /// Searches customers by Name, Phone, SerialNumber, or IMEI.
     /// </summary>
     [HttpGet("search")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<CustomerDetailsDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SearchCustomersResult))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Search([FromQuery] string? searchTerm, CancellationToken cancellationToken)
+    public async Task<IActionResult> Search(
+        [FromQuery] string? searchTerm,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 9,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var query = new SearchCustomersQuery(searchTerm);
+            var query = new SearchCustomersQuery(searchTerm, page, pageSize);
             var response = await _sender.Send(query, cancellationToken);
             return Ok(response);
         }

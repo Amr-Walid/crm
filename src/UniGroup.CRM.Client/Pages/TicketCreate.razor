@@ -327,7 +327,8 @@
         if (string.IsNullOrWhiteSpace(term)) return;
         try
         {
-            var matches = await Api.SearchCustomersAsync(term.Trim());
+            var result = await Api.SearchCustomersAsync(term.Trim(), 1, 9);
+            var matches = result.Customers;
             if (matches.Count > 0) _customer = matches[0];
         }
         catch { /* best-effort auto-match */ }
@@ -355,7 +356,8 @@
         StateHasChanged();
         try
         {
-            _customerResults = await Api.SearchCustomersAsync(term);
+            var result = await Api.SearchCustomersAsync(term, 1, 9);
+            _customerResults = result.Customers;
             _searchedOnce = true;
         }
         catch (ApiException ex) { Toasts.Error(ex.Message); }
