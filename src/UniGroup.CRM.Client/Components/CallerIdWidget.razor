@@ -70,7 +70,7 @@
                 <div class="card" style="padding:12px;margin-bottom:12px">
                     <div class="subtle" style="margin-bottom:8px">@T("Caller.UnknownCreate")</div>
                     <div class="field" style="margin-bottom:8px">
-                        <InputText class="input" @bind-Value="_newCustomerName" @bind-Value:event="oninput" placeholder="@T("Caller.CustomerName")" />
+                        <input class="input" @bind="_newCustomerName" @bind:event="oninput" placeholder="@T("Caller.CustomerName")" />
                     </div>
                     <button class="btn btn-secondary btn-sm" style="width:100%" @onclick="QuickCreateAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_newCustomerName))">
                         @if (_busy)
@@ -112,7 +112,7 @@
             </div>
             <div class="field">
                 <label>@T("Caller.CallSummary")</label>
-                <InputTextArea class="textarea" style="min-height:64px" @bind-Value="_summary" placeholder="@T("Caller.SummaryPlaceholder")" />
+                <textarea class="textarea" style="min-height:64px" @bind="_summary" @bind:event="oninput" placeholder="@T("Caller.SummaryPlaceholder")"></textarea>
             </div>
             <button class="btn btn-danger" style="width:100%" @onclick="EndCallAsync" disabled="@_busy">
                 <i class="bi bi-stop-fill"></i> @T("Caller.EndAndLog")
@@ -125,7 +125,7 @@
             <p class="subtle" style="margin:0 0 12px">@T("Caller.SimDesc")</p>
             <div class="field" style="margin-bottom:10px">
                 <label>@T("Caller.PhoneNumber")</label>
-                <InputText class="input mono" @bind-Value="_dialNumber" @bind-Value:event="oninput" placeholder="@T("Caller.PhonePlaceholder")" @onkeydown="OnDialKeyDown" />
+                <input class="input mono" @bind="_dialNumber" @bind:event="oninput" placeholder="@T("Caller.PhonePlaceholder")" @onkeydown="OnDialKeyDown" />
             </div>
             <button class="btn btn-primary" style="width:100%" @onclick="SimulateAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_dialNumber))">
                 @if (_busy)
