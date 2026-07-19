@@ -265,7 +265,7 @@
   transition: width 0.6s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 [dir="rtl"] .bar-row .bar-fill { margin-left: auto; }
-.spark-cols { display: flex; align-items: flex-end; gap: 3px; height: 120px; }
+.spark-cols { display: flex; align-items: flex-end; gap: 3px; height: 120px; direction: ltr; }
 .spark-col { flex: 1; background: var(--brand-grad); border-radius: 4px 4px 0 0; min-height: 2px; opacity: 0.85; transition: height 0.5s ease; position: relative; }
 .spark-col:hover { opacity: 1; }
 .spark-col .tip {
@@ -275,7 +275,7 @@
   opacity: 0; pointer-events: none; transition: opacity var(--transition-fast);
 }
 .spark-col:hover .tip { opacity: 1; }
-.spark-x { display: flex; gap: 3px; margin-top: 6px; }
+.spark-x { display: flex; gap: 3px; margin-top: 6px; direction: ltr; }
 .spark-x span { flex: 1; text-align: center; font-size: 9.5px; color: var(--text-3); }
 
 /* Rating distribution */
