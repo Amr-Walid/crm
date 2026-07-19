@@ -25,6 +25,15 @@ public record CreateCustomerRequest(
     string Phone,
     string? CustomerGroup = null);
 
+/// <summary>Update-customer body — mirrors <c>CustomersController.UpdateCustomerRequest</c>.</summary>
+public record UpdateCustomerRequest(
+    string Name,
+    string? Email,
+    string? Province,
+    string? City,
+    string? AddressDetails,
+    string? CustomerGroup = null);
+
 /// <summary>Log-call body — mirrors <c>CallsController.LogCallRequest</c> (AgentId comes from JWT).</summary>
 public record LogCallRequest(
     Guid? CustomerId,

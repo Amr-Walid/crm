@@ -159,6 +159,12 @@ public static class TranslationResources
         ["CustD.CustomerSince"] = E("Customer since {0}", "عميل منذ {0}"),
         ["CustD.ActiveWarranty"] = E("Active Warranty", "ضمان سارٍ"),
         ["CustD.NewTicket"] = E("New Ticket", "تذكرة جديدة"),
+        // Edit / complete customer data ("استكمال البيانات")
+        ["CustD.EditBtn"] = E("Update Details", "استكمال البيانات"),
+        ["CustD.EditTitle"] = E("Update Customer Details", "استكمال بيانات العميل"),
+        ["CustD.SaveBtn"] = E("Save changes", "حفظ التعديلات"),
+        ["CustD.Saving"] = E("Saving…", "جارٍ الحفظ…"),
+        ["CustD.Saved"] = E("Customer details updated", "تم تحديث بيانات العميل"),
         ["CustD.PhoneNumbers"] = E("Phone Numbers", "أرقام الهاتف"),
         ["CustD.Primary"] = E("Primary", "أساسي"),
         ["CustD.NoPhones"] = E("No phone numbers on file.", "لا توجد أرقام هاتف مسجلة."),

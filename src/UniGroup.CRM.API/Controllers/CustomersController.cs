@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using UniGroup.CRM.Application.Common.Interfaces;
 using UniGroup.CRM.Application.Features.Customers.Commands.CreateCustomer;
 using UniGroup.CRM.Application.Features.Customers.Commands.ImportCustomers;
+using UniGroup.CRM.Application.Features.Customers.Commands.UpdateCustomer;
 using UniGroup.CRM.Application.Features.Customers.Queries.Common;
 using UniGroup.CRM.Application.Features.Customers.Queries.GetCustomerDetails;
 using UniGroup.CRM.Application.Features.Customers.Queries.SearchCustomers;
@@ -55,6 +56,35 @@ public class CustomersController : ControllerBase
 
             var customerId = await _sender.Send(command, cancellationToken);
             return CreatedAtAction(nameof(GetById), new { id = customerId }, customerId);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Updates an existing customer's profile details ("استكمال البيانات").
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCustomerRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var command = new UpdateCustomerCommand(
+                id,
+                request.Name,
+                request.Email,
+                request.Province,
+                request.City,
+                request.AddressDetails,
+                request.CustomerGroup
+            );
+
+            await _sender.Send(command, cancellationToken);
+            return NoContent();
         }
         catch (Exception ex)
         {
@@ -172,4 +202,16 @@ public record CreateCustomerRequest(
     string? AddressDetails,
     string Phone,
     string? CustomerGroup = null
+);
+
+/// <summary>
+/// Request DTO for updating an existing customer's profile details.
+/// </summary>
+public record UpdateCustomerRequest(
+    string Name,
+    string? Email,
+    string? Province,
+    string? City,
+    string? AddressDetails,
+    string? CustomerGroup
 );
