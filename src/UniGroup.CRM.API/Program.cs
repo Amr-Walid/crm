@@ -272,9 +272,31 @@ if (args.Contains("--seed"))
             );
         }
 
+        // Create Customer Service Agent User
+        var agentEmail = "agent@unigroup.com";
+        var agentUser = await userManager.FindByEmailAsync(agentEmail);
+        if (agentUser == null)
+        {
+            agentUser = new UniGroup.CRM.Domain.Entities.ApplicationUser
+            {
+                Id = Guid.NewGuid(),
+                UserName = agentEmail,
+                Email = agentEmail,
+                FirstName = "Amr",
+                LastName = "Agent",
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            var createResult = await userManager.CreateAsync(agentUser, "Password123!");
+            if (createResult.Succeeded)
+            {
+                await userManager.AddToRoleAsync(agentUser, "Agent");
+            }
+        }
+
         await db.SaveChangesAsync();
         Console.WriteLine("Seeding completed successfully.");
-        return;
+        Environment.Exit(0);
     }
 }
 
