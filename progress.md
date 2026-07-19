@@ -90,10 +90,17 @@
 - [x] Public route `/survey/{Token}` (EmptyLayout, anonymous) — animated 1–5 star selector w/ hover + emoji labels + feedback textarea
 - [x] Success / error / already-submitted / expired states (server message surfaced)
 
+### ✅ Task 8 — 4 CRM Enhancements (DONE, committed)
+- [x] Task 8.1: Added Customer Group field (`Customer.CustomerGroup`) to Create Customer modal, updated API/DTOs, and displayed group badge in Customer 360° profile.
+- [x] Task 8.2: Built Excel bulk import using `MiniExcel 1.45.0` (template download endpoint, upload parser endpoint, phone uniqueness check, and 3-step UI upload wizard).
+- [x] Task 8.3: Split ticket category into Cascading dropdowns (Main Category enum: Maintenance, Complaint, General Support + Sub-category) on Create Ticket form and displays.
+- [x] Task 8.4: Added call classification (cascading optional categories) in Caller ID floating popup and display in customer calls history.
+
 ### ✅ Final Verification
 - [x] Client project build passes — 0 warnings, 0 errors (verified after every task)
 - [x] Full solution build passes
 - [x] Commits per task on `genspark_ai_developer`, pushed + PR created
+- [x] Applied migrations: `AddCustomerGroupToCustomer`, `AddMainCategoryToTickets`, `AddCallClassification`
 
 ## Session Log
 - **2026-07-14 (a)**: Backend audit complete (14 controllers, DTOs, enums, JWT claims). API map documented.
@@ -102,3 +109,4 @@
 - **2026-07-14 (d)**: Task 4 complete — Tickets list/MyTickets/TicketCreate (with embedded KB guidance panel)/TicketDetails (transitions, assignment, notes, attachments, history, big SLA timer). Build green, committed.
 - **2026-07-14 (e)**: Task 5 complete — real dashboard (metric cards, status bars, call-volume spark chart, agent grid, device failures), Reports CSV export, CSAT report. Build green, committed.
 - **2026-07-14 (f)**: Task 6 complete — Knowledge Base guidance viewer + admin CRUD. Task 7 complete — public survey page. Build green, committed. Final: solution build + push + PR.
+- **2026-07-19**: Sandbox AI completed 4 enhancements. Merged with master local configs & seeding exit fixes. EF migrations applied to database and servers started. Added Task 8 to tracker.
