@@ -296,7 +296,7 @@ if (args.Contains("--seed"))
 
         await db.SaveChangesAsync();
         Console.WriteLine("Seeding completed successfully.");
-        return;
+        Environment.Exit(0);
     }
 }
 
