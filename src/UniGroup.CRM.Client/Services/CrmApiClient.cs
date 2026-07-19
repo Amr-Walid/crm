@@ -72,6 +72,10 @@ public class CrmApiClient
     public Task<Guid> CreateCustomerAsync(CreateCustomerRequest request) =>
         PostAsync<Guid>("api/customers", request);
 
+    /// <summary>PUT /api/customers/{id} → update customer profile details.</summary>
+    public Task UpdateCustomerAsync(Guid id, UpdateCustomerRequest request) =>
+        PutAsync($"api/customers/{id}", request);
+
     /// <summary>GET /api/customers/{id}.</summary>
     public Task<CustomerDetailsDto> GetCustomerAsync(Guid id) =>
         GetAsync<CustomerDetailsDto>($"api/customers/{id}");
@@ -427,6 +431,17 @@ public class CrmApiClient
     private async Task PatchAsync(string path, object body)
     {
         using var request = new HttpRequestMessage(HttpMethod.Patch, path)
+        {
+            Content = JsonContent.Create(body, body.GetType(), options: Json),
+        };
+        await AddAuthAsync(request);
+        var response = await _http.SendAsync(request);
+        await EnsureSuccessAsync(response);
+    }
+
+    private async Task PutAsync(string path, object body)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put, path)
         {
             Content = JsonContent.Create(body, body.GetType(), options: Json),
         };

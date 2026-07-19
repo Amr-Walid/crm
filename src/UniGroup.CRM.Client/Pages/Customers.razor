@@ -42,7 +42,7 @@
     <div class="card filter-bar" style="margin-bottom:16px">
         <div style="position:relative;flex:1;min-width:220px">
             <input class="input" placeholder="@T("Cust.SearchPlaceholder")"
-                   value="@_term" @oninput="OnInput" @onkeydown="OnKeyDown" />
+                   value="@_term" @oninput="OnSearchInput" @onkeydown="OnKeyDown" />
         </div>
         <button class="btn btn-secondary" @onclick="SearchAsync" disabled="@_loading"><i class="bi bi-search"></i> @T("Common.Search")</button>
     </div>
@@ -282,6 +282,12 @@
         {
             await MatchFromContextAsync();
         }
+        else
+        {
+            // Standalone (non-embedded) use: auto-load the full customer directory
+            // so agents land on a populated list instead of an empty search prompt.
+            await SearchAsync();
+        }
     }
 
     private void OnCwContextChanged() => InvokeAsync(async () =>
@@ -350,12 +356,40 @@
 
     private void GoTo(Guid id) => Nav.NavigateTo($"/customers/{id}");
 
-    private void OnInput(ChangeEventArgs e) => _term = e.Value?.ToString() ?? string.Empty;
+    // Debounce guard for instant (as-you-type) search.
+    private CancellationTokenSource? _debounceCts;
+    private const int DebounceMs = 300;
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _term = e.Value?.ToString() ?? string.Empty;
+
+        // Cancel any pending debounced search and start a fresh window.
+        _debounceCts?.Cancel();
+        _debounceCts?.Dispose();
+        _debounceCts = new CancellationTokenSource();
+        var token = _debounceCts.Token;
+
+        try
+        {
+            await Task.Delay(DebounceMs, token);
+            if (!token.IsCancellationRequested)
+            {
+                await SearchAsync();
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // A newer keystroke superseded this one — ignore.
+        }
+    }
 
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
+            // Enter fires an immediate search, cancelling any pending debounce.
+            _debounceCts?.Cancel();
             await SearchAsync();
         }
     }
@@ -363,7 +397,10 @@
     private async Task SearchAsync()
     {
         var term = _term.Trim();
-        if (term.Length < 2)
+
+        // Empty term => load the full directory (auto-load / cleared search box).
+        // Otherwise require at least 2 characters to avoid noisy single-char queries.
+        if (term.Length is 1)
         {
             Toasts.Info(T("Cust.MinChars"));
             return;
@@ -512,6 +549,8 @@
         {
             CwContext.OnContextChanged -= OnCwContextChanged;
         }
+        _debounceCts?.Cancel();
+        _debounceCts?.Dispose();
         base.Dispose();
     }
 }

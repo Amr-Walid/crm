@@ -59,6 +59,7 @@
                     {
                         <span class="badge badge-green"><span class="dot"></span> @T("CustD.ActiveWarranty")</span>
                     }
+                    <button class="btn btn-secondary" @onclick="OpenEditModal"><i class="bi bi-pencil-square"></i> @T("CustD.EditBtn")</button>
                     <button class="btn btn-primary" @onclick="NewTicket"><i class="bi bi-ticket-perforated"></i> @T("CustD.NewTicket")</button>
                 </div>
             </div>
@@ -271,6 +272,43 @@
     </button>
 </Modal>
 
+<!-- ======== Edit / Complete Data Modal ======== -->
+<Modal @bind-Visible="_showEdit" Title="@T("CustD.EditTitle")">
+    <EditForm Model="_edit" OnValidSubmit="SaveEditAsync">
+        <DataAnnotationsValidator />
+        <div class="field">
+            <label>@T("Cust.FullName")</label>
+            <InputText class="input" @bind-Value="_edit.Name" placeholder="@T("Cust.FullNamePlaceholder")" />
+            <LocalizedValidationMessage For="() => _edit.Name" />
+        </div>
+        <div class="field">
+            <label>@T("Cust.Email")</label>
+            <InputText class="input" @bind-Value="_edit.Email" placeholder="customer@email.com" />
+        </div>
+        <div class="row" style="align-items:flex-start">
+            <div class="field" style="flex:1">
+                <label>@T("Cust.Province")</label>
+                <InputText class="input" @bind-Value="_edit.Province" placeholder="Cairo" />
+            </div>
+            <div class="field" style="flex:1">
+                <label>@T("Cust.City")</label>
+                <InputText class="input" @bind-Value="_edit.City" placeholder="Maadi" />
+            </div>
+        </div>
+        <div class="field">
+            <label>@T("Cust.AddressDetails")</label>
+            <InputText class="input" @bind-Value="_edit.AddressDetails" placeholder="@T("Cust.AddressPlaceholder")" />
+        </div>
+        <div class="field">
+            <label><i class="bi bi-tags"></i> @T("Customers.Group")</label>
+            <InputText class="input" @bind-Value="_edit.CustomerGroup" placeholder="@T("Customers.GroupPlaceholder")" />
+        </div>
+        <button class="btn btn-primary" style="width:100%" type="submit" disabled="@_saving">
+            @(_saving ? T("CustD.Saving") : T("CustD.SaveBtn"))
+        </button>
+    </EditForm>
+</Modal>
+
 @code {
     /// <summary>The customer id from the route.</summary>
     [Parameter] public Guid Id { get; set; }
@@ -286,6 +324,18 @@
         public string? InvoiceNumber { get; set; }
     }
 
+    private sealed class EditModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Validation.NameRequired")]
+        public string Name { get; set; } = string.Empty;
+
+        public string? Email { get; set; }
+        public string? Province { get; set; }
+        public string? City { get; set; }
+        public string? AddressDetails { get; set; }
+        public string? CustomerGroup { get; set; }
+    }
+
     private CustomerDetailsDto? _customer;
     private List<CallDto>? _calls;
     private List<TicketSummaryDto>? _tickets;
@@ -294,6 +344,11 @@
     private bool _showAssign;
     private bool _assigning;
     private AssignModel _assign = new();
+
+    // Edit / complete-data state.
+    private bool _showEdit;
+    private bool _saving;
+    private EditModel _edit = new();
 
     protected override async Task OnParametersSetAsync() => await LoadAsync();
 
@@ -347,6 +402,56 @@
     private void GoToTicket(string ticketId) => Nav.NavigateTo($"/tickets/{ticketId}");
 
     private void NewTicket() => Nav.NavigateTo($"/tickets/new?customerId={Id}");
+
+    /// <summary>Opens the edit modal pre-filled with the current customer values.</summary>
+    private void OpenEditModal()
+    {
+        if (_customer is null) return;
+
+        _edit = new EditModel
+        {
+            Name = _customer.Name,
+            Email = _customer.Email,
+            Province = _customer.Province,
+            City = _customer.City,
+            AddressDetails = _customer.AddressDetails,
+            CustomerGroup = _customer.CustomerGroup
+        };
+        _showEdit = true;
+    }
+
+    /// <summary>Persists the edited profile, re-fetches it, and closes the modal.</summary>
+    private async Task SaveEditAsync()
+    {
+        _saving = true;
+        try
+        {
+            await Api.UpdateCustomerAsync(Id, new UpdateCustomerRequest(
+                _edit.Name.Trim(),
+                string.IsNullOrWhiteSpace(_edit.Email) ? null : _edit.Email.Trim(),
+                _edit.Province,
+                _edit.City,
+                _edit.AddressDetails,
+                string.IsNullOrWhiteSpace(_edit.CustomerGroup) ? null : _edit.CustomerGroup.Trim()));
+
+            // Re-fetch to reflect the saved values on the profile screen.
+            _customer = await Api.GetCustomerAsync(Id);
+            _showEdit = false;
+            Toasts.Success(T("CustD.Saved"));
+        }
+        catch (ApiException ex)
+        {
+            Toasts.Error(ex.Message);
+        }
+        catch (HttpRequestException)
+        {
+            Toasts.Error(T("Common.CannotReachApi"));
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
 
     private async Task AssignDeviceAsync()
     {
