@@ -256,15 +256,20 @@
 /* ---------- Charts ---------- */
 .bar-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
 .bar-row .bar-label { width: 150px; font-size: 12px; color: var(--text-2); text-align: end; flex-shrink: 0; }
-.bar-row .bar-track { flex: 1; height: 22px; background: var(--surface-3); border-radius: 6px; overflow: hidden; display: flex; }
+/* The track is a flex container that anchors its fill to the row's leading
+   edge: LTR -> fill grows from the left, RTL -> fill grows from the right.
+   `justify-content: flex-start` follows the inherited text direction, so the
+   fill's start edge stays glued to the bar's leading side in both languages,
+   regardless of the fill's percentage width. `flex-shrink: 0` stops the fill
+   from being squeezed below its set width. */
+.bar-row .bar-track { flex: 1; height: 22px; background: var(--surface-3); border-radius: 6px; overflow: hidden; display: flex; justify-content: flex-start; }
 .bar-row .bar-fill {
   height: 100%; border-radius: 6px; background: var(--brand-grad);
   display: flex; align-items: center; justify-content: flex-end;
   color: #fff; font-size: 11px; font-weight: 700; padding-inline-end: 8px;
-  min-width: 26px;
+  min-width: 26px; flex-shrink: 0;
   transition: width 0.6s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
-[dir="rtl"] .bar-row .bar-fill { margin-left: auto; }
 .spark-cols { display: flex; align-items: flex-end; gap: 3px; height: 120px; direction: ltr; }
 .spark-col { flex: 1; background: var(--brand-grad); border-radius: 4px 4px 0 0; min-height: 2px; opacity: 0.85; transition: height 0.5s ease; position: relative; }
 .spark-col:hover { opacity: 1; }

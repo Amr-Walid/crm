@@ -350,6 +350,7 @@ public static class TranslationResources
         ["Dash.CouldNotLoad"] = E("Could not load dashboard data.", "تعذر تحميل بيانات لوحة التحكم."),
         ["Dash.NewToday"] = E("New Tickets Today", "تذاكر جديدة اليوم"),
         ["Dash.TopIssue"] = E("top issue: {0}", "أكثر المشكلات: {0}"),
+        ["Dash.NoTopIssue"] = E("no issues yet", "لا توجد مشكلات بعد"),
         ["Dash.OpenTickets"] = E("Open Tickets", "التذاكر المفتوحة"),
         ["Dash.AcrossDepts"] = E("across all departments", "عبر جميع الأقسام"),
         ["Dash.SlaBreached"] = E("SLA Breached", "تجاوز اتفاقية الخدمة"),

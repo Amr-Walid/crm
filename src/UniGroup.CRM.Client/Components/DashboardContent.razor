@@ -49,7 +49,7 @@
             <div class="card stat-card">
                 <div class="stat-label">@T("Dash.NewToday")</div>
                 <div class="stat-value">@_summary.TodayNewTickets</div>
-                <div class="stat-sub">@T("Dash.TopIssue", _summary.TopIssueCategory ?? "—")</div>
+                <div class="stat-sub">@(string.IsNullOrWhiteSpace(_summary.TopIssueCategory) ? T("Dash.NoTopIssue") : T("Dash.TopIssue", _summary.TopIssueCategory))</div>
                 <div class="stat-icon" style="background:rgba(99,102,241,.15)"><i class="bi bi-ticket-perforated"></i></div>
             </div>
             <div class="card stat-card">
