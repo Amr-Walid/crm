@@ -96,6 +96,10 @@
 - [x] Task 8.3: Split ticket category into Cascading dropdowns (Main Category enum: Maintenance, Complaint, General Support + Sub-category) on Create Ticket form and displays.
 - [x] Task 8.4: Added call classification (cascading optional categories) in Caller ID floating popup and display in customer calls history.
 
+### ✅ Task 9 — Customer Edit & Directory Auto-Load / Instant Search (DONE, committed)
+- [x] Task 9.1: Added "Complete/Update Customer Data" button ("استكمال البيانات") to Customer 360° header, implemented Edit Modal (EditForm), added PUT endpoint on backend, and updated client API.
+- [x] Task 9.2: Changed Customers Directory tab to auto-load all customers by default upon page mounting, and added debounced instant search (300ms) on typing, with automatic fallback to full list if search is cleared.
+
 ### ✅ Final Verification
 - [x] Client project build passes — 0 warnings, 0 errors (verified after every task)
 - [x] Full solution build passes
@@ -109,4 +113,6 @@
 - **2026-07-14 (d)**: Task 4 complete — Tickets list/MyTickets/TicketCreate (with embedded KB guidance panel)/TicketDetails (transitions, assignment, notes, attachments, history, big SLA timer). Build green, committed.
 - **2026-07-14 (e)**: Task 5 complete — real dashboard (metric cards, status bars, call-volume spark chart, agent grid, device failures), Reports CSV export, CSAT report. Build green, committed.
 - **2026-07-14 (f)**: Task 6 complete — Knowledge Base guidance viewer + admin CRUD. Task 7 complete — public survey page. Build green, committed. Final: solution build + push + PR.
-- **2026-07-19**: Sandbox AI completed 4 enhancements. Merged with master local configs & seeding exit fixes. EF migrations applied to database and servers started. Added Task 8 to tracker.
+- **2026-07-19 (a)**: Sandbox AI completed 4 enhancements. Merged with master local configs & seeding exit fixes. EF migrations applied to database and servers started. Added Task 8 to tracker.
+- **2026-07-19 (b)**: Fixed Caller ID Widget typing button-disabled issue. Sandbox AI completed Task 9 (Customer Edit & Auto-load / Instant Search). Pulled, clean built with 0 warnings/errors, restarted servers. Added Task 9 to tracker.
+
