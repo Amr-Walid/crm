@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -118,7 +118,7 @@ public class CustomersController : ControllerBase
     [HttpGet("search")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<CustomerDetailsDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Search([FromQuery] string searchTerm, CancellationToken cancellationToken)
+    public async Task<IActionResult> Search([FromQuery] string? searchTerm, CancellationToken cancellationToken)
     {
         try
         {

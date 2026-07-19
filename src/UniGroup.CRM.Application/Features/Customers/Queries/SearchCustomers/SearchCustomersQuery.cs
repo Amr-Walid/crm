@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using UniGroup.CRM.Application.Common.Interfaces;
 using UniGroup.CRM.Application.Features.Customers.Queries.Common;
@@ -13,7 +13,7 @@ namespace UniGroup.CRM.Application.Features.Customers.Queries.SearchCustomers;
 /// <summary>
 /// Query to search customers by Name, Phone, SerialNumber, or IMEI.
 /// </summary>
-public record SearchCustomersQuery(string SearchTerm) : IRequest<List<CustomerDetailsDto>>;
+public record SearchCustomersQuery(string? SearchTerm) : IRequest<List<CustomerDetailsDto>>;
 
 /// <summary>
 /// Handler for executing the search customers query.
