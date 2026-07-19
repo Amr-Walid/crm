@@ -256,6 +256,11 @@
             _error = ex.Message;
             if (_summary is null) Toasts.Error(ex.Message);
         }
+        catch (Exception)
+        {
+            _error = T("Dash.CouldNotLoad");
+            if (_summary is null) Toasts.Error(T("Common.CannotReachApi"));
+        }
         finally
         {
             _loading = false;
