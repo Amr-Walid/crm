@@ -70,7 +70,7 @@
                 <div class="card" style="padding:12px;margin-bottom:12px">
                     <div class="subtle" style="margin-bottom:8px">@T("Caller.UnknownCreate")</div>
                     <div class="field" style="margin-bottom:8px">
-                        <InputText class="input" @bind-Value="_newCustomerName" placeholder="@T("Caller.CustomerName")" />
+                        <InputText class="input" @bind-Value="_newCustomerName" @bind-Value:event="oninput" placeholder="@T("Caller.CustomerName")" />
                     </div>
                     <button class="btn btn-secondary btn-sm" style="width:100%" @onclick="QuickCreateAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_newCustomerName))">
                         @if (_busy)
@@ -125,7 +125,7 @@
             <p class="subtle" style="margin:0 0 12px">@T("Caller.SimDesc")</p>
             <div class="field" style="margin-bottom:10px">
                 <label>@T("Caller.PhoneNumber")</label>
-                <InputText class="input mono" @bind-Value="_dialNumber" placeholder="@T("Caller.PhonePlaceholder")" @onkeydown="OnDialKeyDown" />
+                <InputText class="input mono" @bind-Value="_dialNumber" @bind-Value:event="oninput" placeholder="@T("Caller.PhonePlaceholder")" @onkeydown="OnDialKeyDown" />
             </div>
             <button class="btn btn-primary" style="width:100%" @onclick="SimulateAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_dialNumber))">
                 @if (_busy)
