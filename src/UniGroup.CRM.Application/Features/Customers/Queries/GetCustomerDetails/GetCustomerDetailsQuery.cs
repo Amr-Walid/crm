@@ -84,7 +84,8 @@ public class GetCustomerDetailsQueryHandler : IRequestHandler<GetCustomerDetails
             customer.AddressDetails,
             customer.CreatedAt,
             phones,
-            devices
+            devices,
+            customer.CustomerGroup
         );
     }
 }

@@ -37,6 +37,13 @@ public abstract class LocalizedComponentBase : ComponentBase, IDisposable
     protected string TCategory(string category) =>
         Enum.TryParse<TicketCategory>(category, out var c) ? TCategory(c) : category;
 
+    /// <summary>Localized label for a main category.</summary>
+    protected string TMainCategory(MainCategory main) => TranslationResources.Get($"MainCategory.{main}", Lang.Current);
+
+    /// <summary>Localized label for a main category enum-name string (falls back to raw value).</summary>
+    protected string TMainCategory(string main) =>
+        Enum.TryParse<MainCategory>(main, out var m) ? TMainCategory(m) : main;
+
     /// <summary>Localized label for a warranty status string ("Active"/"Expired").</summary>
     protected string TWarranty(string warrantyStatus) =>
         TranslationResources.Get($"Warranty.{warrantyStatus}", Lang.Current);

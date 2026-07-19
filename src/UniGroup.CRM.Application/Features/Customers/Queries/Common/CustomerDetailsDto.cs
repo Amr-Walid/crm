@@ -15,5 +15,6 @@ public record CustomerDetailsDto(
     string? AddressDetails,
     DateTime CreatedAt,
     ICollection<CustomerPhoneDto> Phones,
-    ICollection<CustomerDeviceDto> Devices
+    ICollection<CustomerDeviceDto> Devices,
+    string? CustomerGroup = null
 );

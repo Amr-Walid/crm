@@ -16,6 +16,10 @@ namespace UniGroup.CRM.Application.Features.Calls.Queries.Common;
 /// <param name="Summary">Optional agent notes or call summary.</param>
 /// <param name="RecordingUrl">Optional URL to the call recording file.</param>
 /// <param name="CreatedAt">The UTC timestamp when the call record was created.</param>
+/// <param name="MainCategory">Optional main-category classification (int enum value).</param>
+/// <param name="MainCategoryName">Optional main-category enum name for localization.</param>
+/// <param name="SubCategory">Optional sub-category classification (int enum value).</param>
+/// <param name="SubCategoryName">Optional sub-category enum name for localization.</param>
 public record CallDto(
     Guid Id,
     Guid? CustomerId,
@@ -26,5 +30,9 @@ public record CallDto(
     int DurationSeconds,
     string? Summary,
     string? RecordingUrl,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    int? MainCategory = null,
+    string? MainCategoryName = null,
+    int? SubCategory = null,
+    string? SubCategoryName = null
 );

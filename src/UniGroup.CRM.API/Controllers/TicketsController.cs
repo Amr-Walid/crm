@@ -58,6 +58,7 @@ public class TicketsController : ControllerBase
                 request.CustomerDeviceId,
                 request.Title,
                 request.Description,
+                request.MainCategory,
                 request.Category,
                 request.Priority,
                 agentId
@@ -281,6 +282,7 @@ public record CreateTicketRequest(
     Guid? CustomerDeviceId,
     string Title,
     string Description,
+    MainCategory MainCategory,
     TicketCategory Category,
     TicketPriority Priority
 );

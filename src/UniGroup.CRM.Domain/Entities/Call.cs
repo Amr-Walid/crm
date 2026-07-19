@@ -61,6 +61,18 @@ public class Call
     public string? RecordingUrl { get; set; }
 
     /// <summary>
+    /// Gets or sets the optional high-level (main) classification of the call
+    /// (Maintenance, Complaint, or General Support). Null when unclassified.
+    /// </summary>
+    public MainCategory? MainCategory { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional sub-category classification of the call.
+    /// Null when unclassified. When set it must belong to <see cref="MainCategory"/>.
+    /// </summary>
+    public TicketCategory? SubCategory { get; set; }
+
+    /// <summary>
     /// Gets or sets the UTC timestamp when this call record was created.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

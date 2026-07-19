@@ -65,7 +65,10 @@ public class GetMyTicketsQueryHandler : IRequestHandler<GetMyTicketsQuery, List<
             t.SlaDeadline,
             t.SlaBreached,
             t.CreatedAt,
-            t.UpdatedAt
+            t.UpdatedAt,
+            (int)t.MainCategory,
+            t.MainCategory.ToString(),
+            (int)t.Category
         )).ToList();
     }
 }

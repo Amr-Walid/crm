@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UniGroup.CRM.Infrastructure.Data;
 
@@ -12,9 +13,11 @@ using UniGroup.CRM.Infrastructure.Data;
 namespace UniGroup.CRM.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260719100338_AddCustomerGroupToCustomer")]
+    partial class AddCustomerGroupToCustomer
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -370,9 +373,6 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.Property<int>("DurationSeconds")
                         .HasColumnType("int");
 
-                    b.Property<int?>("MainCategory")
-                        .HasColumnType("int");
-
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -381,9 +381,6 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.Property<string>("RecordingUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
-
-                    b.Property<int?>("SubCategory")
-                        .HasColumnType("int");
 
                     b.Property<string>("Summary")
                         .HasMaxLength(2000)
@@ -398,8 +395,6 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.HasIndex("AgentId");
 
                     b.HasIndex("CustomerId");
-
-                    b.HasIndex("MainCategory");
 
                     b.HasIndex("PhoneNumber");
 
@@ -878,11 +873,6 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
 
-                    b.Property<int>("MainCategory")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
                     b.Property<int>("Priority")
                         .HasColumnType("int");
 
@@ -924,8 +914,6 @@ namespace UniGroup.CRM.Infrastructure.Migrations
                     b.HasIndex("CustomerId");
 
                     b.HasIndex("DepartmentId");
-
-                    b.HasIndex("MainCategory");
 
                     b.HasIndex("Priority");
 

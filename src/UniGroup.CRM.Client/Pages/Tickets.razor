@@ -70,6 +70,7 @@
                         <th>@T("Tk.ColCustomer")</th>
                         <th>@T("Tk.ColStatus")</th>
                         <th>@T("Tk.ColPriority")</th>
+                        <th>@T("Tk.ColCategory")</th>
                         <th>@T("Tk.ColSla")</th>
                         <th>@T("Tk.ColAssigned")</th>
                         <th>@T("Tk.ColCreated")</th>
@@ -86,6 +87,10 @@
                             <td>@t.CustomerName</td>
                             <td><span class="badge @UiHelpers.StatusBadge(t.Status)">@TStatus(t.Status)</span></td>
                             <td><span class="badge @UiHelpers.PriorityBadge(t.Priority)">@TPriority(t.Priority)</span></td>
+                            <td>
+                                <span class="badge badge-purple" title="@T("TkC.MainCategory")">@TMainCategory(t.MainCategoryName)</span>
+                                <div class="subtle" style="margin-top:3px">@TCategory(t.Category)</div>
+                            </td>
                             <td>
                                 <SlaTimer Deadline="t.SlaDeadline" Breached="t.SlaBreached" Status="@t.Status"
                                           TotalHours="GetSlaHours(t.Priority)" />

@@ -37,7 +37,8 @@
                         <span class="mono muted" style="font-size:12.5px">@_ticket.Id</span>
                         <span class="badge @UiHelpers.StatusBadge(_ticket.Status)">@TStatus(_ticket.Status)</span>
                         <span class="badge @UiHelpers.PriorityBadge(_ticket.Priority)">@TPriority(_ticket.Priority)</span>
-                        <span class="badge badge-slate"><i class="bi @CategoryIconClass"></i> @CategoryLabelText</span>
+                        <span class="badge badge-purple" title="@T("TkC.MainCategory")"><i class="bi bi-diagram-3"></i> @TMainCategory(_ticket.MainCategoryName)</span>
+                        <span class="badge badge-slate" title="@T("TkC.SubCategory")"><i class="bi @CategoryIconClass"></i> @CategoryLabelText</span>
                     </div>
                     <h1 style="font-size:20px;margin:0">@_ticket.Title</h1>
                     <div class="subtle" style="margin-top:6px">

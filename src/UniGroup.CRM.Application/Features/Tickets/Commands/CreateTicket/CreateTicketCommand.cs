@@ -17,6 +17,7 @@ public record CreateTicketCommand(
     Guid? CustomerDeviceId,
     string Title,
     string Description,
+    MainCategory MainCategory,
     TicketCategory Category,
     TicketPriority Priority,
     Guid CreatedById
@@ -47,6 +48,13 @@ public class CreateTicketCommandHandler : IRequestHandler<CreateTicketCommand, s
         if (!customerExists)
         {
             throw new Exception($"Customer with ID {request.CustomerId} does not exist.");
+        }
+
+        // Validate that the chosen sub-category belongs to the selected main category.
+        if (!TicketCategoryMap.IsValidPair(request.MainCategory, request.Category))
+        {
+            throw new Exception(
+                $"Sub-category '{request.Category}' is not valid for main category '{request.MainCategory}'.");
         }
 
         // Verify device exists and belongs to customer (if device is specified)
@@ -92,6 +100,7 @@ public class CreateTicketCommandHandler : IRequestHandler<CreateTicketCommand, s
                 CustomerDeviceId = request.CustomerDeviceId,
                 Title = request.Title,
                 Description = request.Description,
+                MainCategory = request.MainCategory,
                 Category = request.Category,
                 Status = TicketStatus.New,
                 Priority = request.Priority,

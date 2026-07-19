@@ -89,7 +89,8 @@ public class SearchCustomersQueryHandler : IRequestHandler<SearchCustomersQuery,
                 customer.AddressDetails,
                 customer.CreatedAt,
                 phones,
-                devices
+                devices,
+                customer.CustomerGroup
             );
         }).ToList();
     }

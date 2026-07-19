@@ -35,6 +35,12 @@
                     <div class="avatar lg">@UiHelpers.Initials(_customer.Name)</div>
                     <div>
                         <h1 style="font-size:21px">@_customer.Name</h1>
+                        @if (!string.IsNullOrWhiteSpace(_customer.CustomerGroup))
+                        {
+                            <div style="margin-top:5px">
+                                <span class="badge badge-indigo" title="@T("Customers.Group")"><i class="bi bi-tags"></i> @_customer.CustomerGroup</span>
+                            </div>
+                        }
                         <div class="row wrap subtle" style="margin-top:4px;gap:12px">
                             @if (!string.IsNullOrWhiteSpace(_customer.Email))
                             {
@@ -162,6 +168,19 @@
                                             </span>
                                             <span class="subtle">@TimeAgo(call.CreatedAt) · @UiHelpers.FormatDuration(call.DurationSeconds)</span>
                                         </div>
+                                        @if (call.MainCategoryName is not null || call.SubCategoryName is not null)
+                                        {
+                                            <div class="row wrap" style="gap:5px;margin-top:4px">
+                                                @if (call.MainCategoryName is not null)
+                                                {
+                                                    <span class="badge badge-purple badge-micro" title="@T("TkC.MainCategory")"><i class="bi bi-diagram-3"></i> @TMainCategory(call.MainCategoryName)</span>
+                                                }
+                                                @if (call.SubCategoryName is not null)
+                                                {
+                                                    <span class="badge badge-slate badge-micro" title="@T("TkC.SubCategory")">@TCategory(call.SubCategoryName)</span>
+                                                }
+                                            </div>
+                                        }
                                         @if (!string.IsNullOrWhiteSpace(call.Summary))
                                         {
                                             <div class="muted" style="font-size:12.5px;margin-top:3px">@call.Summary</div>
@@ -195,7 +214,8 @@
                                         <div class="row wrap" style="margin-top:5px;gap:6px">
                                             <span class="badge @UiHelpers.StatusBadge(t.Status)">@TStatus(t.Status)</span>
                                             <span class="badge @UiHelpers.PriorityBadge(t.Priority)">@TPriority(t.Priority)</span>
-                                            <span class="badge badge-slate">@TCategory(t.Category)</span>
+                                            <span class="badge badge-purple" title="@T("TkC.MainCategory")">@TMainCategory(t.MainCategoryName)</span>
+                                            <span class="badge badge-slate" title="@T("TkC.SubCategory")">@TCategory(t.Category)</span>
                                         </div>
                                     </div>
                                 }

@@ -20,6 +20,8 @@ namespace UniGroup.CRM.Application.Features.Calls.Commands.LogCall;
 /// <param name="DurationSeconds">The total duration of the call in seconds.</param>
 /// <param name="Summary">Optional agent summary or notes after the call.</param>
 /// <param name="RecordingUrl">Optional URL to the call recording on external storage.</param>
+/// <param name="MainCategory">Optional main-category classification of the call.</param>
+/// <param name="SubCategory">Optional sub-category classification of the call.</param>
 public record LogCallCommand(
     Guid? CustomerId,
     Guid AgentId,           // Injected from JWT by CallsController – never from request body
@@ -27,7 +29,9 @@ public record LogCallCommand(
     string PhoneNumber,
     int DurationSeconds,
     string? Summary,
-    string? RecordingUrl
+    string? RecordingUrl,
+    MainCategory? MainCategory = null,
+    TicketCategory? SubCategory = null
 ) : IRequest<Guid>;
 
 /// <summary>
@@ -62,6 +66,15 @@ public class LogCallCommandHandler : IRequestHandler<LogCallCommand, Guid>
                 $"Invalid call direction '{request.Direction}'. Valid values are: Inbound, Outbound.");
         }
 
+        // When both classification fields are supplied, ensure the sub-category
+        // belongs to the chosen main category.
+        if (request.MainCategory.HasValue && request.SubCategory.HasValue &&
+            !TicketCategoryMap.IsValidPair(request.MainCategory.Value, request.SubCategory.Value))
+        {
+            throw new ArgumentException(
+                $"Sub-category '{request.SubCategory}' is not valid for main category '{request.MainCategory}'.");
+        }
+
         var call = new Call
         {
             Id = Guid.NewGuid(),
@@ -72,6 +85,8 @@ public class LogCallCommandHandler : IRequestHandler<LogCallCommand, Guid>
             DurationSeconds = request.DurationSeconds,
             Summary = request.Summary,
             RecordingUrl = request.RecordingUrl,
+            MainCategory = request.MainCategory,
+            SubCategory = request.SubCategory,
             CreatedAt = DateTime.UtcNow
         };
 

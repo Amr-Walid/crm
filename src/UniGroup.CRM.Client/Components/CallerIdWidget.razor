@@ -85,6 +85,31 @@
                 </div>
             }
 
+            <div class="row" style="gap:10px;align-items:flex-start">
+                <div class="field" style="flex:1">
+                    <label>@T("TkC.MainCategory")</label>
+                    <select class="select" @onchange="OnCallMainCategoryChanged">
+                        <option value="" selected="@(_callMainCategory is null)">@T("Caller.NoClassification")</option>
+                        @foreach (var mc in Enum.GetValues<MainCategory>())
+                        {
+                            <option value="@((int)mc)" selected="@(_callMainCategory == mc)">@TMainCategory(mc.ToString())</option>
+                        }
+                    </select>
+                </div>
+                <div class="field" style="flex:1">
+                    <label>@T("TkC.SubCategory")</label>
+                    <select class="select" @onchange="OnCallSubCategoryChanged" disabled="@(_callMainCategory is null)">
+                        <option value="" selected="@(_callSubCategory is null)">@T("Caller.NoClassification")</option>
+                        @if (_callMainCategory is not null)
+                        {
+                            @foreach (var cat in TicketCategoryMap.GetSubCategories(_callMainCategory.Value))
+                            {
+                                <option value="@((int)cat)" selected="@(_callSubCategory == cat)">@TCategory(cat.ToString())</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
             <div class="field">
                 <label>@T("Caller.CallSummary")</label>
                 <InputTextArea class="textarea" style="min-height:64px" @bind-Value="_summary" placeholder="@T("Caller.SummaryPlaceholder")" />
@@ -125,6 +150,10 @@
     private string _newCustomerName = string.Empty;
     private string _callDuration = "00:00";
     private Timer? _durationTimer;
+
+    // Optional call classification (Task 4).
+    private MainCategory? _callMainCategory;
+    private TicketCategory? _callSubCategory;
 
     protected override void OnInitialized()
     {
@@ -238,6 +267,34 @@
         }
     }
 
+    // ───── call classification (cascading) ─────
+    private void OnCallMainCategoryChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var v))
+        {
+            _callMainCategory = (MainCategory)v;
+
+            // Keep the sub-category consistent with the newly chosen main category.
+            if (_callSubCategory is not null &&
+                !TicketCategoryMap.GetSubCategories(_callMainCategory.Value).Contains(_callSubCategory.Value))
+            {
+                _callSubCategory = null;
+            }
+        }
+        else
+        {
+            _callMainCategory = null;
+            _callSubCategory = null;
+        }
+    }
+
+    private void OnCallSubCategoryChanged(ChangeEventArgs e)
+    {
+        _callSubCategory = int.TryParse(e.Value?.ToString(), out var v)
+            ? (TicketCategory)v
+            : null;
+    }
+
     private async Task EndCallAsync()
     {
         var duration = CallerId.AnsweredAtUtc is { } start
@@ -246,6 +303,8 @@
         await LogCallAsync(duration, string.IsNullOrWhiteSpace(_summary) ? null : _summary.Trim());
         _summary = string.Empty;
         _newCustomerName = string.Empty;
+        _callMainCategory = null;
+        _callSubCategory = null;
         CallerId.End();
     }
 
@@ -260,7 +319,9 @@
                 CallerId.IncomingNumber ?? _dialNumber,
                 durationSeconds,
                 summary,
-                null));
+                null,
+                _callMainCategory,
+                _callSubCategory));
             Toasts.Success(T("Caller.CallLogged"));
         }
         catch (ApiException ex)

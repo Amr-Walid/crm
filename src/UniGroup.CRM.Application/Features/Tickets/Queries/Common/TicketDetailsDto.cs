@@ -37,5 +37,8 @@ public record TicketDetailsDto(
     DateTime? ClosedAt,
     List<TicketHistoryDto> Histories,
     List<InternalNoteDto> InternalNotes,
-    List<AttachmentDto> Attachments
+    List<AttachmentDto> Attachments,
+    int MainCategory = 0,
+    string MainCategoryName = "Maintenance",
+    int SubCategory = 0
 );

@@ -45,7 +45,14 @@ public class Ticket
     public string Description { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the ticket category.
+    /// Gets or sets the high-level (main) category of the ticket
+    /// (Maintenance, Complaint, or General Support).
+    /// </summary>
+    public MainCategory MainCategory { get; set; }
+
+    /// <summary>
+    /// Gets or sets the ticket category (treated as the sub-category under
+    /// <see cref="MainCategory"/>).
     /// </summary>
     public TicketCategory Category { get; set; }
 

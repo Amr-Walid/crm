@@ -17,7 +17,8 @@ public record CreateCustomerCommand(
     string? Province,
     string? City,
     string? AddressDetails,
-    string Phone
+    string Phone,
+    string? CustomerGroup = null
 ) : IRequest<Guid>;
 
 /// <summary>
@@ -57,6 +58,7 @@ public class CreateCustomerCommandHandler : IRequestHandler<CreateCustomerComman
             Province = request.Province,
             City = request.City,
             AddressDetails = request.AddressDetails,
+            CustomerGroup = string.IsNullOrWhiteSpace(request.CustomerGroup) ? null : request.CustomerGroup.Trim(),
             CreatedAt = DateTime.UtcNow
         };
 

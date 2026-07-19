@@ -7,6 +7,7 @@ using UniGroup.CRM.Application.Features.Calls.Queries.Common;
 using UniGroup.CRM.Application.Features.Calls.Queries.GetCallerProfile;
 using UniGroup.CRM.Application.Features.Calls.Queries.GetCallHistory;
 using UniGroup.CRM.Application.Features.Customers.Queries.Common;
+using UniGroup.CRM.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -67,7 +68,9 @@ public class CallsController : ControllerBase
                 request.PhoneNumber,
                 request.DurationSeconds,
                 request.Summary,
-                request.RecordingUrl
+                request.RecordingUrl,
+                request.MainCategory,
+                request.SubCategory
             );
 
             var callId = await _sender.Send(command, cancellationToken);
@@ -170,5 +173,7 @@ public record LogCallRequest(
     string PhoneNumber,
     int DurationSeconds,
     string? Summary,
-    string? RecordingUrl
+    string? RecordingUrl,
+    MainCategory? MainCategory = null,
+    TicketCategory? SubCategory = null
 );

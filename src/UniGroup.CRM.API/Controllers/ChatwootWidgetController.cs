@@ -268,6 +268,8 @@ public class ChatwootWidgetController : ControllerBase
                 : request.Title.Trim(),
             Description = request.Description ?? string.Empty,
             Category = request.Category ?? TicketCategory.GeneralInquiry,
+            MainCategory = request.MainCategory
+                ?? TicketCategoryMap.ResolveMain(request.Category ?? TicketCategory.GeneralInquiry),
             Priority = priority,
             Status = TicketStatus.New,
             ChatwootConversationId = request.ConversationId,
@@ -384,7 +386,8 @@ public record ChatwootLinkTicketRequest(
     string? Title,
     string? Description,
     TicketCategory? Category,
-    TicketPriority? Priority);
+    TicketPriority? Priority,
+    MainCategory? MainCategory = null);
 
 /// <summary>Ticket-link result. <c>AlreadyLinked</c> signals idempotent reuse.</summary>
 public record ChatwootLinkTicketResponse(string TicketId, bool AlreadyLinked);

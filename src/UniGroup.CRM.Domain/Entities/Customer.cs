@@ -39,6 +39,12 @@ public class Customer
     public string? AddressDetails { get; set; }
 
     /// <summary>
+    /// Gets or sets the customer group / segment (e.g. "VIP", "Retail").
+    /// Optional free-text classification with a maximum length of 100 characters.
+    /// </summary>
+    public string? CustomerGroup { get; set; }
+
+    /// <summary>
     /// Gets or sets when the customer profile was created.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

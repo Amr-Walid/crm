@@ -22,7 +22,8 @@ public record CreateCustomerRequest(
     string? Province,
     string? City,
     string? AddressDetails,
-    string Phone);
+    string Phone,
+    string? CustomerGroup = null);
 
 /// <summary>Log-call body — mirrors <c>CallsController.LogCallRequest</c> (AgentId comes from JWT).</summary>
 public record LogCallRequest(
@@ -31,7 +32,9 @@ public record LogCallRequest(
     string PhoneNumber,
     int DurationSeconds,
     string? Summary,
-    string? RecordingUrl);
+    string? RecordingUrl,
+    MainCategory? MainCategory = null,
+    TicketCategory? SubCategory = null);
 
 /// <summary>Create-brand body — mirrors <c>DevicesController.CreateBrandRequest</c>.</summary>
 public record CreateBrandRequest(string Name);
@@ -58,6 +61,7 @@ public record CreateTicketRequest(
     Guid? CustomerDeviceId,
     string Title,
     string Description,
+    MainCategory MainCategory,
     TicketCategory Category,
     TicketPriority Priority);
 
@@ -138,7 +142,8 @@ public record ChatwootLinkTicketRequest(
     string? Title,
     string? Description,
     TicketCategory? Category,
-    TicketPriority? Priority);
+    TicketPriority? Priority,
+    MainCategory? MainCategory = null);
 
 /// <summary>Widget ticket-link result — mirrors <c>ChatwootLinkTicketResponse</c>.</summary>
 public record ChatwootLinkTicketResponse(string TicketId, bool AlreadyLinked);

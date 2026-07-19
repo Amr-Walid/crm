@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using UniGroup.CRM.Application.Common.Interfaces;
 using UniGroup.CRM.Application.Features.Calls.Queries.Common;
+using UniGroup.CRM.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,10 +69,26 @@ public class GetCallHistoryQueryHandler : IRequestHandler<GetCallHistoryQuery, L
                 c.DurationSeconds,
                 c.Summary,
                 c.RecordingUrl,
-                c.CreatedAt
+                c.CreatedAt,
+                (int?)c.MainCategory,
+                null,
+                (int?)c.SubCategory,
+                null
             ))
             .ToListAsync(cancellationToken);
 
-        return calls;
+        // Resolve localizable enum names after materialization (avoids translating
+        // nullable-enum ToString() in the SQL projection).
+        return calls
+            .Select(c => c with
+            {
+                MainCategoryName = c.MainCategory.HasValue
+                    ? ((MainCategory)c.MainCategory.Value).ToString()
+                    : null,
+                SubCategoryName = c.SubCategory.HasValue
+                    ? ((TicketCategory)c.SubCategory.Value).ToString()
+                    : null
+            })
+            .ToList();
     }
 }

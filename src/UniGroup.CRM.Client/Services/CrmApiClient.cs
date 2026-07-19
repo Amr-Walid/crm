@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components;
+using UniGroup.CRM.Application.Common.Models;
 using UniGroup.CRM.Application.Features.Auth.Common;
 using UniGroup.CRM.Application.Features.Calls.Queries.Common;
 using UniGroup.CRM.Application.Features.Csat.Commands.SubmitCsatSurvey;
@@ -82,6 +83,40 @@ public class CrmApiClient
     /// <summary>GET /api/search?q= (unified system search).</summary>
     public Task<List<CustomerDetailsDto>> SystemSearchAsync(string q) =>
         GetAsync<List<CustomerDetailsDto>>($"api/search?q={Uri.EscapeDataString(q)}");
+
+    /// <summary>GET /api/customers/import/template → blank .xlsx template bytes + file name.</summary>
+    public async Task<(byte[] Content, string FileName)> DownloadImportTemplateAsync()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "api/customers/import/template");
+        await AddAuthAsync(request);
+        var response = await _http.SendAsync(request);
+        await EnsureSuccessAsync(response);
+
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+            ?? "customers_import_template.xlsx";
+
+        return (await response.Content.ReadAsByteArrayAsync(), fileName);
+    }
+
+    /// <summary>POST /api/customers/import (multipart) → import summary.</summary>
+    public async Task<ImportCustomersResult> ImportCustomersAsync(Stream fileStream, string fileName)
+    {
+        using var content = new MultipartFormDataContent();
+        var streamContent = new StreamContent(fileStream);
+        streamContent.Headers.ContentType = new MediaTypeHeaderValue(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        content.Add(streamContent, "file", fileName);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "api/customers/import")
+        {
+            Content = content,
+        };
+        await AddAuthAsync(request);
+
+        var response = await _http.SendAsync(request);
+        return await ReadAsync<ImportCustomersResult>(response);
+    }
 
     /* ================= Calls ================= */
 

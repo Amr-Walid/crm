@@ -53,7 +53,8 @@
                     <div class="row wrap" style="gap:6px;margin-bottom:8px">
                         <span class="badge @UiHelpers.StatusBadge(t.Status)">@TStatus(t.Status)</span>
                         <span class="badge @UiHelpers.PriorityBadge(t.Priority)">@TPriority(t.Priority)</span>
-                        <span class="badge badge-slate">@TCategory(t.Category)</span>
+                        <span class="badge badge-purple" title="@T("TkC.MainCategory")">@TMainCategory(t.MainCategoryName)</span>
+                        <span class="badge badge-slate" title="@T("TkC.SubCategory")">@TCategory(t.Category)</span>
                     </div>
                     <div class="subtle"><i class="bi bi-person"></i> @t.CustomerName · @TimeAgo(t.CreatedAt)</div>
                 </div>

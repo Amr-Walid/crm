@@ -17,5 +17,8 @@ public record TicketSummaryDto(
     DateTime? SlaDeadline,
     bool SlaBreached,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    int MainCategory = 0,
+    string MainCategoryName = "Maintenance",
+    int SubCategory = 0
 );

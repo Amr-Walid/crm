@@ -6,6 +6,7 @@
 @inject ToastService Toasts
 @inject EmbeddedStateService Embedded
 @inject ChatwootContextService CwContext
+@inject IJSRuntime JS
 
 <PageTitle>@T("Cust.PageTitle")</PageTitle>
 
@@ -32,7 +33,10 @@
             <h1 style="font-size:22px">@T("Cust.Title")</h1>
             <p class="muted" style="margin:4px 0 0">@T("Cust.Subtitle")</p>
         </div>
-        <button class="btn btn-primary" @onclick="() => _showCreate = true"><i class="bi bi-plus-lg"></i> @T("Cust.New")</button>
+        <div class="row" style="gap:10px">
+            <button class="btn btn-ghost" @onclick="OpenImport"><i class="bi bi-upload"></i> @T("Cust.Import")</button>
+            <button class="btn btn-primary" @onclick="() => _showCreate = true"><i class="bi bi-plus-lg"></i> @T("Cust.New")</button>
+        </div>
     </div>
 
     <div class="card filter-bar" style="margin-bottom:16px">
@@ -145,10 +149,85 @@
             <label>@T("Cust.AddressDetails")</label>
             <InputText class="input" @bind-Value="_create.AddressDetails" placeholder="@T("Cust.AddressPlaceholder")" />
         </div>
+        <div class="field">
+            <label><i class="bi bi-tags"></i> @T("Customers.Group")</label>
+            <InputText class="input" @bind-Value="_create.CustomerGroup" placeholder="@T("Customers.GroupPlaceholder")" />
+        </div>
         <button class="btn btn-primary" style="width:100%" type="submit" disabled="@_creating">
             @(_creating ? T("Cust.Creating") : T("Cust.CreateBtn"))
         </button>
     </EditForm>
+</Modal>
+
+<Modal @bind-Visible="_showImport" Title="@T("Cust.Import")">
+    <div class="import-panel">
+        <p class="muted" style="margin:0 0 12px">@T("Cust.ImportIntro")</p>
+
+        <div class="import-step">
+            <span class="import-step-num">1</span>
+            <div style="flex:1">
+                <div style="font-weight:600">@T("Cust.ImportStep1")</div>
+                <button class="btn btn-ghost btn-sm" style="margin-top:8px" @onclick="DownloadTemplateAsync" disabled="@_downloadingTemplate">
+                    @if (_downloadingTemplate)
+                    {
+                        <span class="spinner-sm"></span> <span>@T("Common.Loading")</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-file-earmark-excel"></i> <span>@T("Cust.ImportDownloadTemplate")</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        <div class="import-step">
+            <span class="import-step-num">2</span>
+            <div style="flex:1">
+                <div style="font-weight:600">@T("Cust.ImportStep2")</div>
+                <label class="file-drop" style="margin-top:8px">
+                    <InputFile OnChange="OnImportFileSelected" accept=".xlsx" />
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    <span>@(string.IsNullOrEmpty(_importFileName) ? T("Cust.ImportChooseFile") : _importFileName)</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="import-step">
+            <span class="import-step-num">3</span>
+            <div style="flex:1">
+                <div style="font-weight:600">@T("Cust.ImportStep3")</div>
+                <button class="btn btn-primary btn-sm" style="margin-top:8px" @onclick="ImportAsync" disabled="@(_importing || _importStream is null)">
+                    @if (_importing)
+                    {
+                        <span class="spinner-sm"></span> <span>@T("Cust.ImportUploading")</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-upload"></i> <span>@T("Cust.ImportSubmit")</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        @if (_importResult is not null)
+        {
+            <div class="alert @(_importResult.FailedCount > 0 ? "alert-warning" : "alert-success")" style="margin-top:16px">
+                <div style="font-weight:600">
+                    <i class="bi @(_importResult.FailedCount > 0 ? "bi-exclamation-triangle" : "bi-check-circle")"></i>
+                    @T("Cust.ImportResult", _importResult.SuccessCount, _importResult.FailedCount)
+                </div>
+                @if (_importResult.Errors.Count > 0)
+                {
+                    <ul class="import-errors">
+                        @foreach (var err in _importResult.Errors)
+                        {
+                            <li>@err</li>
+                        }
+                    </ul>
+                }
+            </div>
+        }
+    </div>
 </Modal>
 
 @code {
@@ -164,6 +243,7 @@
         public string? Province { get; set; }
         public string? City { get; set; }
         public string? AddressDetails { get; set; }
+        public string? CustomerGroup { get; set; }
     }
 
     private string _term = string.Empty;
@@ -173,6 +253,14 @@
     private bool _showCreate;
     private bool _creating;
     private CreateModel _create = new();
+
+    // Bulk import (Excel) state.
+    private bool _showImport;
+    private bool _importing;
+    private bool _downloadingTemplate;
+    private string? _importFileName;
+    private System.IO.Stream? _importStream;
+    private ImportCustomersResult? _importResult;
 
     // Tracks the last Chatwoot contact we auto-matched so a re-render (e.g. theme
     // toggle) doesn't re-trigger the search for the same conversation.
@@ -303,6 +391,84 @@
         }
     }
 
+    /* ================= Bulk import (Excel) ================= */
+
+    private void OpenImport()
+    {
+        _importResult = null;
+        _importFileName = null;
+        _importStream = null;
+        _showImport = true;
+    }
+
+    private async Task DownloadTemplateAsync()
+    {
+        _downloadingTemplate = true;
+        try
+        {
+            var (content, fileName) = await Api.DownloadImportTemplateAsync();
+            await JS.InvokeVoidAsync(
+                "unigroup.downloadFile",
+                fileName,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                Convert.ToBase64String(content));
+        }
+        catch (ApiException ex) { Toasts.Error(ex.Message); }
+        catch (HttpRequestException) { Toasts.Error(T("Common.CannotReachApi")); }
+        finally { _downloadingTemplate = false; }
+    }
+
+    private async Task OnImportFileSelected(InputFileChangeEventArgs e)
+    {
+        _importResult = null;
+        var file = e.File;
+        if (file is null) return;
+
+        if (!file.Name.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+        {
+            Toasts.Error(T("Cust.ImportBadType"));
+            _importFileName = null;
+            _importStream = null;
+            return;
+        }
+
+        // Buffer the file into memory (max 10 MB) so it can be re-read on submit.
+        var buffer = new System.IO.MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(buffer);
+        buffer.Position = 0;
+        _importStream = buffer;
+        _importFileName = file.Name;
+    }
+
+    private async Task ImportAsync()
+    {
+        if (_importStream is null) return;
+        _importing = true;
+        _importResult = null;
+        try
+        {
+            _importStream.Position = 0;
+            _importResult = await Api.ImportCustomersAsync(_importStream, _importFileName ?? "import.xlsx");
+
+            if (_importResult.SuccessCount > 0)
+            {
+                Toasts.Success(T("Cust.ImportResult", _importResult.SuccessCount, _importResult.FailedCount));
+                // Refresh the current search results so imported customers appear.
+                if (!string.IsNullOrWhiteSpace(_lastTerm))
+                {
+                    try { _results = await Api.SearchCustomersAsync(_lastTerm); } catch { /* non-fatal */ }
+                }
+            }
+            else
+            {
+                Toasts.Info(T("Cust.ImportResult", _importResult.SuccessCount, _importResult.FailedCount));
+            }
+        }
+        catch (ApiException ex) { Toasts.Error(ex.Message); }
+        catch (HttpRequestException) { Toasts.Error(T("Common.CannotReachApi")); }
+        finally { _importing = false; }
+    }
+
     private async Task CreateAsync()
     {
         _creating = true;
@@ -312,7 +478,8 @@
                 _create.Name.Trim(),
                 string.IsNullOrWhiteSpace(_create.Email) ? null : _create.Email.Trim(),
                 _create.Province, _create.City, _create.AddressDetails,
-                _create.Phone.Trim()));
+                _create.Phone.Trim(),
+                string.IsNullOrWhiteSpace(_create.CustomerGroup) ? null : _create.CustomerGroup.Trim()));
 
             Toasts.Success(T("Cust.Created"));
             _showCreate = false;

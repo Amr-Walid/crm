@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using UniGroup.CRM.Application.Common.Interfaces;
 using UniGroup.CRM.Domain.Entities;
+using UniGroup.CRM.Domain.Enums;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -162,6 +163,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.Property(c => c.Province).HasMaxLength(100);
             entity.Property(c => c.City).HasMaxLength(100);
             entity.Property(c => c.AddressDetails).HasMaxLength(500);
+            entity.Property(c => c.CustomerGroup).HasMaxLength(100);
         });
 
         // Configure CustomerPhone entity mappings
@@ -248,6 +250,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.HasIndex(c => c.CustomerId);
             entity.HasIndex(c => c.AgentId);
             entity.HasIndex(c => c.TicketId);
+            entity.HasIndex(c => c.MainCategory);
 
             // Relationship with ApplicationUser (Agent) – restricted delete to preserve call history
             entity.HasOne(c => c.Agent)
@@ -291,9 +294,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
             entity.Property(t => t.ResolutionNote).HasMaxLength(2000);
             entity.Property(t => t.ChatwootConversationId).HasMaxLength(100);
 
+            // High-level main category (stored as int, defaults to Maintenance = 0).
+            entity.Property(t => t.MainCategory).HasDefaultValue(MainCategory.Maintenance);
+
             // Indexes for performance
             entity.HasIndex(t => t.Status);
             entity.HasIndex(t => t.Priority);
+            entity.HasIndex(t => t.MainCategory);
             entity.HasIndex(t => t.SlaDeadline);
             entity.HasIndex(t => t.CreatedAt);
             entity.HasIndex(t => t.AssignedToId);

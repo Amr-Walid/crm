@@ -116,17 +116,30 @@
                 }
             </div>
 
-            <!-- Category + Priority -->
+            <!-- Main Category + Sub Category -->
             <div class="row" style="gap:14px;align-items:flex-start">
                 <div class="field" style="flex:1">
-                    <label>@T("TkC.Category") *</label>
+                    <label>@T("TkC.MainCategory") *</label>
+                    <select class="select" @onchange="OnMainCategoryChanged">
+                        @foreach (var mc in Enum.GetValues<MainCategory>())
+                        {
+                            <option value="@((int)mc)" selected="@(_mainCategory == mc)">@TMainCategory(mc.ToString())</option>
+                        }
+                    </select>
+                </div>
+                <div class="field" style="flex:1">
+                    <label>@T("TkC.SubCategory") *</label>
                     <select class="select" @onchange="OnCategoryChanged">
-                        @foreach (var cat in Enum.GetValues<TicketCategory>())
+                        @foreach (var cat in TicketCategoryMap.GetSubCategories(_mainCategory))
                         {
                             <option value="@((int)cat)" selected="@(_category == cat)">@TCategory(cat.ToString())</option>
                         }
                     </select>
                 </div>
+            </div>
+
+            <!-- Priority -->
+            <div class="row" style="gap:14px;align-items:flex-start">
                 <div class="field" style="flex:1">
                     <label>@T("TkC.Priority") *</label>
                     <select class="select" @onchange="OnPriorityChanged">
@@ -237,6 +250,7 @@
     private System.Threading.Timer? _debounce;
 
     private Guid? _deviceId;
+    private MainCategory _mainCategory = MainCategory.GeneralSupport;
     private TicketCategory _category = TicketCategory.GeneralInquiry;
     private TicketPriority _priority = TicketPriority.Medium;
     private string _title = string.Empty;
@@ -365,7 +379,26 @@
     private void OnDeviceChanged(ChangeEventArgs e) =>
         _deviceId = Guid.TryParse(e.Value?.ToString(), out var g) ? g : null;
 
-    // ───── category → live KB guidance ─────
+    // ───── main category → cascades the sub-category list ─────
+    private async Task OnMainCategoryChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var v))
+        {
+            _mainCategory = (MainCategory)v;
+
+            // Reset the sub-category to the first valid option under the new main
+            // category so the pairing is always consistent before submit.
+            var subs = TicketCategoryMap.GetSubCategories(_mainCategory);
+            if (subs.Count > 0 && !subs.Contains(_category))
+            {
+                _category = subs[0];
+            }
+
+            await LoadArticleAsync();
+        }
+    }
+
+    // ───── sub-category → live KB guidance ─────
     private async Task OnCategoryChanged(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out var v))
@@ -405,7 +438,7 @@
                 // messages are appended to it as internal notes.
                 var linkResult = await Api.LinkChatwootTicketAsync(new ChatwootLinkTicketRequest(
                     _customer.Id, _conversationId!, _title.Trim(), _description.Trim(),
-                    _category, _priority));
+                    _category, _priority, _mainCategory));
                 ticketId = linkResult.TicketId;
                 Toasts.Success(linkResult.AlreadyLinked
                     ? T("Cw.LinkedToConversation") + $" — {ticketId}"
@@ -414,7 +447,7 @@
             else
             {
                 ticketId = await Api.CreateTicketAsync(new CreateTicketRequest(
-                    _customer.Id, _deviceId, _title.Trim(), _description.Trim(), _category, _priority));
+                    _customer.Id, _deviceId, _title.Trim(), _description.Trim(), _mainCategory, _category, _priority));
                 Toasts.Success(T("TkC.Created", ticketId));
             }
             Nav.NavigateTo($"/tickets/{ticketId}");

@@ -136,7 +136,10 @@ public class GetTicketDetailsQueryHandler : IRequestHandler<GetTicketDetailsQuer
             ticket.ClosedAt,
             histories,
             notes,
-            attachments
+            attachments,
+            (int)ticket.MainCategory,
+            ticket.MainCategory.ToString(),
+            (int)ticket.Category
         );
     }
 }

@@ -113,7 +113,10 @@ public class GetTicketsListQueryHandler : IRequestHandler<GetTicketsListQuery, P
             t.SlaDeadline,
             t.SlaBreached,
             t.CreatedAt,
-            t.UpdatedAt
+            t.UpdatedAt,
+            (int)t.MainCategory,
+            t.MainCategory.ToString(),
+            (int)t.Category
         )).ToList();
 
         return new PagedResult<TicketSummaryDto>(items, totalCount, page, pageSize);
